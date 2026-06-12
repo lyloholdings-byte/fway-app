@@ -2169,8 +2169,8 @@ async function loadRoster(){
   if(state.cTab==='roster'){const el=document.getElementById('c-content');if(el)el.innerHTML=renderRoster();}
   try{
     const r=await notionFetch('https://api.notion.com/v1/databases/7bb55142-c3dc-4e8f-9f16-fa66c0fa4dcb/query','POST',{page_size:50,sorts:[{property:'Athlete',direction:'ascending'}]});
-    if(d.results&&Array.isArray(d.results)){
-      state.rosterProfiles=d.results.map(p=>{
+    if(r.results&&Array.isArray(r.results)){
+      state.rosterProfiles=r.results.map(p=>{
         const props=p.properties;
         const g=(key,type)=>{
           const prop=props[key];
@@ -2505,9 +2505,39 @@ async function loadNotionLogs(){
   try{
     const today=new Date().toISOString().split('T')[0];
     const r=await notionFetch('https://api.notion.com/v1/databases/0f830044-995c-4d21-af44-f48e3ba8dc3d/query','POST',{filter:{property:'Date',date:{equals:today}},page_size:50,sorts:[{property:'Date',direction:'descending'}]});
-    const txt=d.content.filter(x=>x.type==='text').map(x=>x.text).join('');
-    const m=txt.match(/\[[\s\S]*\]/);
-    if(m){const parsed=JSON.parse(m[0]);if(Array.isArray(parsed))state.notionLogs=parsed;}
+    if(r.results&&Array.isArray(r.results)){
+      state.notionLogs=r.results.map(p=>{
+        const props=p.properties;
+        const g=(key,type)=>{
+          const prop=props[key];if(!prop)return'';
+          if(type==='title')return prop.title?.[0]?.plain_text||'';
+          if(type==='rich_text')return prop.rich_text?.[0]?.plain_text||'';
+          if(type==='number')return prop.number??0;
+          if(type==='select')return prop.select?.name||'';
+          return'';
+        };
+        return{
+          athleteName:g('Athlete','rich_text'),
+          checkInStatus:g('Check-In Status','select'),
+          fuelScore:g('Fuel Score','number'),
+          energy:g('Energy','select'),
+          sleep:g('Sleep','select'),
+          soreness:g('Soreness Level','select'),
+          pain:g('Pain Level','select'),
+          mental:g('Mental State','select'),
+          sport:g('Sport','rich_text'),
+          position:g('Position','rich_text'),
+          schedule:g('Schedule Today','rich_text'),
+          mealsLogged:g('Meals Logged','number'),
+          waterOz:g('Water Oz Logged','number'),
+          waterGoalHit:g('Water Goal Hit','select'),
+          streak:g('Consistency Streak','number'),
+          skillWorkDone:g('Skill Work Done','select'),
+          redFlags:g('Red Flags','rich_text'),
+          fuelCoachSummary:g('Fuel Coach EOD Summary','rich_text')
+        };
+      });
+    }
   }catch(e){
     console.error('Logs error:',e);
     state.logsError='';
