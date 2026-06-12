@@ -440,7 +440,7 @@ function requestPinResetFromEntry(){
   const parts=name.split(' ');
   const first=parts[0]||'';const last=parts.slice(1).join(' ')||'';
   pushNotification('PIN Reset Requested',name,'Athlete requested a PIN reset from login screen',new Date().toLocaleString());
-  notionFetch('https://api.notion.com/v1/databases/eb218ec8-b0f4-44f4-90bb-972c91dc23ea/query','POST',{filter:{and:[{property:'First Name',rich_text:{equals:first}},{property:'Last Name',rich_text:{equals:last}}]},page_size:1})
+  notionFetch('https://api.notion.com/v1/databases/7bb55142-c3dc-4e8f-9f16-fa66c0fa4dcb/query','POST',{filter:{and:[{property:'First Name',rich_text:{equals:first}},{property:'Last Name',rich_text:{equals:last}}]},page_size:1})
   .then(d=>{
     if(d.results&&d.results[0]){
       notionFetch('https://api.notion.com/v1/pages/'+d.results[0].id,'PATCH',{properties:{"PIN Status":{select:{name:'PIN Reset Requested'}}}});
@@ -501,7 +501,7 @@ function pinCreateKey(k){
           const sessForPin=JSON.parse(localStorage.getItem('fw_session')||'null');
           const fnPin=(sessForPin?.name||'').split(' ')[0];
           const lnPin=(sessForPin?.name||'').split(' ').slice(1).join(' ');
-          notionFetch('https://api.notion.com/v1/databases/eb218ec8-b0f4-44f4-90bb-972c91dc23ea/query','POST',{filter:{and:[{property:'First Name',rich_text:{equals:fnPin}},{property:'Last Name',rich_text:{equals:lnPin}}]},page_size:1})
+          notionFetch('https://api.notion.com/v1/databases/7bb55142-c3dc-4e8f-9f16-fa66c0fa4dcb/query','POST',{filter:{and:[{property:'First Name',rich_text:{equals:fnPin}},{property:'Last Name',rich_text:{equals:lnPin}}]},page_size:1})
           .then(d=>{
             if(d.results&&d.results[0]){
               notionFetch('https://api.notion.com/v1/pages/'+d.results[0].id,'PATCH',{properties:{"PIN":{rich_text:[{text:{content:pin}}]},"PIN Status":{select:{name:'Active'}}}});
@@ -826,7 +826,7 @@ function requestPinReset(){
   const name=capitalize(first)+' '+capitalize(last);
   pushNotification('PIN Reset Requested',name,'Athlete requested a PIN reset from the login screen',new Date().toLocaleString());
   // Update PIN status in Notion via worker
-  notionFetch('https://api.notion.com/v1/databases/eb218ec8-b0f4-44f4-90bb-972c91dc23ea/query','POST',{filter:{and:[{property:'First Name',rich_text:{equals:capitalize(first)}},{property:'Last Name',rich_text:{equals:capitalize(last)}}]},page_size:1})
+  notionFetch('https://api.notion.com/v1/databases/7bb55142-c3dc-4e8f-9f16-fa66c0fa4dcb/query','POST',{filter:{and:[{property:'First Name',rich_text:{equals:capitalize(first)}},{property:'Last Name',rich_text:{equals:capitalize(last)}}]},page_size:1})
   .then(d=>{
     if(d.results&&d.results[0]){
       notionFetch('https://api.notion.com/v1/pages/'+d.results[0].id,'PATCH',{properties:{"PIN Status":{select:{name:'PIN Reset Requested'}}}});
@@ -1278,7 +1278,7 @@ async function silentPushToNotion(){
     };
 
     // First check if entry exists for today
-    const searchData=await notionFetch('https://api.notion.com/v1/databases/61e0dc32-7f94-4ac3-809c-1cd06469ae81/query','POST',{
+    const searchData=await notionFetch('https://api.notion.com/v1/databases/0f830044-995c-4d21-af44-f48e3ba8dc3d/query','POST',{
       filter:{and:[
         {property:'First Name',rich_text:{equals:name.split(' ')[0]||''}},
         {property:'Date',date:{equals:today}}
@@ -1293,7 +1293,7 @@ async function silentPushToNotion(){
       console.log('✅ Notion updated',new Date().toLocaleTimeString());
     } else {
       await notionFetch('https://api.notion.com/v1/pages','POST',{
-        parent:{database_id:'61e0dc32-7f94-4ac3-809c-1cd06469ae81'},
+        parent:{database_id:'0f830044-995c-4d21-af44-f48e3ba8dc3d'},
         properties
       });
       console.log('✅ Notion created',new Date().toLocaleTimeString());
@@ -2146,7 +2146,7 @@ async function confirmPinReset(){
 
   // Push to Notion Athlete Profiles
   try{
-    const sr=await notionFetch('https://api.notion.com/v1/databases/eb218ec8-b0f4-44f4-90bb-972c91dc23ea/query','POST',{filter:{property:'Athlete',title:{contains:name}},page_size:1});
+    const sr=await notionFetch('https://api.notion.com/v1/databases/7bb55142-c3dc-4e8f-9f16-fa66c0fa4dcb/query','POST',{filter:{property:'Athlete',title:{contains:name}},page_size:1});
     if(sr.results&&sr.results[0]){
       await notionFetch('https://api.notion.com/v1/pages/'+sr.results[0].id,'PATCH',{properties:{"PIN":{rich_text:[{text:{content:pin}}]},"PIN Status":{select:{name:'Active'}}}});
     }
@@ -2169,7 +2169,7 @@ async function loadRoster(){
   state.rosterLoading=true;state.rosterProfiles=[];
   if(state.cTab==='roster'){const el=document.getElementById('c-content');if(el)el.innerHTML=renderRoster();}
   try{
-    const r=await notionFetch('https://api.notion.com/v1/databases/eb218ec8-b0f4-44f4-90bb-972c91dc23ea/query','POST',{page_size:50,sorts:[{property:'Athlete',direction:'ascending'}]});
+    const r=await notionFetch('https://api.notion.com/v1/databases/7bb55142-c3dc-4e8f-9f16-fa66c0fa4dcb/query','POST',{page_size:50,sorts:[{property:'Athlete',direction:'ascending'}]});
     if(d.results&&Array.isArray(d.results)){
       state.rosterProfiles=d.results.map(p=>{
         const props=p.properties;
@@ -2505,7 +2505,7 @@ async function loadNotionLogs(){
   state.loadingLogs=true;state.notionLogs=[];renderCoach();
   try{
     const today=new Date().toISOString().split('T')[0];
-    const r=await notionFetch('https://api.notion.com/v1/databases/61e0dc32-7f94-4ac3-809c-1cd06469ae81/query','POST',{filter:{property:'Date',date:{equals:today}},page_size:50,sorts:[{property:'Date',direction:'descending'}]});
+    const r=await notionFetch('https://api.notion.com/v1/databases/0f830044-995c-4d21-af44-f48e3ba8dc3d/query','POST',{filter:{property:'Date',date:{equals:today}},page_size:50,sorts:[{property:'Date',direction:'descending'}]});
     const txt=d.content.filter(x=>x.type==='text').map(x=>x.text).join('');
     const m=txt.match(/\[[\s\S]*\]/);
     if(m){const parsed=JSON.parse(m[0]);if(Array.isArray(parsed))state.notionLogs=parsed;}
@@ -2804,7 +2804,7 @@ function saveProfile(){
   // Push to Notion Athlete Profiles DB — single source of truth
   // Save profile to Notion Athlete Profiles directly
   notionFetch('https://api.notion.com/v1/pages','POST',{
-    parent:{database_id:'eb218ec8-b0f4-44f4-90bb-972c91dc23ea'},
+    parent:{database_id:'7bb55142-c3dc-4e8f-9f16-fa66c0fa4dcb'},
     properties:{
       "Athlete":{title:[{text:{content:name}}]},
       "First Name":{rich_text:[{text:{content:name.split(' ')[0]||''}}]},
@@ -2839,8 +2839,8 @@ function saveProfile(){
 // ── NOTIFICATION SYSTEM ──────────────────────────────────────────────────────
 const NOTION_TOKEN='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';
 const WORKER_URL='https://summer-snowflake-b830.lyloholdings.workers.dev/';
-const PROFILES_DB='eb218ec8-b0f4-44f4-90bb-972c91dc23ea';
-const DAILY_DB='61e0dc32-7f94-4ac3-809c-1cd06469ae81';
+const PROFILES_DB='7bb55142-c3dc-4e8f-9f16-fa66c0fa4dcb';
+const DAILY_DB='0f830044-995c-4d21-af44-f48e3ba8dc3d';
 // Notification DB uses Daily Athlete Summary for now
 const FWAY_NOTIF_DB='fway_notifications';
 
