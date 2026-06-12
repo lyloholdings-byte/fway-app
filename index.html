@@ -1247,7 +1247,6 @@ async function silentPushToNotion(){
     const properties={
       "Entry":{title:[{text:{content:entryTitle}}]},
       "Athlete":{rich_text:[{text:{content:name}}]},
-      "First Name":{rich_text:[{text:{content:name.split(' ')[0]||''}}]},
       "Date":{date:{start:today}},
       "Sport":{rich_text:[{text:{content:profile?.sport||''}}]},
       "Position":{rich_text:[{text:{content:profile?.position||''}}]},
@@ -1280,7 +1279,7 @@ async function silentPushToNotion(){
     // First check if entry exists for today
     const searchData=await notionFetch('https://api.notion.com/v1/databases/0f830044-995c-4d21-af44-f48e3ba8dc3d/query','POST',{
       filter:{and:[
-        {property:'First Name',rich_text:{equals:name.split(' ')[0]||''}},
+        {property:'Athlete',rich_text:{contains:name.split(' ')[0]||''}},
         {property:'Date',date:{equals:today}}
       ]},
       page_size:1
