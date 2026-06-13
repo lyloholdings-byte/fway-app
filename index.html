@@ -660,6 +660,8 @@ function initState(){
   state.ciRedFlags=loadJ('fw_red_flags_'+state.todayDate,[]);
   state.ciYellowFlags=loadJ('fw_yellow_flags_'+state.todayDate,[]);
   state.ciAns=loadJ('fw_ans_'+state.todayDate,{});
+  state.readinessReport=loadJ('fw_readiness_'+state.todayDate,null);
+  state.readinessLoading=false;
   // Global (shared) keys — not namespaced
   state.wLib=JSON.parse(localStorage.getItem('fway_wkts')||'[]');
   state.coachClip=JSON.parse(localStorage.getItem('fway_daily_clip')||'null');
@@ -712,6 +714,138 @@ async function pushN(payload){
 
 // Meal data is included in silentPushToNotion via Meal Log field
 
+
+
+// ── READINESS REPORT — FLAG TRACKING ────────────────────────────────────────
+function isSleepFlagged(a){const s=a.sleep||'';return s.includes('Less than 5')||s.includes('5–6');}
+function isFuelFlagged(a){return (a.ate||'').includes('Nothing');}
+function isMentalFlagged(a){const m=a.mental||'';return m.includes('Stressed')||m.includes('tired')||m.includes('off today');}
+function isPainFlagged(a){const p=a.pain||'';return p.includes('Moderate')||p.includes('High');}
+
+function updateFlagStreak(flagType,hasFlagToday){
+  const key='fw_flagstr_'+flagType;
+  let streak=loadJ(key,{count:0,lastDate:''});
+  const yesterday=new Date(Date.now()-86400000).toLocaleDateString();
+  if(hasFlagToday){
+    if(streak.lastDate===yesterday)streak.count++;
+    else if(streak.lastDate===state.todayDate){/* already updated today */}
+    else streak.count=1;
+    streak.lastDate=state.todayDate;
+  } else if(streak.lastDate!==state.todayDate){
+    streak.count=0;streak.lastDate=state.todayDate;
+  }
+  save(key,streak);
+  return streak.count;
+}
+
+async function getReadinessReport(){
+  const a=state.ciAns||{};
+  const firstName=getSessionName().split(' ')[0];
+  const schedFreq='3x';
+  const lastActiveSaved=load('fw_last_active','');
+  let daysAbsent=0;
+  if(lastActiveSaved){
+    try{
+      const parts=lastActiveSaved.split('/');
+      const lastDate=new Date(parseInt(parts[2]),parseInt(parts[0])-1,parseInt(parts[1]));
+      lastDate.setHours(0,0,0,0);
+      const now=new Date();now.setHours(0,0,0,0);
+      daysAbsent=Math.max(0,Math.floor((now-lastDate)/86400000)-1);
+    }catch(e){daysAbsent=0;}
+  }
+  const sleepCount=updateFlagStreak('sleep',isSleepFlagged(a));
+  const fuelCount=updateFlagStreak('fuel',isFuelFlagged(a));
+  const mentalCount=updateFlagStreak('mental',isMentalFlagged(a));
+  const painCount=updateFlagStreak('pain',isPainFlagged(a));
+  const prompt=`An athlete just completed their daily check-in. Analyze their data and return a readiness report.
+
+---
+
+SCHEDULE PROFILE
+Name: ${firstName}
+Training Schedule: ${schedFreq} per week
+Days Since Last Check-In: ${daysAbsent}
+Current Flag Counts:
+- Sleep flag: ${sleepCount} consecutive days
+- Fuel flag: ${fuelCount} consecutive days
+- Mental flag: ${mentalCount} consecutive days
+- Pain flag: ${painCount} consecutive days
+
+---
+
+CHECK-IN DATA
+Overall feel: ${a.readiness||'Not provided'}
+Sleep hours: ${a.sleep||'Not provided'}
+Sleep quality: ${a.sleep||'Not provided'}
+Energy level: ${a.energy||'Not provided'}
+Last meal: ${a.ate||'Not provided'}
+Hydration: ${Math.round(state.waterOz)}oz logged
+Mental clarity: ${a.mental||'Not provided'}
+Outside stress: Not separately tracked
+Motivation: ${a.motivation||'Not provided'}
+
+---
+
+FLAG RULES — apply these before setting status
+
+SLEEP
+Day 1-2: "Your nervous system didn't fully recover. Speed work today is less effective — your body can't express what it hasn't built yet."
+Day 3: "Three nights in a row. Your development is stalling. Coach is watching this closely."
+Day 4+: PULLED. Set status to Rest Day. Notify coach.
+
+FUEL
+Day 1-2: "You're asking your body to perform without fuel. Your top speed drops up to 10% in a depleted state."
+Day 3: "Three days of poor fuel is actively working against everything you're training for."
+Day 4+: PULLED. Set status to Rest Day. Notify coach.
+
+MENTAL
+Day 1-2: "Something outside the building is showing up in your data. Your body handles stress the same way whether it comes from the field or from life."
+Day 3: "This is no longer a one-off day — this is a pattern. Talk to Coach before your next session."
+Day 4+: PULLED. Coach conversation required. Set status to Rest Day.
+
+PAIN
+Day 1: "You flagged something wrong. Do not push through pain."
+Day 2-3: "This is becoming a pattern. Talk to Coach immediately."
+Day 4+: PULLED. Movement assessment required. Set status to Rest Day.
+
+ABSENCE
+2x per week athlete — warning at 4 days absent, alert at 7 days
+3x per week athlete — warning at 3 days absent, alert at 5 days
+4x per week athlete — warning at 2 days absent, alert at 4 days
+
+---
+
+TRAINING STATUS LOGIC
+
+Full Go — overall feel 3-4, sleep 3+, energy 3+, no active flags
+Modified — one or more flags at day 1-3, overall feel 2-3
+Recovery Day — multiple flags, overall feel 2
+Rest Day — any flag at day 4+, pain reported, or overall feel 1
+
+---
+
+COACH VOICE
+Speak directly to the athlete by first name.
+Simple language — 5th grade level.
+Direct and warm — like a trusted older cousin or coach.
+Never more than 2 sentences for the callout.
+Reference something specific from their data.
+Do not use bullet points in the callout.
+
+---
+
+OUTPUT — respond only in this exact JSON format. No markdown. No backticks. No extra text.
+
+{"status":"Full Go","focus":"One sentence on what today session targets.","callout":"One to two sentences from Coach directly to the athlete.","flags":["Short flag string for coach dashboard"],"pulled":false}
+
+If pulled is true — status must be Rest Day and flags must include the reason.`;
+  try{
+    const data=await aiFetch({model:'claude-sonnet-4-6',max_tokens:500,messages:[{role:'user',content:prompt}]});
+    const text=data.content?.find(b=>b.type==='text')?.text||'';
+    const clean=text.replace(/```json|```/g,'').trim();
+    return JSON.parse(clean);
+  }catch(e){console.error('Readiness report failed:',e);return null;}
+}
 
 // AUTH
 let loginPinDigits=[];
@@ -1048,45 +1182,40 @@ function renderHome(){
 // CHECK-IN
 function renderCheckin(){
   if(state.done){
-    const redFlags=state.ciRedFlags||[];
-    const yellowFlags=state.ciYellowFlags||[];
-    const hasRed=redFlags.length>0;
-    const hasYellow=yellowFlags.length>0&&!hasRed;
-    const allClear=!hasRed&&!hasYellow;
-
-    return `<div style="text-align:center;padding:32px 20px 16px">
-      ${hasRed?`
-        <div style="width:80px;height:80px;border-radius:50%;background:${R}20;border:3px solid ${R};display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:36px">🚨</div>
-        <p style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:900;color:${R};margin-bottom:8px">SEE COACH FIRST</p>
-        <p style="font-size:13px;color:#C8C8E0;line-height:1.7;margin-bottom:14px">Your check-in has flags that need a coach review <strong>before you train.</strong> Find Coach before warm-up to determine your training status today.</p>
-        <div style="background:#13131E;border:1px solid ${R}40;border-radius:12px;padding:12px 14px;margin-bottom:16px;text-align:left">
-          ${redFlags.map(f=>`<p style="font-size:12px;color:${R};margin-bottom:5px;display:flex;align-items:flex-start;gap:6px"><span>🔴</span>${f}</p>`).join('')}
-          ${yellowFlags.map(f=>`<p style="font-size:12px;color:#F59E0B;margin-bottom:5px;display:flex;align-items:flex-start;gap:6px"><span>🟡</span>${f}</p>`).join('')}
+    const report=state.readinessReport||loadJ('fw_readiness_'+state.todayDate,null);
+    const loading=state.readinessLoading;
+    const sColors={'Full Go':'#22C55E','Modified':'#F59E0B','Recovery Day':'#3B82F6','Rest Day':'#DC2626'};
+    const sIcons={'Full Go':'⚡','Modified':'⚠️','Recovery Day':'🔄','Rest Day':'🛑'};
+    const status=report?.status||(state.ciRedFlags?.length?'Rest Day':state.ciYellowFlags?.length?'Modified':'Full Go');
+    const sColor=sColors[status]||'#9A9AB0';
+    const sIcon=sIcons[status]||'✓';
+    const isPulled=report?.pulled||false;
+    return `<div style="text-align:center;padding:28px 16px 16px">
+      <div style="width:90px;height:90px;border-radius:50%;background:${sColor}20;border:4px solid ${sColor};display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:42px">${sIcon}</div>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:40px;font-weight:900;color:${sColor};margin-bottom:4px;line-height:1">${status.toUpperCase()}</p>
+      ${loading?`<div style="background:#13131E;border:1px solid #252538;border-radius:12px;padding:14px;margin:16px 0">
+        <p style="font-size:13px;color:#9A9AB0">Analyzing your check-in...</p>
+      </div>`:''}
+      ${report&&!loading?`
+        <div style="background:#13131E;border:1px solid ${sColor}40;border-radius:13px;padding:13px 14px;margin:14px 0;text-align:left">
+          <p style="font-size:9px;color:${sColor};font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px">TODAY'S FOCUS</p>
+          <p style="font-size:14px;color:#F0EDE6;line-height:1.5">${report.focus}</p>
         </div>
-        
-        <button onclick="aTab('home')" style="width:100%;background:none;border:1px solid #303050;border-radius:12px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#9A9AB0;cursor:pointer">GO TO HOME</button>
-      `:''}
-
-      ${hasYellow?`
-        <div style="width:80px;height:80px;border-radius:50%;background:#F59E0B20;border:3px solid #F59E0B;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:36px">⚠️</div>
-        <p style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:900;color:#F59E0B;margin-bottom:8px">CHECK IN WITH COACH</p>
-        <p style="font-size:13px;color:#C8C8E0;line-height:1.7;margin-bottom:14px">Your check-in shows some concerns. Connect with Coach before practice — you may be on a modified plan today.</p>
-        <div style="background:#13131E;border:1px solid #F59E0B40;border-radius:12px;padding:12px 14px;margin-bottom:16px;text-align:left">
-          ${yellowFlags.map(f=>`<p style="font-size:12px;color:#F59E0B;margin-bottom:5px;display:flex;align-items:flex-start;gap:6px"><span>🟡</span>${f}</p>`).join('')}
+        <div style="background:#0A0A12;border-left:3px solid ${sColor};border-radius:0 12px 12px 0;padding:13px 14px;margin:10px 0;text-align:left">
+          <p style="font-size:9px;color:${sColor};font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px">COACH</p>
+          <p style="font-size:14px;color:#E0E0F0;line-height:1.6;font-style:italic">"${report.callout}"</p>
         </div>
-        
-        <button onclick="aTab('fuel')" style="width:100%;background:#13131E;border:1px solid #303050;border-radius:12px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#9A9AB0;cursor:pointer">GO LOG YOUR MEALS →</button>
+        ${report.flags?.length?`<div style="margin:10px 0;text-align:left">${report.flags.map(f=>`<div style="background:${sColor}15;border:1px solid ${sColor}30;border-radius:9px;padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px"><span style="font-size:12px">${isPulled?'🛑':'⚠️'}</span><p style="font-size:12px;color:${sColor};font-weight:600">${f}</p></div>`).join('')}</div>`:''}
       `:''}
-
-      ${allClear?`
-        <div style="width:110px;height:110px;border-radius:50%;background:#22C55E20;border:4px solid #22C55E;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:52px;color:#22C55E">✓</div>
-        <p style="font-family:'Barlow Condensed',sans-serif;font-size:52px;font-weight:900;color:#22C55E;margin-bottom:8px">ALL CLEAR</p>
-        <p style="font-size:15px;color:#C8C8E0;margin-bottom:4px">You're good to go today.</p>
-        <p style="font-size:13px;color:#9A9AB0;margin-bottom:24px">Fuel up, stay locked in, and compete.</p>
-        <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:${R};font-weight:700;margin-bottom:28px">+20 pts 🔥</p>
-        <button onclick="aTab('fuel')" style="width:100%;background:#22C55E;color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px">GO LOG YOUR MEALS →</button>
-      `:''}
-      <div style="margin-top:20px"><button onclick="resetCheckin()" style="background:none;border:none;color:#2A2A3E;font-size:18px;cursor:pointer;padding:8px">⟳</button></div>
+      ${!isPulled?`<p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:${R};font-weight:700;margin:12px 0">+20 pts 🔥</p>`:''}
+      ${isPulled?
+        `<div style="background:#DC262615;border:2px solid #DC2626;border-radius:13px;padding:14px;margin:14px 0">
+          <p style="font-size:13px;color:#DC2626;font-weight:700;margin-bottom:4px">🛑 REST DAY — DO NOT TRAIN</p>
+          <p style="font-size:12px;color:#9A9AB0">Find Coach Fonoti before doing anything today.</p>
+        </div>`
+        :`<button onclick="aTab('fuel')" style="width:100%;background:${status==='Full Go'?'#22C55E':status==='Modified'?'#F59E0B':'#3B82F6'};color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px">GO LOG YOUR MEALS →</button>`
+      }
+      <div style="margin-top:16px"><button onclick="resetCheckin()" style="background:none;border:none;color:#2A2A3E;font-size:18px;cursor:pointer;padding:8px">⟳</button></div>
     </div>`;
   }
   const step=state.ciStep,q=Q_STEPS[step],total=Q_STEPS.length;
@@ -1214,8 +1343,24 @@ function finishCheckin(){
     state.streak=lastActive===yesterday?state.streak+1:1;
     save('fw_streak',state.streak);save('fw_last_active',today);
   }
-  schedulePush(); // silent auto-push to Notion
+  // ── AI READINESS REPORT ────────────────────────────────────────────────
+  state.readinessLoading=true;
+  state.readinessReport=null;
+  schedulePush();
   renderAthlete();
+  getReadinessReport().then(report=>{
+    state.readinessLoading=false;
+    if(report){
+      state.readinessReport=report;
+      save('fw_readiness_'+state.todayDate,report);
+      if(report.pulled&&!(state.ciRedFlags||[]).length){
+        state.ciRedFlags=report.flags||[];
+        save('fw_red_flags_'+state.todayDate,state.ciRedFlags);
+        pushNotification('Red Flag',getSessionName(),'PULLED: '+(report.flags?.[0]||'Rest Day required'),'');
+      }
+    }
+    renderAthlete();
+  }).catch(()=>{state.readinessLoading=false;renderAthlete();});
 }
 function getSessionName(){try{return JSON.parse(localStorage.getItem('fw_session')||'null')?.name||'Athlete';}catch{return 'Athlete';}}
 
@@ -1248,11 +1393,6 @@ async function silentPushToNotion(){
       "Entry":{title:[{text:{content:entryTitle}}]},
       "Athlete":{rich_text:[{text:{content:name}}]},
       "Date":{date:{start:today}},
-      "Sport":{rich_text:[{text:{content:profile?.sport||''}}]},
-      "Position":{rich_text:[{text:{content:profile?.position||''}}]},
-      "Grad Year":{rich_text:[{text:{content:String(profile?.gradYear||'')}}]},
-      "Body Goal":{select:{name:profile?.bodyGoal?.split(',')?.[0]?.trim()||'Gain Muscle'}},
-      "Current Weight (lbs)":{number:parseFloat(profile?.weight)||0},
       "Schedule Today":{rich_text:[{text:{content:Array.isArray(a.schedule)?a.schedule.join(', '):''}}]},
       "Energy":{select:{name:a.energy||'⚡ Good'}},
       "Body Feeling":{select:{name:a.body||'🏃 Good'}},
@@ -2714,7 +2854,7 @@ function doFullWipe(){localStorage.clear();window.location.reload();}
 // PROFILE SETUP
 const SPORTS=['Football','Basketball','Volleyball','Soccer','Track','Baseball','Softball','Lacrosse','Other'];
 const BODY_GOALS=['Gain Muscle','Lose Weight','Maintain','Get Faster','Stay Lean'];
-const GRAD_YEARS=['2025','2026','2027','2028','2029','2030'];
+const GRAD_YEARS=['2026','2027','2028','2029','2030'];
 let profState={sports:[],gradYear:'',bodyGoals:[]};
 
 function showProfileSetup(name){
@@ -2819,6 +2959,10 @@ function checkProfReady(){
 function saveProfile(){
   const pos=document.getElementById('prof-position').value.trim();
   if(!pos||!profState.sports.length||!profState.gradYear)return;
+  const name=getSessionName();
+  const sessForSave=JSON.parse(localStorage.getItem('fw_session')||'null');
+  const saveNameKey=(sessForSave?.name||'').toLowerCase().replace(/\s+/g,'_');
+  const currentPin=localStorage.getItem(saveNameKey+'_fw_pin')||'';
   const profile={
     sport:profState.sports.join(', '),
     position:pos,
@@ -2845,6 +2989,7 @@ function saveProfile(){
       "Goal Weight (lbs)":{number:parseFloat(profile.goalWeight)||0},
       "Body Goal":{select:{name:profile.bodyGoal||'Gain Muscle'}},
       "Height":{rich_text:[{text:{content:profile.height||''}}]},
+      "PIN":{rich_text:[{text:{content:currentPin}}]},
       "PIN Status":{select:{name:'Active'}},
       "Status":{select:{name:'Active'}}
     }
