@@ -596,6 +596,11 @@ const Q_STEPS=[
   {key:'readiness',q:'Overall readiness to perform?',sub:'1 = not ready  ·  5 = fully ready',opts:['1 - Not ready','2 - Below par','3 - I can work','4 - Ready','5 - Peak ready'],scale:true},
   {key:'motivation',q:'Want to train today?',opts:["1 - Don't want to be here","2 - I'll get through it","3 - I'm here","4 - Let's work","5 - Can't wait"],scale:true}
 ];
+const PULSE_Q=[
+  {key:'sleep',q:"How'd you sleep?",opts:['😫 Less than 5 hrs','😐 5–6 hrs','✅ 7–8 hrs','💤 9+ hrs']},
+  {key:'body',q:'Body feeling?',opts:['💪 Fresh','🏃 Good','😤 Sore','🤕 Hurting']},
+  {key:'energy',q:'Energy level?',opts:['🔥 Locked In','⚡ Good','😐 Low','🛑 Tank Empty']},
+];
 
 // STATE
 let state={
@@ -662,6 +667,10 @@ function initState(){
   state.ciAns=loadJ('fw_ans_'+state.todayDate,{});
   state.readinessReport=loadJ('fw_readiness_'+state.todayDate,null);
   state.readinessLoading=false;
+  state.pulseDone=load('fw_pulse_'+state.todayDate,'')==='true';
+  state.pulseAnswers=loadJ('fw_pulse_ans_'+state.todayDate,{});
+  state.ciMode=null;
+  state.pulseStep=0;
   // Global (shared) keys — not namespaced
   state.wLib=JSON.parse(localStorage.getItem('fway_wkts')||'[]');
   state.coachClip=JSON.parse(localStorage.getItem('fway_daily_clip')||'null');
@@ -1181,6 +1190,58 @@ function renderHome(){
 
 // CHECK-IN
 function renderCheckin(){
+  // ROUTING SCREEN — no mode selected yet
+  if(!state.done&&!state.pulseDone&&!state.ciMode){
+    return `
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">DAILY CHECK-IN</p>
+    <p style="font-size:12px;color:#9A9AB0;margin-bottom:20px">What kind of day is it?</p>
+    <div onclick="startFullCI()" style="background:#1A0A0A;border:2px solid #DC2626;border-radius:16px;padding:22px 20px;margin-bottom:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">
+      <p style="font-size:28px;margin-bottom:8px">⚡</p>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:#DC2626;letter-spacing:0.05em">TRAINING WITH COACH</p>
+      <p style="font-size:13px;color:#C8C8E0;margin-top:4px;line-height:1.5">Training with Coach Fonoti today</p>
+      <p style="font-size:11px;color:#9A9AB0;margin-top:6px">Full check-in · 9 questions · ~60 seconds</p>
+    </div>
+    <div onclick="startPulse()" style="background:#09090E;border:2px solid #303050;border-radius:16px;padding:22px 20px;cursor:pointer;-webkit-tap-highlight-color:transparent">
+      <p style="font-size:28px;margin-bottom:8px">😴</p>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:#F0EDE6;letter-spacing:0.05em">OFF DAY</p>
+      <p style="font-size:13px;color:#C8C8E0;margin-top:4px;line-height:1.5">Rest day, school, or training elsewhere</p>
+      <p style="font-size:11px;color:#9A9AB0;margin-top:6px">Quick pulse · 3 questions · 15 seconds</p>
+    </div>`;
+  }
+  // PULSE QUESTIONS
+  if(!state.done&&!state.pulseDone&&state.ciMode==='pulse'){
+    const pq=PULSE_Q[state.pulseStep];
+    const dots=PULSE_Q.map((_,i)=>`<div style="width:7px;height:7px;border-radius:50%;background:${state.pulseStep===i?R:state.pulseStep>i?'#22C55E':'#2A2A3E'}"></div>`).join('');
+    return `
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">PULSE CHECK-IN</p>
+    <p style="font-size:12px;color:#9A9AB0;margin-bottom:20px">Quick off-day read. Tap to answer.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <button onclick="state.ciMode=null;renderAthlete()" style="color:#888;font-size:22px;padding:4px 8px;background:none;border:none;cursor:pointer">←</button>
+      <div style="display:flex;gap:6px">${dots}</div>
+      <div style="width:38px"></div>
+    </div>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;text-align:center;margin-bottom:22px;line-height:1.1">${pq.q}</p>
+    ${pq.opts.map(o=>`<button class="opt-btn" onclick="pulsePick('${pq.key}','${o.replace(/'/g,"\'")}')">${o}</button>`).join('')}
+    <p style="font-size:10px;color:#9A9AB0;text-align:center;margin-top:12px">${state.pulseStep+1} of ${PULSE_Q.length}</p>`;
+  }
+  // PULSE DONE
+  if(state.pulseDone&&!state.done){
+    const pa=state.pulseAnswers;
+    const keyLabels={sleep:'Sleep',body:'Body',energy:'Energy'};
+    return `<div style="text-align:center;padding:28px 16px 16px">
+      <div style="width:80px;height:80px;border-radius:50%;background:#22C55E20;border:3px solid #22C55E;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:36px;color:#22C55E">✓</div>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:38px;font-weight:900;color:#22C55E;margin-bottom:6px">PULSE LOGGED</p>
+      <p style="font-size:13px;color:#9A9AB0;margin-bottom:20px">Off-day data received. Keep the habit going.</p>
+      <div style="background:#13131E;border:1px solid #1E1E2E;border-radius:12px;padding:14px;margin-bottom:16px;text-align:left">
+        ${Object.entries(pa).map(([k,v])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1A1A28"><p style="font-size:11px;color:#9A9AB0;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">${keyLabels[k]||k}</p><p style="font-size:13px;color:#F0EDE6">${v}</p></div>`).join('')}
+      </div>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:#22C55E;font-weight:700;margin-bottom:20px">🔥 ${state.streak} day streak</p>
+      <p style="font-size:12px;color:#6A6A85;margin-bottom:20px">Full check-in unlocks on your next training day.</p>
+      <button onclick="startFullCI()" style="width:100%;background:none;border:1px solid #DC2626;border-radius:12px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#DC2626;cursor:pointer;margin-bottom:8px">ACTUALLY TRAINING TODAY →</button>
+      <button onclick="aTab('home')" style="width:100%;background:none;border:1px solid #303050;border-radius:12px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#9A9AB0;cursor:pointer">SEE YOU NEXT SESSION</button>
+      <div style="margin-top:16px"><button onclick="state.pulseDone=false;save('fw_pulse_'+state.todayDate,'false');renderAthlete()" style="background:none;border:none;color:#2A2A3E;font-size:18px;cursor:pointer;padding:8px">⟳</button></div>
+    </div>`;
+  }
   if(state.done){
     const report=state.readinessReport||loadJ('fw_readiness_'+state.todayDate,null);
     const loading=state.readinessLoading;
@@ -1267,7 +1328,7 @@ function calcDailyScore(){
     pts+=20;
     if(f.length===0)pts+=10;
     else pts-=Math.min(f.length*10,20);
-  }
+  } else if(state.pulseDone){pts+=5;} // off-day pulse habit bonus
   if(meals.length>=3)pts+=20;
   else if(meals.length>=1)pts+=10;
   if(oz>=goal)pts+=15;
@@ -1292,6 +1353,27 @@ function updateScore(){
   return daily;
 }
 
+function startFullCI(){state.ciMode='full';renderAthlete();}
+function startPulse(){state.ciMode='pulse';state.pulseStep=0;state.pulseAnswers={};renderAthlete();}
+function pulsePick(key,val){
+  state.pulseAnswers[key]=val;
+  if(state.pulseStep<PULSE_Q.length-1){state.pulseStep++;renderAthlete();}
+  else{finishPulse();}
+}
+function finishPulse(){
+  state.pulseDone=true;
+  save('fw_pulse_'+state.todayDate,'true');
+  save('fw_pulse_ans_'+state.todayDate,state.pulseAnswers);
+  const today=state.todayDate,lastActive=load('fw_last_active','');
+  if(lastActive!==today){
+    const yesterday=new Date(Date.now()-86400000).toLocaleDateString();
+    state.streak=lastActive===yesterday?state.streak+1:1;
+    save('fw_streak',state.streak);save('fw_last_active',today);
+  }
+  updateScore();
+  schedulePush();
+  renderAthlete();
+}
 function finishCheckin(){
   const a=state.ciAns;
   const redFlags=[];
@@ -1379,7 +1461,8 @@ async function silentPushToNotion(){
   }
   try{
     const name=getSessionName();
-    const a=state.ciAns||{};
+    const a=state.ciAns&&Object.keys(state.ciAns).length?state.ciAns:{};
+    const pa=state.pulseAnswers||{};
     const profile=loadJ('fw_profile',null);
     const waterGoal=getWaterGoal();
     const score=calcDailyScore();
@@ -1394,8 +1477,8 @@ async function silentPushToNotion(){
       "Athlete":{rich_text:[{text:{content:name}}]},
       "Date":{date:{start:today}},
       "Schedule Today":{rich_text:[{text:{content:Array.isArray(a.schedule)?a.schedule.join(', '):''}}]},
-      "Energy":{select:{name:a.energy||'⚡ Good'}},
-      "Body Feeling":{select:{name:a.body||'🏃 Good'}},
+      "Energy":{select:{name:a.energy||pa.energy||'⚡ Good'}},
+      "Body Feeling":{select:{name:a.body||pa.body||'🏃 Good'}},
       "Soreness Level":{select:{name:a.soreness||'0 - No soreness'}},
       "Sleep":{select:{name:a.sleep||'✅ 7-8 hrs'}},
       "Pain Level":{select:{name:a.pain||'✅ No pain'}},
@@ -1403,7 +1486,7 @@ async function silentPushToNotion(){
       "Ate Before Training":{select:{name:a.ate||'🟡 A little'}},
       "Motivation":{select:{name:a.motivation||'3 - Im here'}},
       "Red Flags":{rich_text:[{text:{content:(state.ciRedFlags||[]).join('; ')||'None'}}]},
-      "Check-In Status":{select:{name:(state.ciRedFlags||[]).length?'Flagged':'All Clear'}},
+      "Check-In Status":{select:{name:state.done?((state.ciRedFlags||[]).length?'Flagged':'All Clear'):'Pulse'}},
       "Meals Logged":{number:state.meals.length},
       "Meal Log":{rich_text:[{text:{content:state.meals.map(m=>m.slot+': '+m.text).join(' | ').slice(0,2000)}}]},
       "Water Oz Logged":{number:Math.round(state.waterOz)},
@@ -1766,7 +1849,8 @@ function deleteMeal(i){state.meals.splice(i,1);save('fw_meals_'+state.todayDate,
 function getLYLOContext(){
   try{
     const profile=JSON.parse(load('fw_profile', null)||'null');
-    const a=state.ciAns||{};
+    const a=state.ciAns&&Object.keys(state.ciAns).length?state.ciAns:{};
+    const pa=state.pulseAnswers||{};
     const sched=Array.isArray(a.schedule)?a.schedule.join(', '):'not set';
     const mealCount=state.meals.length;
     const hour=new Date().getHours();
