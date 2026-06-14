@@ -1489,7 +1489,7 @@ async function silentPushToNotion(){
       "Energy":{select:{name:a.energy||pa.energy||'⚡ Good'}},
       "Body Feeling":{select:{name:a.body||pa.body||'🏃 Good'}},
       "Soreness Level":{select:{name:a.soreness||'0 - No soreness'}},
-      "Sleep":{select:{name:a.sleep||'✅ 7-8 hrs'}},
+      "Sleep":{select:{name:a.sleep||pa.sleep||'✅ 7-8 hrs'}},
       "Pain Level":{select:{name:a.pain||'✅ No pain'}},
       "Mental State":{select:{name:a.mental||'😊 Good'}},
       "Ate Before Training":{select:{name:a.ate||'🟡 A little'}},
@@ -1497,7 +1497,7 @@ async function silentPushToNotion(){
       "Red Flags":{rich_text:[{text:{content:(state.ciRedFlags||[]).join('; ')||'None'}}]},
       "Check-In Status":{select:{name:state.done?((state.ciRedFlags||[]).length?'Flagged':'All Clear'):'Pulse'}},
       "Meals Logged":{number:state.meals.length},
-      "Meal Log":{rich_text:[{text:{content:state.meals.map(m=>m.slot+': '+m.text).join(' | ').slice(0,2000)}}]},
+      "Meal Log":{rich_text:[{text:{content:state.meals.map(m=>(m.loggedAt?m.loggedAt+' — ':'')+m.slot+': '+m.text).join('\n').slice(0,2000)}}]},
       "Water Oz Logged":{number:Math.round(state.waterOz)},
       "Water Goal Oz":{number:waterGoal},
       "Water Goal Hit":{select:{name:state.waterOz>=waterGoal?'Yes':'No'}},
@@ -1505,7 +1505,7 @@ async function silentPushToNotion(){
       "Skill Work Details":{rich_text:[{text:{content:skillEntry?.details||''}}]},
       "Fuel Score":{number:score},
       "Consistency Streak":{number:state.streak},
-      "Submitted At":{rich_text:[{text:{content:new Date().toLocaleString()}}]}
+      "Submitted At":{rich_text:[{text:{content:new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}}]}
     };
 
     // First check if entry exists for today
