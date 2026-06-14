@@ -1469,7 +1469,7 @@ function getSessionName(){try{return JSON.parse(localStorage.getItem('fw_session
 let _pushTimer=null;
 function schedulePush(){
   if(_pushTimer)clearTimeout(_pushTimer);
-  _pushTimer=setTimeout(()=>silentPushToNotion(),1500);
+  _pushTimer=setTimeout(()=>silentPushToNotion(),500);
 }
 
 async function silentPushToNotion(){
@@ -1533,14 +1533,16 @@ async function silentPushToNotion(){
       const pageId=searchData.results[0].id;
       await notionFetch('https://api.notion.com/v1/pages/'+pageId,'PATCH',{properties});
       console.log('✅ Notion updated',new Date().toLocaleTimeString());
+      flash('✅ Synced to Notion','#22C55E');
     } else {
       await notionFetch('https://api.notion.com/v1/pages','POST',{
         parent:{database_id:'0f830044-995c-4d21-af44-f48e3ba8dc3d'},
         properties
       });
       console.log('✅ Notion created',new Date().toLocaleTimeString());
+      flash('✅ Synced to Notion','#22C55E');
     }
-  }catch(e){console.error('Silent push failed:',e.message||e);}
+  }catch(e){console.error('Silent push failed:',e.message||e);flash('⚠️ Sync failed: '+( e.message||'network error'),'#DC2626');}
 }
 
 
@@ -2016,7 +2018,7 @@ async function pushNutritionLog(){
     "Water Goal Hit":{select:{name:state.waterOz>=waterGoal?'Yes':'No'}},
     "Fuel Score":{number:score},
     "Ate Before Training":{select:{name:(state.ciAns?.ate)||'Not Answered'}},
-    "Body Goal":{select:{name:(profile?.bodyGoal?.split(',')?.[0]?.trim())||''}},
+    "Body Goal":{select:{name:(profile?.bodyGoal?.split(',')?.[0]?.trim())||'Gain Muscle'}},
     "Log Complete":{select:{name:state.logDone?'Yes':'In Progress'}},
     "Updated At":{rich_text:[{text:{content:new Date().toLocaleString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}}]}
   };
@@ -2902,12 +2904,54 @@ function getAllAthleteKeys(){
   return Array.from(athletes);
 }
 
+
+async function forcePush(){
+  flash('Pushing to Notion...','#9A9AB0');
+  const el=document.getElementById('sync-result');
+  if(el){el.style.display='block';el.textContent='Pushing...';}
+  try{
+    await silentPushToNotion();
+    if(el)el.textContent='Push complete — check Notion';
+  }catch(e){
+    if(el)el.textContent='Push failed: '+e.message;
+  }
+}
+async function testWorker(){
+  const el=document.getElementById('sync-result');
+  if(el){el.style.display='block';el.textContent='Testing connection...';}
+  try{
+    const r=await fetch('https://summer-snowflake-b830.lyloholdings.workers.dev/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({_notionUrl:'https://api.notion.com/v1/databases/0f830044-995c-4d21-af44-f48e3ba8dc3d/query',_notionMethod:'POST',_notionBody:{page_size:1}})
+    });
+    const d=await r.json();
+    if(el){
+      if(d.object==='error')el.textContent='Worker OK — Notion error: '+d.message;
+      else if(d.results)el.textContent='✅ Worker OK — Notion connected. DB has '+d.results.length+' results visible';
+      else el.textContent='Worker response: '+JSON.stringify(d).slice(0,200);
+    }
+  }catch(e){
+    if(el)el.textContent='❌ Worker unreachable: '+e.message;
+    flash('❌ Worker unreachable: '+e.message,'#DC2626');
+  }
+}
+
 function renderSync(){
   const isTesting=localStorage.getItem('fw_testing_mode')==='true';
   const isDev=localStorage.getItem('fw_dev_mode')==='true';
   return `
   <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;margin-bottom:4px">SYNC & RESET</p>
   <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Manage data and Notion sync</p>
+
+  <div class="card" style="margin-bottom:10px;border:1px solid #DC262640">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;margin-bottom:10px">PUSH CONTROLS</p>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button onclick="forcePush()" style="flex:1;background:#DC2626;border:none;border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;padding:11px;cursor:pointer">FORCE SYNC NOW</button>
+      <button onclick="testWorker()" style="flex:1;background:#13131E;border:1px solid #303050;border-radius:10px;color:#9A9AB0;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;padding:11px;cursor:pointer">TEST CONNECTION</button>
+    </div>
+    <div id="sync-result" style="display:none;background:#0A0A12;border-radius:8px;padding:10px;font-size:12px;color:#E0E0F0;line-height:1.6;word-break:break-all"></div>
+  </div>
 
   <div class="card" style="margin-bottom:10px;border:2px solid ${isDev?'#22C55E':'#1E1E2E'}">
     <div style="display:flex;align-items:center;justify-content:space-between">
