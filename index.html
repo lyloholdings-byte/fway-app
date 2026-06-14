@@ -1052,12 +1052,6 @@ function aTab(t){
   state.aTab=t;
   document.querySelectorAll('#a-nav .bnav-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('an-'+t);if(btn)btn.classList.add('active');
-  // Only show schedule popup on Fuel if: no meals logged yet today AND popup not already dismissed today
-  if(t==='fuel'){
-    const sched=Array.isArray(state.ciAns?.schedule)?state.ciAns.schedule:[];
-    const dismissed=load('fw_sched_dismissed_'+state.todayDate,'')==='true';
-    if(!sched.length&&!dismissed){showSchedulePopup();return;}
-  }
   renderAthlete();
 }
 function renderAthlete(){
@@ -1236,9 +1230,8 @@ function renderCheckin(){
         ${Object.entries(pa).map(([k,v])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1A1A28"><p style="font-size:11px;color:#9A9AB0;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">${keyLabels[k]||k}</p><p style="font-size:13px;color:#F0EDE6">${v}</p></div>`).join('')}
       </div>
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:#22C55E;font-weight:700;margin-bottom:20px">🔥 ${state.streak} day streak</p>
-      <p style="font-size:12px;color:#6A6A85;margin-bottom:20px">Full check-in unlocks on your next training day.</p>
-      <button onclick="startFullCI()" style="width:100%;background:none;border:1px solid #DC2626;border-radius:12px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#DC2626;cursor:pointer;margin-bottom:8px">ACTUALLY TRAINING TODAY →</button>
-      <button onclick="aTab('home')" style="width:100%;background:none;border:1px solid #303050;border-radius:12px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#9A9AB0;cursor:pointer">SEE YOU NEXT SESSION</button>
+      <button onclick="aTab('fuel')" style="width:100%;background:#13131E;border:1px solid #303050;border-radius:12px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#9A9AB0;cursor:pointer;margin-bottom:8px">LOG YOUR MEALS →</button>
+      <button onclick="aTab('home')" style="width:100%;background:none;border:none;padding:10px;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;color:#5A5A75;cursor:pointer">GO HOME</button>
       <div style="margin-top:16px"><button onclick="state.pulseDone=false;save('fw_pulse_'+state.todayDate,'false');renderAthlete()" style="background:none;border:none;color:#2A2A3E;font-size:18px;cursor:pointer;padding:8px">⟳</button></div>
     </div>`;
   }
@@ -1353,8 +1346,24 @@ function updateScore(){
   return daily;
 }
 
-function startFullCI(){state.ciMode='full';renderAthlete();}
-function startPulse(){state.ciMode='pulse';state.pulseStep=0;state.pulseAnswers={};renderAthlete();}
+function startFullCI(){
+  state.ciMode='full';
+  if(!state.ciAns)state.ciAns={};
+  if(!(state.ciAns.schedule||[]).length){
+    state.ciAns.schedule=['FWAY Training'];
+    save('fw_ans_'+state.todayDate,state.ciAns);
+  }
+  renderAthlete();
+}
+function startPulse(){
+  state.ciMode='pulse';state.pulseStep=0;state.pulseAnswers={};
+  if(!state.ciAns)state.ciAns={};
+  if(!(state.ciAns.schedule||[]).length){
+    state.ciAns.schedule=['Off Day'];
+    save('fw_ans_'+state.todayDate,state.ciAns);
+  }
+  renderAthlete();
+}
 function pulsePick(key,val){
   state.pulseAnswers[key]=val;
   if(state.pulseStep<PULSE_Q.length-1){state.pulseStep++;renderAthlete();}
@@ -1452,7 +1461,7 @@ function getSessionName(){try{return JSON.parse(localStorage.getItem('fw_session
 let _pushTimer=null;
 function schedulePush(){
   if(_pushTimer)clearTimeout(_pushTimer);
-  _pushTimer=setTimeout(()=>silentPushToNotion(),8000);
+  _pushTimer=setTimeout(()=>silentPushToNotion(),1500);
 }
 
 async function silentPushToNotion(){
@@ -1964,6 +1973,30 @@ async function completeDailyLog(){
   flash('Log sent to Coach ✓');
 }
 
+
+// ── ATHLETE NUTRITION LOG — individual meal entries ─────────────────────────
+const NUTRITION_DB='56c6ca8e-2c6f-462b-bff7-bf405e0ee599';
+async function pushMealToNutritionLog(meal){
+  if(localStorage.getItem('fw_testing_mode')==='true')return;
+  const name=getSessionName();
+  const today=new Date().toISOString().split('T')[0];
+  try{
+    const res=await notionFetch('https://api.notion.com/v1/pages','POST',{
+      parent:{database_id:NUTRITION_DB},
+      properties:{
+        "Name":{title:[{text:{content:name+' — '+meal.slot+' — '+today}}]},
+        "Athlete":{rich_text:[{text:{content:name}}]},
+        "Date":{date:{start:today}},
+        "Meal Slot":{select:{name:meal.slot}},
+        "What They Ate":{rich_text:[{text:{content:meal.text||''}}]},
+        "Time Logged":{rich_text:[{text:{content:meal.loggedAt||''}}]}
+      }
+    });
+    if(res.object==='error')console.error('Nutrition log error:',res.message);
+    else console.log('✅ Nutrition log entry created',meal.slot);
+  }catch(e){console.error('Nutrition log push failed:',e.message);}
+}
+
 // MEAL SHEET
 function openMeal(){
   document.getElementById('meal-sheet-title').textContent='LOG MEAL';
@@ -2042,7 +2075,8 @@ function saveMeal(){
   state.meals.push({id,slot:state.mealSlot,text,loggedAt:(()=>{const d=new Date();let h=d.getHours(),m=d.getMinutes(),ap=h>=12?'PM':'AM';h=h===0?12:h>12?h-12:h;return h+':'+(m<10?'0':'')+m+' '+ap;})(),cal:0,pro:0,carb:0});
   save('fw_meals_'+state.todayDate,state.meals);
   updateScore();
-  schedulePush(); // silent push after meal log
+  schedulePush(); // silent push to daily summary
+  pushMealToNutritionLog(state.meals[state.meals.length-1]); // individual nutrition log entry
   flash('Meal logged');closeMeal();renderAthlete();
   // Auto-fire nutrition feedback — no button needed
   setTimeout(()=>autoMealFeedback(id,idx),300);
