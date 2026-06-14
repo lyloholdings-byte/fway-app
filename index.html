@@ -122,10 +122,8 @@ select option{background:#13131E}
   <div class="scroll" id="c-content"></div>
   <nav class="bnav" id="c-nav">
     <button class="bnav-btn active" onclick="cTab('roster')" id="cn-roster"><span class="icon">👥</span>Roster<span id="badge-roster" style="display:none;background:#DC2626;color:#fff;border-radius:50%;width:8px;height:8px;position:absolute;top:4px;right:4px"></span></button>
-    <button class="bnav-btn" onclick="cTab('library')" id="cn-library"><span class="icon">📚</span>Library</button>
     <button class="bnav-btn" onclick="cTab('clip')" id="cn-clip"><span class="icon">▶</span>Clip</button>
     <button class="bnav-btn" onclick="cTab('logs')" id="cn-logs" style="position:relative"><span class="icon">📋</span>Logs<span id="badge-logs" style="display:none;background:#DC2626;border-radius:50%;width:8px;height:8px;position:absolute;top:4px;right:4px"></span></button>
-    <button class="bnav-btn" onclick="cTab('chat')" id="cn-chat"><span class="icon">💬</span>Chat</button>
     <button class="bnav-btn" onclick="cTab('alerts')" id="cn-alerts" style="position:relative"><span class="icon">🔔</span>Alerts<span id="badge-alerts" style="display:none;background:#DC2626;border-radius:50%;width:8px;height:8px;position:absolute;top:4px;right:4px"></span></button>
     <button class="bnav-btn" onclick="cTab('sync')" id="cn-sync"><span class="icon">🔄</span>Sync</button>
   </nav>
@@ -215,7 +213,11 @@ select option{background:#13131E}
   <div style="display:flex;gap:10px;margin-bottom:18px">
     <div style="flex:1">
       <span class="lbl">Height — tap yours</span>
-      <div id="prof-heights" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px"></div>
+      <div style="position:relative">
+        <input id="prof-height" type="tel" class="inp" placeholder="e.g. 56 or 511" maxlength="3" oninput="onHeightInput(this)" style="background:#13131E;letter-spacing:0.08em"/>
+        <span id="prof-height-disp" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:16px;color:#22C55E;font-family:'Barlow Condensed',sans-serif;font-weight:900;pointer-events:none"></span>
+      </div>
+      <p style="font-size:10px;color:#6A6A85;margin-top:4px">Type 56 → 5'6" &nbsp;·&nbsp; 511 → 5'11"</p>
     </div>
     <div style="flex:1">
       <span class="lbl">Weight (lbs)</span>
@@ -1076,9 +1078,9 @@ function renderHome(){
   const yellowFlags=state.ciYellowFlags||[];
   const hasRed=redFlags.length>0;
   const hasYellow=yellowFlags.length>0&&!hasRed;
-  const statusColor=hasRed?'#DC2626':hasYellow?'#F59E0B':state.done?'#22C55E':'#555';
-  const statusLabel=hasRed?'SEE COACH FIRST':hasYellow?'CHECK IN WITH COACH':state.done?'ALL CLEAR':'CHECK-IN NEEDED';
-  const statusIcon=hasRed?'🚨':hasYellow?'⚠️':state.done?'✓':'—';
+  const statusColor=hasRed?'#DC2626':state.done?'#22C55E':'#555';
+  const statusLabel=hasRed?'SEE COACH FIRST':state.done?'ALL CLEAR':'CHECK-IN NEEDED';
+  const statusIcon=hasRed?'🚨':state.done?'✓':'—';
 
   // Skill work
   const skillLogs=loadJ('fw_work_logs_'+state.todayDate,[]);
@@ -1119,13 +1121,13 @@ function renderHome(){
   </div>
 
   <!-- TODAY'S STATUS BANNER — only show if checked in -->
-  ${state.done?`<div onclick="${hasRed||hasYellow?'aTab(\'checkin\')'  :''}" style="background:${statusColor}15;border:2px solid ${statusColor}50;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:${(hasRed||hasYellow)?'pointer':'default'}">
+  ${state.done?`<div onclick="${hasRed||hasYellow?'aTab(\'checkin\')'  :''}" style="background:${statusColor}15;border:2px solid ${statusColor}50;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:${hasRed?'pointer':'default'}">
     <div style="width:36px;height:36px;border-radius:50%;background:${statusColor}20;border:2px solid ${statusColor};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${statusIcon}</div>
     <div style="flex:1">
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:${statusColor}">${statusLabel}</p>
-      <p style="font-size:11px;color:#9A9AB0;margin-top:1px">${hasRed?redFlags[0]:hasYellow?yellowFlags[0]:'Check-in complete — good to go'}</p>
+      <p style="font-size:11px;color:#9A9AB0;margin-top:1px">${hasRed?redFlags[0]:'Check-in complete — good to go'}</p>
     </div>
-    ${(hasRed||hasYellow)?'<span style="font-size:11px;color:#6A6A85">tap ›</span>':''}
+    ${hasRed?'<span style="font-size:11px;color:#6A6A85">tap ›</span>':''}
   </div>`:''}
 
   <!-- TODAY'S SCHEDULE -->
@@ -1404,7 +1406,7 @@ function finishCheckin(){
   if(a.readiness&&a.readiness.includes('1 - Not ready'))
     redFlags.push('Readiness 1/5 — athlete not ready to perform');
 
-  // ── YELLOW FLAGS — CHECK IN WITH COACH ──────────────────────────────────
+  // ── YELLOW FLAGS — logged to Notion only, not shown to athlete ─────────
   // Only physical/performance flags — lifestyle factors logged silently
   if(a.pain&&a.pain.includes('Moderate'))
     yellowFlags.push('Moderate pain — needs movement modification');
@@ -1470,7 +1472,7 @@ function schedulePush(){
 
 async function silentPushToNotion(){
   if(localStorage.getItem('fw_testing_mode')==='true'||localStorage.getItem('fw_dev_mode')==='true'){
-    console.log('Push skipped — testing/dev mode on');return;
+    flash('🔕 Push skipped — Testing Mode ON','#F59E0B');return;
   }
   try{
     const name=getSessionName();
@@ -2086,7 +2088,7 @@ function saveMeal(){
   state.meals.push({id,slot:state.mealSlot,text,loggedAt:(()=>{const d=new Date();let h=d.getHours(),m=d.getMinutes(),ap=h>=12?'PM':'AM';h=h===0?12:h>12?h-12:h;return h+':'+(m<10?'0':'')+m+' '+ap;})(),cal:0,pro:0,carb:0});
   save('fw_meals_'+state.todayDate,state.meals);
   updateScore();
-  schedulePush(); // silent push to daily summary
+  setTimeout(()=>silentPushToNotion(),300); // push daily summary immediately after meal
   pushMealToNutritionLog(state.meals[state.meals.length-1]);
   flash('Meal logged');closeMeal();renderAthlete();
   // Auto-fire nutrition feedback — no button needed
@@ -2260,10 +2262,8 @@ function renderCoach(){
   const el=document.getElementById('c-content');
   if(state.cTab==='roster')el.innerHTML=renderRoster();
   else if(state.cTab==='push')el.innerHTML=renderPush();
-  else if(state.cTab==='library')el.innerHTML=renderLibrary();
   else if(state.cTab==='clip')el.innerHTML=renderCoachClip();
   else if(state.cTab==='logs')el.innerHTML=renderLogs();
-  else if(state.cTab==='chat')el.innerHTML=renderChat();
   else if(state.cTab==='sync')el.innerHTML=renderSync();
   else if(state.cTab==='alerts')el.innerHTML=renderAlerts();
 }
@@ -3049,9 +3049,9 @@ function showProfileSetup(name){
   // goals
   profState.trainingFreq='';
   document.querySelectorAll('#prof-freq button').forEach(b=>{b.style.background='#111118';b.style.color='#888';b.style.borderColor='#2A2A3E';});
-  const htValues=[];
-  for(let ft=4;ft<=7;ft++){for(let inch=0;inch<=11;inch++){if(ft===4&&inch<8)continue;if(ft===7&&inch>0)break;htValues.push(ft+"'"+inch+'"');}}
-  document.getElementById('prof-heights').innerHTML=htValues.map(h=>`<button onclick="setProfHeight('${h}')" id="ph-${h.replace(/['"]/g,'')}" style="background:#111118;color:#888;border:1px solid #2A2A3E;border-radius:8px;padding:8px 10px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;cursor:pointer;min-width:52px">${h}</button>`).join('');
+  document.getElementById('prof-height').value='';
+  document.getElementById('prof-height-disp').textContent='';
+  profState.height='';
   document.getElementById('prof-goals').innerHTML=BODY_GOALS.map(g=>`<button onclick="setProfGoal('${g}')" id="pg-${g.replace(/\s/g,'_')}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer">${g}</button>`).join('');
   document.getElementById('prof-save-btn').disabled=true;
   document.getElementById('prof-position').value='';
@@ -3137,24 +3137,22 @@ function formatHeight(input){
   if(parseInt(inches)>11){display.textContent='';return;}
   display.textContent=feet+"'"+inches+'"';
 }
-function getFormattedHeight(){
-  const raw=document.getElementById('prof-height')?.value||'';
-  if(!raw)return'';
-  const feet=raw[0];
-  const inches=raw.length<=2?raw.slice(1)||'0':raw.slice(1);
-  return feet+"'"+inches+'"';
-}
+function getFormattedHeight(){return profState.height||'';}
 function checkProfReady(){
   const pos=document.getElementById('prof-position')?.value.trim()||'';
   const ready=profState.sports.length>0&&profState.gradYear&&pos&&profState.bodyGoals.length>0;
   document.getElementById('prof-save-btn').disabled=!ready;
 }
-function setProfHeight(h){
-  profState.height=h;
-  document.querySelectorAll('#prof-heights button').forEach(b=>{b.style.background='#111118';b.style.color='#888';b.style.borderColor='#2A2A3E';});
-  const btn=document.getElementById('ph-'+h.replace(/[\'"]/g,''));
-  if(btn){btn.style.background='#DC2626';btn.style.color='#fff';btn.style.borderColor='#DC2626';}
-  checkProfReady();
+function onHeightInput(input){
+  const raw=input.value.replace(/\D/g,'').slice(0,3);
+  input.value=raw;
+  const disp=document.getElementById('prof-height-disp');
+  if(!disp)return;
+  if(!raw||raw.length<2){disp.textContent='';profState.height='';checkProfReady();return;}
+  const ft=raw[0];const inch=raw.slice(1);
+  if(parseInt(inch)>11){disp.textContent='❌';profState.height='';checkProfReady();return;}
+  const fmt=ft+"'"+inch+'"';
+  disp.textContent=fmt;profState.height=fmt;checkProfReady();
 }
 function saveProfile(){
   const pos=document.getElementById('prof-position').value.trim();
@@ -3363,6 +3361,7 @@ async function aiFetch(payload){
 // BOOT
 initState();
 const sess=JSON.parse(localStorage.getItem('fw_session')||'null');
+if(localStorage.getItem('fw_testing_mode')==='true')setTimeout(()=>flash('🔕 Testing Mode ON — Notion sync disabled','#F59E0B'),1500);
 if(sess){state.role=sess.role||'athlete';showApp();if(sess.role==='coach')setTimeout(updateBadges,500);}
 else{checkWelcome();}
 </script>
