@@ -214,12 +214,8 @@ select option{background:#13131E}
   </div>
   <div style="display:flex;gap:10px;margin-bottom:18px">
     <div style="flex:1">
-      <span class="lbl">Height</span>
-      <div style="position:relative">
-        <input id="prof-height" type="number" class="inp" placeholder="e.g. 511" maxlength="3" oninput="formatHeight(this)" style="background:#13131E"/>
-        <span id="prof-height-display" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;color:#9A9AB0;pointer-events:none"></span>
-      </div>
-      <p style="font-size:10px;color:#6A6A85;margin-top:4px">Enter numbers only — type 56 for 5'6&quot;, 511 for 5'11&quot;</p>
+      <span class="lbl">Height — tap yours</span>
+      <div id="prof-heights" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px"></div>
     </div>
     <div style="flex:1">
       <span class="lbl">Weight (lbs)</span>
@@ -1531,16 +1527,13 @@ async function silentPushToNotion(){
     if(searchData.results&&searchData.results.length>0){
       // Update existing page
       const pageId=searchData.results[0].id;
-      await notionFetch('https://api.notion.com/v1/pages/'+pageId,'PATCH',{properties});
-      console.log('✅ Notion updated',new Date().toLocaleTimeString());
-      flash('✅ Synced to Notion','#22C55E');
+      const upRes=await notionFetch('https://api.notion.com/v1/pages/'+pageId,'PATCH',{properties});
+      if(upRes.object==='error'){console.error('Update error:',upRes.message);flash('⚠️ '+upRes.message.slice(0,80),'#DC2626');}
+      else{console.log('✅ Notion updated',new Date().toLocaleTimeString());flash('✅ Synced','#22C55E');}
     } else {
-      await notionFetch('https://api.notion.com/v1/pages','POST',{
-        parent:{database_id:'0f830044-995c-4d21-af44-f48e3ba8dc3d'},
-        properties
-      });
-      console.log('✅ Notion created',new Date().toLocaleTimeString());
-      flash('✅ Synced to Notion','#22C55E');
+      const crRes=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:'0f830044-995c-4d21-af44-f48e3ba8dc3d'},properties});
+      if(crRes.object==='error'){console.error('Create error:',crRes.message);flash('⚠️ '+crRes.message.slice(0,80),'#DC2626');}
+      else{console.log('✅ Notion created',new Date().toLocaleTimeString());flash('✅ Synced','#22C55E');}
     }
   }catch(e){console.error('Silent push failed:',e.message||e);flash('⚠️ Sync failed: '+( e.message||'network error'),'#DC2626');}
 }
@@ -1983,61 +1976,37 @@ async function completeDailyLog(){
   // Push meals to Meal Entries DB
   // Final complete push to Daily Athlete Summary — fires immediately (no debounce)
   await silentPushToNotion();
-  await pushNutritionLog();
   flash('Log sent to Coach ✓');
 }
 
 
 // ── ATHLETE NUTRITION LOG — individual meal entries ─────────────────────────
 const NUTRITION_DB='56c6ca8e-2c6f-462b-bff7-bf405e0ee599';
-async function pushNutritionLog(){
+async function pushMealToNutritionLog(meal){
   if(localStorage.getItem('fw_testing_mode')==='true')return;
-  if(!state.meals.length&&state.waterOz===0)return; // nothing logged yet
+  if(!meal||!meal.text)return;
   const name=getSessionName();
   const today=new Date().toISOString().split('T')[0];
-  const waterGoal=getWaterGoal();
-  const score=calcDailyScore();
-  const profile=loadJ('fw_profile',null);
-  // Build full meal log with timestamps
-  const mealLines=state.meals.map((m,i)=>`${i+1}. ${m.loggedAt?m.loggedAt+' — ':''}${m.slot}: ${m.text}`).join('\n');
-  const entryTitle=name+' — '+new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-  const properties={
-    "Name":{title:[{text:{content:entryTitle}}]},
-    "Athlete":{rich_text:[{text:{content:name}}]},
-    "Date":{date:{start:today}},
-    "All Meals":{rich_text:[{text:{content:mealLines.slice(0,2000)||'No meals logged'}}]},
-    "Breakfast":{rich_text:[{text:{content:state.meals.filter(m=>m.slot==='Breakfast').map(m=>m.text).join('; ')||''}}]},
-    "Lunch":{rich_text:[{text:{content:state.meals.filter(m=>m.slot==='Lunch').map(m=>m.text).join('; ')||''}}]},
-    "Dinner":{rich_text:[{text:{content:state.meals.filter(m=>m.slot==='Dinner').map(m=>m.text).join('; ')||''}}]},
-    "Pre-Workout":{rich_text:[{text:{content:state.meals.filter(m=>m.slot==='Pre-Workout').map(m=>m.text).join('; ')||''}}]},
-    "Post-Workout":{rich_text:[{text:{content:state.meals.filter(m=>m.slot==='Post-Workout').map(m=>m.text).join('; ')||''}}]},
-    "Snacks":{rich_text:[{text:{content:state.meals.filter(m=>!['Breakfast','Lunch','Dinner','Pre-Workout','Post-Workout'].includes(m.slot)).map(m=>m.slot+': '+m.text).join('; ')||''}}]},
-    "Total Meals":{number:state.meals.length},
-    "Water Oz Logged":{number:Math.round(state.waterOz)},
-    "Water Goal Oz":{number:waterGoal},
-    "Water Goal Hit":{select:{name:state.waterOz>=waterGoal?'Yes':'No'}},
-    "Fuel Score":{number:score},
-    "Ate Before Training":{select:{name:(state.ciAns?.ate)||'Not Answered'}},
-    "Body Goal":{select:{name:(profile?.bodyGoal?.split(',')?.[0]?.trim())||'Gain Muscle'}},
-    "Log Complete":{select:{name:state.logDone?'Yes':'In Progress'}},
-    "Updated At":{rich_text:[{text:{content:new Date().toLocaleString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}}]}
-  };
+  const sched=Array.isArray(state.ciAns?.schedule)?state.ciAns.schedule.join(', '):'';
+  const entryTitle=name+' — '+meal.slot+' — '+(meal.loggedAt||'');
   try{
-    const search=await notionFetch('https://api.notion.com/v1/databases/'+NUTRITION_DB+'/query','POST',{
-      filter:{and:[{property:'Athlete',rich_text:{contains:name.split(' ')[0]||''}},{property:'Date',date:{equals:today}}]},page_size:1
+    const res=await notionFetch('https://api.notion.com/v1/pages','POST',{
+      parent:{database_id:NUTRITION_DB},
+      properties:{
+        "Meal":{title:[{text:{content:entryTitle}}]},
+        "Athlete":{rich_text:[{text:{content:name}}]},
+        "What They Ate":{rich_text:[{text:{content:meal.text||''}}]},
+        "Meal Type":{select:{name:meal.slot||'Other'}},
+        "Schedule":{rich_text:[{text:{content:sched}}]},
+        "Time Logged":{rich_text:[{text:{content:meal.loggedAt||''}}]},
+        "Date":{date:{start:today}}
+      }
     });
-    if(search.results&&search.results.length>0){
-      const res=await notionFetch('https://api.notion.com/v1/pages/'+search.results[0].id,'PATCH',{properties});
-      if(res.object==='error')console.error('Nutrition log update error:',res.message);
-      else console.log('✅ Nutrition log updated');
-    } else {
-      if(search.object==='error'){console.error('Nutrition search error:',search.message);return;}
-      const res=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:NUTRITION_DB},properties});
-      if(res.object==='error')console.error('Nutrition log create error:',res.message);
-      else console.log('✅ Nutrition log created');
-    }
-  }catch(e){console.error('Nutrition log push failed:',e.message);}
+    if(res.object==='error')console.error('Nutrition log error:',res.message);
+    else console.log('✅ Nutrition log:',meal.slot);
+  }catch(e){console.error('Nutrition log failed:',e.message);}
 }
+
 
 // MEAL SHEET
 function openMeal(){
@@ -2118,7 +2087,7 @@ function saveMeal(){
   save('fw_meals_'+state.todayDate,state.meals);
   updateScore();
   schedulePush(); // silent push to daily summary
-  setTimeout(()=>pushNutritionLog(),500); // update daily nutrition log
+  pushMealToNutritionLog(state.meals[state.meals.length-1]);
   flash('Meal logged');closeMeal();renderAthlete();
   // Auto-fire nutrition feedback — no button needed
   setTimeout(()=>autoMealFeedback(id,idx),300);
@@ -3080,6 +3049,9 @@ function showProfileSetup(name){
   // goals
   profState.trainingFreq='';
   document.querySelectorAll('#prof-freq button').forEach(b=>{b.style.background='#111118';b.style.color='#888';b.style.borderColor='#2A2A3E';});
+  const htValues=[];
+  for(let ft=4;ft<=7;ft++){for(let inch=0;inch<=11;inch++){if(ft===4&&inch<8)continue;if(ft===7&&inch>0)break;htValues.push(ft+"'"+inch+'"');}}
+  document.getElementById('prof-heights').innerHTML=htValues.map(h=>`<button onclick="setProfHeight('${h}')" id="ph-${h.replace(/['"]/g,'')}" style="background:#111118;color:#888;border:1px solid #2A2A3E;border-radius:8px;padding:8px 10px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;cursor:pointer;min-width:52px">${h}</button>`).join('');
   document.getElementById('prof-goals').innerHTML=BODY_GOALS.map(g=>`<button onclick="setProfGoal('${g}')" id="pg-${g.replace(/\s/g,'_')}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer">${g}</button>`).join('');
   document.getElementById('prof-save-btn').disabled=true;
   document.getElementById('prof-position').value='';
@@ -3176,6 +3148,13 @@ function checkProfReady(){
   const pos=document.getElementById('prof-position')?.value.trim()||'';
   const ready=profState.sports.length>0&&profState.gradYear&&pos&&profState.bodyGoals.length>0;
   document.getElementById('prof-save-btn').disabled=!ready;
+}
+function setProfHeight(h){
+  profState.height=h;
+  document.querySelectorAll('#prof-heights button').forEach(b=>{b.style.background='#111118';b.style.color='#888';b.style.borderColor='#2A2A3E';});
+  const btn=document.getElementById('ph-'+h.replace(/[\'"]/g,''));
+  if(btn){btn.style.background='#DC2626';btn.style.color='#fff';btn.style.borderColor='#DC2626';}
+  checkProfReady();
 }
 function saveProfile(){
   const pos=document.getElementById('prof-position').value.trim();
