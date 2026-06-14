@@ -1029,7 +1029,8 @@ function setRole(r){
   if(r==='athlete'){renderAthlete();}else{renderCoach();}
 }
 function showApp(){
-  document.getElementById('s-login').classList.remove('active');
+  // Clear every screen first — prevents overlap bug when reloading mid-flow
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const sess=JSON.parse(localStorage.getItem('fw_session')||'null');
   state.role=sess?.role||'athlete';
   if(state.role==='coach'){
@@ -3360,10 +3361,11 @@ async function aiFetch(payload){
 
 // BOOT
 initState();
+document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
 const sess=JSON.parse(localStorage.getItem('fw_session')||'null');
 if(localStorage.getItem('fw_testing_mode')==='true')setTimeout(()=>flash('🔕 Testing Mode ON — Notion sync disabled','#F59E0B'),1500);
 if(sess){state.role=sess.role||'athlete';showApp();if(sess.role==='coach')setTimeout(updateBadges,500);}
-else{checkWelcome();}
+else{document.getElementById('s-login').classList.add('active');checkWelcome();}
 </script>
 
 <script>
