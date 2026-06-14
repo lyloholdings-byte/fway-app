@@ -221,13 +221,19 @@ select option{background:#13131E}
     </div>
     <div style="flex:1">
       <span class="lbl">Weight (lbs)</span>
-      <input id="prof-weight" type="number" class="inp" placeholder="185" style="background:#13131E"/>
+      <div style="position:relative">
+        <input id="prof-weight" type="tel" inputmode="numeric" class="inp" placeholder="185" oninput="onWeightInput(this,'wdisp')" style="background:#13131E"/>
+        <span id="wdisp" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;color:#22C55E;font-family:'Barlow Condensed',sans-serif;font-weight:900;pointer-events:none"></span>
+      </div>
     </div>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:18px">
     <div style="flex:1">
       <span class="lbl">Goal Weight (lbs)</span>
-      <input id="prof-goalweight" type="number" class="inp" placeholder="195" style="background:#13131E"/>
+      <div style="position:relative">
+        <input id="prof-goalweight" type="tel" inputmode="numeric" class="inp" placeholder="195" oninput="onWeightInput(this,'gwdisp')" style="background:#13131E"/>
+        <span id="gwdisp" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;color:#22C55E;font-family:'Barlow Condensed',sans-serif;font-weight:900;pointer-events:none"></span>
+      </div>
     </div>
   </div>
   <div style="margin-bottom:32px">
@@ -3056,8 +3062,8 @@ function showProfileSetup(name){
   document.getElementById('prof-goals').innerHTML=BODY_GOALS.map(g=>`<button onclick="setProfGoal('${g}')" id="pg-${g.replace(/\s/g,'_')}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer">${g}</button>`).join('');
   document.getElementById('prof-save-btn').disabled=true;
   document.getElementById('prof-position').value='';
-  document.getElementById('prof-weight').value='';
-  document.getElementById('prof-goalweight').value='';
+  document.getElementById('prof-weight').value='';const wd=document.getElementById('wdisp');if(wd)wd.textContent='';
+  document.getElementById('prof-goalweight').value='';const gwd=document.getElementById('gwdisp');if(gwd)gwd.textContent='';
 }
 function setProfSport(s){
   if(s==='Other'){
@@ -3143,6 +3149,12 @@ function checkProfReady(){
   const pos=document.getElementById('prof-position')?.value.trim()||'';
   const ready=profState.sports.length>0&&profState.gradYear&&pos&&profState.bodyGoals.length>0;
   document.getElementById('prof-save-btn').disabled=!ready;
+}
+function onWeightInput(input,dispId){
+  const raw=input.value.replace(/\D/g,'');
+  input.value=raw;
+  const d=document.getElementById(dispId);
+  if(d)d.textContent=raw?raw+' lbs':'';
 }
 function onHeightInput(input){
   const raw=input.value.replace(/\D/g,'').slice(0,3);
