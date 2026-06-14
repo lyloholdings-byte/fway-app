@@ -236,6 +236,14 @@ select option{background:#13131E}
     <span class="lbl">Body Goal</span>
     <div id="prof-goals" style="display:flex;flex-wrap:wrap;gap:8px"></div>
   </div>
+  <div style="margin-bottom:32px">
+    <span class="lbl">Training Frequency with Coach</span>
+    <div style="display:flex;gap:10px;flex-wrap:wrap" id="prof-freq">
+      <button onclick="setProfFreq('2x per week')" id="pf-2x" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:10px;padding:12px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer">2x / week</button>
+      <button onclick="setProfFreq('3x per week')" id="pf-3x" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:10px;padding:12px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer">3x / week</button>
+      <button onclick="setProfFreq('4x per week')" id="pf-4x" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:10px;padding:12px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer">4x / week</button>
+    </div>
+  </div>
   <button onclick="saveProfile()" id="prof-save-btn" class="btn-red" disabled>NEXT — CREATE YOUR PIN →</button>
 </div>
 
@@ -1505,6 +1513,9 @@ async function silentPushToNotion(){
       "Skill Work Details":{rich_text:[{text:{content:skillEntry?.details||''}}]},
       "Fuel Score":{number:score},
       "Consistency Streak":{number:state.streak},
+      "Clip Assigned":{rich_text:[{text:{content:state.coachClip?.title||''}}]},
+      "Clip Watched":{select:{name:state.coachClip?(state.clipWatched?'Yes':'No'):'Not Assigned'}},
+      "Clip Reflection":{rich_text:[{text:{content:state.clipReflection||''}}]},
       "Submitted At":{rich_text:[{text:{content:new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})}}]}
     };
 
@@ -1970,30 +1981,59 @@ async function completeDailyLog(){
   // Push meals to Meal Entries DB
   // Final complete push to Daily Athlete Summary — fires immediately (no debounce)
   await silentPushToNotion();
+  await pushNutritionLog();
   flash('Log sent to Coach ✓');
 }
 
 
 // ── ATHLETE NUTRITION LOG — individual meal entries ─────────────────────────
 const NUTRITION_DB='56c6ca8e-2c6f-462b-bff7-bf405e0ee599';
-async function pushMealToNutritionLog(meal){
+async function pushNutritionLog(){
   if(localStorage.getItem('fw_testing_mode')==='true')return;
+  if(!state.meals.length&&state.waterOz===0)return; // nothing logged yet
   const name=getSessionName();
   const today=new Date().toISOString().split('T')[0];
+  const waterGoal=getWaterGoal();
+  const score=calcDailyScore();
+  const profile=loadJ('fw_profile',null);
+  // Build full meal log with timestamps
+  const mealLines=state.meals.map((m,i)=>`${i+1}. ${m.loggedAt?m.loggedAt+' — ':''}${m.slot}: ${m.text}`).join('\n');
+  const entryTitle=name+' — '+new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const properties={
+    "Name":{title:[{text:{content:entryTitle}}]},
+    "Athlete":{rich_text:[{text:{content:name}}]},
+    "Date":{date:{start:today}},
+    "All Meals":{rich_text:[{text:{content:mealLines.slice(0,2000)||'No meals logged'}}]},
+    "Breakfast":{rich_text:[{text:{content:state.meals.filter(m=>m.slot==='Breakfast').map(m=>m.text).join('; ')||''}}]},
+    "Lunch":{rich_text:[{text:{content:state.meals.filter(m=>m.slot==='Lunch').map(m=>m.text).join('; ')||''}}]},
+    "Dinner":{rich_text:[{text:{content:state.meals.filter(m=>m.slot==='Dinner').map(m=>m.text).join('; ')||''}}]},
+    "Pre-Workout":{rich_text:[{text:{content:state.meals.filter(m=>m.slot==='Pre-Workout').map(m=>m.text).join('; ')||''}}]},
+    "Post-Workout":{rich_text:[{text:{content:state.meals.filter(m=>m.slot==='Post-Workout').map(m=>m.text).join('; ')||''}}]},
+    "Snacks":{rich_text:[{text:{content:state.meals.filter(m=>!['Breakfast','Lunch','Dinner','Pre-Workout','Post-Workout'].includes(m.slot)).map(m=>m.slot+': '+m.text).join('; ')||''}}]},
+    "Total Meals":{number:state.meals.length},
+    "Water Oz Logged":{number:Math.round(state.waterOz)},
+    "Water Goal Oz":{number:waterGoal},
+    "Water Goal Hit":{select:{name:state.waterOz>=waterGoal?'Yes':'No'}},
+    "Fuel Score":{number:score},
+    "Ate Before Training":{select:{name:(state.ciAns?.ate)||'Not Answered'}},
+    "Body Goal":{select:{name:(profile?.bodyGoal?.split(',')?.[0]?.trim())||''}},
+    "Log Complete":{select:{name:state.logDone?'Yes':'In Progress'}},
+    "Updated At":{rich_text:[{text:{content:new Date().toLocaleString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}}]}
+  };
   try{
-    const res=await notionFetch('https://api.notion.com/v1/pages','POST',{
-      parent:{database_id:NUTRITION_DB},
-      properties:{
-        "Name":{title:[{text:{content:name+' — '+meal.slot+' — '+today}}]},
-        "Athlete":{rich_text:[{text:{content:name}}]},
-        "Date":{date:{start:today}},
-        "Meal Slot":{select:{name:meal.slot}},
-        "What They Ate":{rich_text:[{text:{content:meal.text||''}}]},
-        "Time Logged":{rich_text:[{text:{content:meal.loggedAt||''}}]}
-      }
+    const search=await notionFetch('https://api.notion.com/v1/databases/'+NUTRITION_DB+'/query','POST',{
+      filter:{and:[{property:'Athlete',rich_text:{contains:name.split(' ')[0]||''}},{property:'Date',date:{equals:today}}]},page_size:1
     });
-    if(res.object==='error')console.error('Nutrition log error:',res.message);
-    else console.log('✅ Nutrition log entry created',meal.slot);
+    if(search.results&&search.results.length>0){
+      const res=await notionFetch('https://api.notion.com/v1/pages/'+search.results[0].id,'PATCH',{properties});
+      if(res.object==='error')console.error('Nutrition log update error:',res.message);
+      else console.log('✅ Nutrition log updated');
+    } else {
+      if(search.object==='error'){console.error('Nutrition search error:',search.message);return;}
+      const res=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:NUTRITION_DB},properties});
+      if(res.object==='error')console.error('Nutrition log create error:',res.message);
+      else console.log('✅ Nutrition log created');
+    }
   }catch(e){console.error('Nutrition log push failed:',e.message);}
 }
 
@@ -2076,7 +2116,7 @@ function saveMeal(){
   save('fw_meals_'+state.todayDate,state.meals);
   updateScore();
   schedulePush(); // silent push to daily summary
-  pushMealToNutritionLog(state.meals[state.meals.length-1]); // individual nutrition log entry
+  setTimeout(()=>pushNutritionLog(),500); // update daily nutrition log
   flash('Meal logged');closeMeal();renderAthlete();
   // Auto-fire nutrition feedback — no button needed
   setTimeout(()=>autoMealFeedback(id,idx),300);
@@ -2973,18 +3013,20 @@ function doFullWipe(){localStorage.clear();window.location.reload();}
 const SPORTS=['Football','Basketball','Volleyball','Soccer','Track','Baseball','Softball','Lacrosse','Other'];
 const BODY_GOALS=['Gain Muscle','Lose Weight','Maintain','Get Faster','Stay Lean'];
 const GRAD_YEARS=['2026','2027','2028','2029','2030'];
-let profState={sports:[],gradYear:'',bodyGoals:[]};
+let profState={sports:[],gradYear:'',bodyGoals:[],height:'',trainingFreq:''};
 
 function showProfileSetup(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('s-profile').classList.add('active');
   document.getElementById('profile-name-heading').textContent=name.toUpperCase();
-  profState={sports:[],gradYear:'',bodyGoals:[]};
+  profState={sports:[],gradYear:'',bodyGoals:[],height:'',trainingFreq:''};
   // sports
   document.getElementById('prof-sports').innerHTML=SPORTS.map(s=>`<button onclick="setProfSport('${s}')" id="ps-${s.replace(/\s/g,'_')}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer">${s}</button>`).join('');
   // years
   document.getElementById('prof-years').innerHTML=GRAD_YEARS.map(y=>`<button onclick="setProfYear('${y}')" id="py-${y}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:10px;padding:10px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer">'${y.slice(2)}</button>`).join('');
   // goals
+  profState.trainingFreq='';
+  document.querySelectorAll('#prof-freq button').forEach(b=>{b.style.background='#111118';b.style.color='#888';b.style.borderColor='#2A2A3E';});
   document.getElementById('prof-goals').innerHTML=BODY_GOALS.map(g=>`<button onclick="setProfGoal('${g}')" id="pg-${g.replace(/\s/g,'_')}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer">${g}</button>`).join('');
   document.getElementById('prof-save-btn').disabled=true;
   document.getElementById('prof-position').value='';
@@ -3027,6 +3069,14 @@ function setProfYear(y){
   document.querySelectorAll('#prof-years button').forEach(b=>{b.style.background='#111118';b.style.color='#888';b.style.borderColor='#2A2A3E';});
   const btn=document.getElementById('py-'+y);
   if(btn){btn.style.background=R;btn.style.color='#fff';btn.style.borderColor=R;}
+  checkProfReady();
+}
+function setProfFreq(v){
+  profState.trainingFreq=v;
+  document.querySelectorAll('#prof-freq button').forEach(b=>{b.style.background='#111118';b.style.color='#888';b.style.borderColor='#2A2A3E';});
+  const id='pf-'+v.split(' ')[0];
+  const btn=document.getElementById(id);
+  if(btn){btn.style.background='#DC2626';btn.style.color='#fff';btn.style.borderColor='#DC2626';}
   checkProfReady();
 }
 function setProfGoal(g){
@@ -3088,7 +3138,8 @@ function saveProfile(){
     height:getFormattedHeight(),
     weight:document.getElementById('prof-weight').value,
     goalWeight:document.getElementById('prof-goalweight').value,
-    bodyGoal:profState.bodyGoals.join(', ')
+    bodyGoal:profState.bodyGoals.join(', '),
+    trainingFreq:profState.trainingFreq||'3x per week'
   };
   save('fw_profile',profile);
   // Also save under name-specific key to prevent cross-athlete issues
@@ -3107,6 +3158,7 @@ function saveProfile(){
       "Goal Weight (lbs)":{number:parseFloat(profile.goalWeight)||0},
       "Body Goal":{select:{name:profile.bodyGoal||'Gain Muscle'}},
       "Height":{rich_text:[{text:{content:profile.height||''}}]},
+      "Training Frequency":{select:{name:profile.trainingFreq||'3x per week'}},
       "PIN":{rich_text:[{text:{content:currentPin}}]},
       "PIN Status":{select:{name:'Active'}},
       "Status":{select:{name:'Active'}}
