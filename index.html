@@ -2918,23 +2918,32 @@ async function forcePush(){
 }
 async function testWorker(){
   const el=document.getElementById('sync-result');
-  if(el){el.style.display='block';el.textContent='Testing connection...';}
-  try{
-    const r=await fetch('https://summer-snowflake-b830.lyloholdings.workers.dev/',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({_notionUrl:'https://api.notion.com/v1/databases/0f830044-995c-4d21-af44-f48e3ba8dc3d/query',_notionMethod:'POST',_notionBody:{page_size:1}})
-    });
-    const d=await r.json();
-    if(el){
-      if(d.object==='error')el.textContent='Worker OK — Notion error: '+d.message;
-      else if(d.results)el.textContent='✅ Worker OK — Notion connected. DB has '+d.results.length+' results visible';
-      else el.textContent='Worker response: '+JSON.stringify(d).slice(0,200);
+  if(el){el.style.display='block';el.textContent='Reading Notion database schemas...';}
+  const dbs=[
+    {name:'Daily Athlete Summary',id:'0f830044-995c-4d21-af44-f48e3ba8dc3d'},
+    {name:'Athlete Nutrition Log',id:'56c6ca8e-2c6f-462b-bff7-bf405e0ee599'},
+    {name:'Athlete Profiles',id:'7bb55142-c3dc-4e8f-9f16-fa66c0fa4dcb'},
+  ];
+  let out='';
+  for(const db of dbs){
+    try{
+      const r=await fetch('https://summer-snowflake-b830.lyloholdings.workers.dev/',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({_notionUrl:'https://api.notion.com/v1/databases/'+db.id,_notionMethod:'GET',_notionBody:null})
+      });
+      const d=await r.json();
+      if(d.object==='error'){
+        out+=`❌ ${db.name}: ${d.message}\n\n`;
+      } else {
+        const props=Object.keys(d.properties||{});
+        out+=`✅ ${db.name}\n${props.join(' · ')}\n\n`;
+      }
+    }catch(e){
+      out+=`❌ ${db.name}: ${e.message}\n\n`;
     }
-  }catch(e){
-    if(el)el.textContent='❌ Worker unreachable: '+e.message;
-    flash('❌ Worker unreachable: '+e.message,'#DC2626');
   }
+  if(el)el.textContent=out;
 }
 
 function renderSync(){
