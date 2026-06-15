@@ -1068,7 +1068,8 @@ function aTab(t){
   state.aTab=t;
   document.querySelectorAll('#a-nav .bnav-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('an-'+t);if(btn)btn.classList.add('active');
-  renderAthlete();
+  if(t==='clip')fetchActiveClip();
+  else renderAthlete();
 }
 function renderAthlete(){
   const el=document.getElementById('a-content');
@@ -1482,35 +1483,32 @@ function schedulePush(){
 
 async function silentPushToNotion(){
   if(localStorage.getItem('fw_testing_mode')==='true'||localStorage.getItem('fw_dev_mode')==='true'){
-    flash('🔕 Push skipped — Testing Mode ON','#F59E0B');return;
+    flash('Push skipped - Testing Mode ON','#F59E0B');return;
   }
-  const name=getSessionName();
-  if(!name)return;
+  const name=getSessionName();if(!name)return;
   const today=new Date().toISOString().split('T')[0];
   const a=state.ciAns&&Object.keys(state.ciAns).length?state.ciAns:{};
   const pa=state.pulseAnswers||{};
   const score=calcDailyScore();
   const waterGoal=getWaterGoal();
-  const skillEntry=state.skillLog?.find(s=>s.date===today);
-  const sched=Array.isArray(a.schedule)?a.schedule.join(', '):'';
   const proto=getTodayProtocol();
   const protoText=proto?proto.title+': '+proto.steps.map(s=>s.t).join(' | '):'';
-  const mealText=state.meals.map((m,i)=>`${i+1}. ${m.loggedAt?m.loggedAt+' — ':''}${m.slot}: ${m.text}`).join('\n');
+  const skillEntry=state.skillLog?.find(s=>s.date===today);
+  const sched=Array.isArray(a.schedule)?a.schedule.join(', '):'';
+  const mealText=state.meals.map((m,i)=>(i+1)+'. '+(m.loggedAt?m.loggedAt+' - ':'')+m.slot+': '+m.text).join('\n');
   const submitted=new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
-
-  // ── Push to Athlete Daily's (check-in data) ───────────────────────────────
   const checkinProps={
-    "Entry":{title:[{text:{content:name+' — '+today}}]},
+    "Entry":{title:[{text:{content:name+' - '+today}}]},
     "Athlete":{rich_text:[{text:{content:name}}]},
     "Date":{date:{start:today}},
     "Schedule Today":{rich_text:[{text:{content:sched}}]},
-    "Energy":{select:{name:a.energy||pa.energy||'⚡ Good'}},
-    "Body Feeling":{select:{name:a.body||pa.body||'🏃 Good'}},
+    "Energy":{select:{name:a.energy||pa.energy||'Good'}},
+    "Body Feeling":{select:{name:a.body||pa.body||'Good'}},
     "Soreness Level":{select:{name:a.soreness||'0 - No soreness'}},
-    "Sleep":{select:{name:a.sleep||pa.sleep||'✅ 7-8 hrs'}},
-    "Pain Level":{select:{name:a.pain||'✅ No pain'}},
-    "Mental State":{select:{name:a.mental||pa.mental||'😊 Good'}},
-    "Ate Before Training":{select:{name:a.ate||'🟡 A little'}},
+    "Sleep":{select:{name:a.sleep||pa.sleep||'7-8 hrs'}},
+    "Pain Level":{select:{name:a.pain||'No pain'}},
+    "Mental State":{select:{name:a.mental||pa.mental||'Good'}},
+    "Ate Before Training":{select:{name:a.ate||'A little'}},
     "Motivation":{select:{name:a.motivation||'3 - Im here'}},
     "Red Flags":{rich_text:[{text:{content:(state.ciRedFlags||[]).join(', ')||''}}]},
     "Check-In Status":{select:{name:state.done?((state.ciRedFlags||[]).length?'Flagged':'All Clear'):pa.sleep?'Pulse':'Check-In Needed'}},
@@ -1519,10 +1517,8 @@ async function silentPushToNotion(){
     "Consistency Streak":{number:state.streak},
     "Submitted At":{rich_text:[{text:{content:submitted}}]}
   };
-
-  // ── Push to Athlete Food Log (meals + water) ──────────────────────────────
   const foodLogProps={
-    "Entry":{title:[{text:{content:name+' — '+today}}]},
+    "Entry":{title:[{text:{content:name+' - '+today}}]},
     "Athlete":{rich_text:[{text:{content:name}}]},
     "Date":{date:{start:today}},
     "Schedule Today":{rich_text:[{text:{content:sched}}]},
@@ -1535,30 +1531,20 @@ async function silentPushToNotion(){
     "Fuel Score":{number:score},
     "Log Complete":{select:{name:state.logDone?'Yes':'In Progress'}}
   };
-
   try{
-    // Push both in parallel
     const [ciRes,flRes]=await Promise.all([
       pushToDb(DAILY_DB,checkinProps,name,today),
       pushToDb(FOOD_LOG_DB,foodLogProps,name,today)
     ]);
-    if(ciRes.error||flRes.error){
-      flash('⚠️ '+(ciRes.error||flRes.error).slice(0,80),'#DC2626');
-    } else {
-      flash('✅ Synced','#22C55E');
-    }
-  }catch(e){
-    console.error('Push failed:',e.message);
-    flash('⚠️ Sync failed: '+(e.message||'network error'),'#DC2626');
-  }
+    if(ciRes.error||flRes.error){flash('Notion: '+(ciRes.error||flRes.error).slice(0,60),'#DC2626');}
+    else{flash('Synced','#22C55E');}
+  }catch(e){flash('Sync failed: '+(e.message||'error'),'#DC2626');}
 }
 
-// Helper: search for existing entry and create/update
 async function pushToDb(dbId,properties,name,today){
   try{
     const search=await notionFetch('https://api.notion.com/v1/databases/'+dbId+'/query','POST',{
-      filter:{and:[{property:'Athlete',rich_text:{contains:name.split(' ')[0]||''}},{property:'Date',date:{equals:today}}]},
-      page_size:1
+      filter:{and:[{property:'Athlete',rich_text:{contains:name.split(' ')[0]||''}},{property:'Date',date:{equals:today}}]},page_size:1
     });
     if(search.object==='error')return{error:search.message};
     if(search.results&&search.results.length>0){
@@ -1572,6 +1558,474 @@ async function pushToDb(dbId,properties,name,today){
 }
 
 
+
+
+// FUEL
+function getWaterGoal(){
+  try{
+    const p=JSON.parse(load('fw_profile', null)||'null');
+    const w=parseFloat(p?.weight||0);
+    if(!w)return 100;
+    // GAIN System: ~half body weight in oz, rounded to nearest 5
+    const base=Math.round((w*0.5)/5)*5;
+    return Math.max(50,Math.min(base,130));
+  }catch{return 100;}
+}
+
+function getTodayProtocol(){
+  const sched=Array.isArray(state.ciAns?.schedule)?state.ciAns.schedule:[];
+  const hasGame=sched.includes('Game');
+  const hasTournament=sched.includes('Tournament');
+  const hasPractice=sched.includes('FWAY Training')||sched.includes('Practice')||sched.includes('Skill Training');
+  const hasRecovery=sched.includes('Recovery Day');
+  const hasNothing=sched.includes('Nothing');
+
+  if(!sched.length){
+    return {
+      title:'REST / OPEN DAY',
+      color:'#3B82F6',
+      icon:'💧',
+      sub:'Focus on hydration and eating well today.',
+      steps:[
+        {t:'Hit your water goal',d:'Get your full daily baseline oz in. Start with 16oz when you wake up.'},
+        {t:'Protein at every meal',d:'Even on off days your muscles are recovering. Keep protein consistent.'},
+        {t:'No junk fueling',d:'Off days are not cheat days. What you eat today shows up in practice tomorrow.'},
+      ]
+    };
+  }
+  if(hasTournament){
+    return {
+      title:'TOURNAMENT DAY',
+      color:'#8B5CF6',
+      icon:'🏆',
+      sub:'Compete. Eat. Repeat. Use the 1:1 Rule between games.',
+      steps:[
+        {t:'Pre-tournament meal','d':'High carbs + moderate protein (chicken + rice, turkey sub)'},
+        {t:'Between games','d':'Match minutes to carbs: 15min → applesauce. 30min → banana. 45min → Clif bar. 60min+ → PB&J + protein'},
+        {t:'Every hour','d':'16-20oz fluids + ½ Liquid IV packet'},
+        {t:'After last game','d':'Recovery meal within 1 hour — balanced carbs, protein, fats'},
+      ]
+    };
+  }
+  if(hasGame){
+    return {
+      title:'GAME DAY — 4-2-1-0',
+      color:R,
+      icon:'⚡',
+      sub:'Follow the 4-2-1-0 protocol. Every step matters.',
+      steps:[
+        {t:'4 hrs before','d':'Big meal — high carbs, moderate protein, low fat. Chicken + rice or turkey sub.'},
+        {t:'2 hrs before','d':'High carb snack + 16oz water. Apple + granola bar, dried mango, or Lara bar + applesauce.'},
+        {t:'1 hr before','d':'12-20oz water + electrolytes. No solid food. Sip slow and steady.'},
+        {t:'During game','d':'Football/Soccer: BodyArmour + applesauce each half. Basketball/Volleyball: BodyArmour each half + snack at halftime.'},
+        {t:'Within 1 hr after','d':'Recovery meal — ½ plate carbs, ¼ plate protein, ⅕ plate fats, 1 fruit + 1 veggie.'},
+      ]
+    };
+  }
+  if(hasPractice){
+    return {
+      title:'TRAINING DAY',
+      color:'#22C55E',
+      icon:'💪',
+      sub:'Fuel before. Recover after. Don\'t train on empty.',
+      steps:[
+        {t:'2 hrs before','d':'Last big meal. High carbs + protein. Don\'t eat heavy within 90 min of starting.'},
+        {t:'1 hr before','d':'16oz water + electrolytes. Sip steady — don\'t chug.'},
+        {t:'During','d':'Water only if under 2 hrs. Add electrolytes (yellow option) if 2+ hrs or very hot.'},
+        {t:'Within 45 min after','d':'Recovery meal or protein + carb combo. This is when your muscles rebuild. Don\'t skip it.'},
+      ]
+    };
+  }
+  if(hasRecovery){
+    return {
+      title:'RECOVERY DAY',
+      color:'#3B82F6',
+      icon:'🔄',
+      sub:'Light on the body. High on nutrition.',
+      steps:[
+        {t:'Hydration focus','d':'Hit your full daily water baseline. This is when your body rehydrates from yesterday.'},
+        {t:'Protein priority','d':'Keep protein high even on rest days — this is when muscle actually repairs.'},
+        {t:'Carbs','d':'Moderate carbs — your body doesn\'t need as much fuel but still needs to replenish glycogen.'},
+        {t:'Anti-inflammatory foods','d':'Berries, leafy greens, salmon, turmeric. These speed up recovery.'},
+      ]
+    };
+  }
+  return {
+    title:'REST DAY',
+    color:'#888',
+    icon:'😴',
+    sub:'Still eat. Still hydrate. Your body is working even when you\'re not.',
+    steps:[
+      {t:'Still hit your water goal','d':'Hydration doesn\'t take a day off.'},
+      {t:'3 meals minimum','d':'Don\'t under-eat on off days — your body is recovering.'},
+      {t:'Protein every meal','d':'Keep muscle repair going even at rest.'},
+    ]
+  };
+}
+
+function switchFuelView(v){
+  state.fuelView=v;
+  const plan=document.getElementById('fuel-plan');
+  const log=document.getElementById('fuel-log');
+  const btnP=document.getElementById('ftab-plan');
+  const btnL=document.getElementById('ftab-log');
+  if(!plan||!log)return;
+  plan.style.display=v==='plan'?'block':'none';
+  log.style.display=v==='log'?'block':'none';
+  btnP.style.background=v==='plan'?'#DC2626':'transparent';
+  btnP.style.color=v==='plan'?'#fff':'#6A6A85';
+  btnL.style.background=v==='log'?'#DC2626':'transparent';
+  btnL.style.color=v==='log'?'#fff':'#6A6A85';
+}
+
+function renderFuel(){
+  const waterGoal=getWaterGoal();
+  const oz=state.waterOz,pct=Math.min((oz/waterGoal)*100,100);
+  const meals=state.meals;
+  const totals=meals.reduce((acc,m)=>({cal:acc.cal+(m.cal||0),pro:acc.pro+(m.pro||0),carb:acc.carb+(m.carb||0)}),{cal:0,pro:0,carb:0});
+  const fb=state.mealFeedback;
+  const proto=getTodayProtocol();
+  const fp=state.fuelView||'plan';
+  return `
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:2px">FUEL</p>
+  <p style="font-size:12px;color:#9A9AB0;margin-bottom:10px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</p>
+  <div style="display:flex;gap:6px;margin-bottom:14px;background:#0C0C14;border:1px solid #1E1E2E;border-radius:12px;padding:4px">
+    <button id="ftab-plan" onclick="switchFuelView('plan')" style="flex:1;padding:9px;border-radius:9px;border:none;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;cursor:pointer;background:${fp==='plan'?'#DC2626':'transparent'};color:${fp==='plan'?'#fff':'#6A6A85'}">PLAN</button>
+    <button id="ftab-log" onclick="switchFuelView('log')" style="flex:1;padding:9px;border-radius:9px;border:none;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;cursor:pointer;background:${fp==='log'?'#DC2626':'transparent'};color:${fp==='log'?'#fff':'#6A6A85'}">LOG</button>
+  </div>
+  <div id="fuel-plan" style="display:${fp==='plan'?'block':'none'}">
+  <!-- TODAY'S PROTOCOL -->
+  <div style="background:#13131E;border:1px solid ${proto.color}40;border-radius:14px;margin-bottom:14px;overflow:hidden">
+    <div style="background:${proto.color}18;padding:12px 14px;border-bottom:1px solid ${proto.color}30;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">${proto.icon}</span>
+      <div style="flex:1">
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;color:${proto.color};letter-spacing:0.08em">${proto.title}</p>
+        <p style="font-size:11px;color:#9A9AB0;margin-top:1px">${proto.sub}</p>
+      </div>
+      <button onclick="editSchedule()" style="background:none;border:1px solid #303050;border-radius:7px;color:#9A9AB0;font-size:10px;font-family:'Barlow',sans-serif;font-weight:600;cursor:pointer;padding:4px 8px;flex-shrink:0;margin-right:4px">edit</button>
+      <button onclick="toggleProtocol()" id="proto-toggle" style="background:none;border:none;color:#9A9AB0;font-size:18px;cursor:pointer;flex-shrink:0;padding:4px">▾</button>
+    </div>
+    <div id="proto-steps" style="display:block">
+      ${proto.steps.map((s,i)=>`
+        <div style="padding:10px 14px;${i<proto.steps.length-1?'border-bottom:1px solid #1A1A28':''}display:flex;align-items:flex-start;gap:10px">
+          <div style="width:20px;height:20px;border-radius:50%;background:${proto.color}20;border:1px solid ${proto.color}60;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
+            <span style="font-size:9px;font-family:'Barlow Condensed',sans-serif;font-weight:900;color:${proto.color}">${i+1}</span>
+          </div>
+          <div>
+            <p style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:#F0EDE6;margin-bottom:2px">${s.t}</p>
+            <p style="font-size:12px;color:#9A9AB0;line-height:1.5">${s.d}</p>
+          </div>
+        </div>`).join('')}
+      ${proto.steps.length===0?`<p style="font-size:13px;color:#6A6A85;text-align:center;padding:16px">Complete your daily check-in first.</p>`:''}
+    </div>
+  </div>
+
+  ${totals.cal>0?`<div class="card" style="display:flex;justify-content:space-around;margin-bottom:12px">
+    ${[['Cal',Math.round(totals.cal),'#F59E0B'],['Pro',Math.round(totals.pro)+'g','#22C55E'],['Carb',Math.round(totals.carb)+'g','#3B82F6']].map(([l,v,c])=>`<div style="text-align:center"><p style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:${c}">${v}</p><p style="font-size:9px;color:#9A9AB0;text-transform:uppercase;letter-spacing:0.1em">${l}</p></div>`).join('')}
+  </div>`:''}
+
+  <!-- WATER -->
+  </div>
+  <div id="fuel-log" style="display:${fp==='log'?'block':'none'}">
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span class="lbl" style="margin:0">💧 Water Intake</span>
+      <div style="text-align:right">
+        <span style="font-size:10px;color:#9A9AB0;display:block">Goal: ${waterGoal}oz</span>
+        ${state.hydStreak>0?`<span style="font-size:10px;color:#3B82F6;font-weight:600">💧 ${state.hydStreak} day streak</span>`:''}
+      </div>
+    </div>
+    <div style="text-align:center;margin-bottom:10px">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:${oz>=waterGoal?'#22C55E':'#F0EDE6'};line-height:1">${Math.round(oz)}<span style="font-size:18px;color:#9A9AB0;font-weight:400"> oz</span></p>
+      <p style="font-size:11px;color:#9A9AB0;margin-top:2px">${Math.round((oz/16.9)*10)/10} bottles · ${waterGoal}oz goal</p>
+    </div>
+    <div style="height:6px;background:#1C1C2E;border-radius:4px;overflow:hidden;margin-bottom:12px">
+      <div style="height:100%;width:${pct}%;background:${oz>=waterGoal?'#22C55E':'#3B82F6'};border-radius:4px;transition:width 0.3s"></div>
+    </div>
+    <div style="display:flex;gap:6px">
+      ${[['+ 8oz',8,'Cup'],['+ 16oz',16,'Bottle'],['+ 20oz',20,'Large'],['+ 32oz',32,'Hydro']].map(([l,a,s])=>`<button onclick="addWater(${a})" style="flex:1;background:#0A0A12;border:1px solid #303050;border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center"><p style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:#F0EDE6">${l}</p><p style="font-size:9px;color:#9A9AB0;margin-top:1px">${s}</p></button>`).join('')}
+    </div>
+    ${oz>0?`<div style="text-align:right;margin-top:8px"><button onclick="resetWater()" style="background:none;border:none;color:#7A7A95;font-size:12px;cursor:pointer">Reset</button></div>`:''}
+    <p style="font-size:11px;color:${oz>=waterGoal?'#22C55E':'#888'};font-weight:${oz>=waterGoal?700:400};margin-top:8px">${oz>=waterGoal?'Goal reached! Keep drinking 💧':'Tap to add each drink as you go'}</p>
+  </div>
+
+  <!-- MEALS -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900">MEALS (${meals.length})</p>
+    <button onclick="openMeal()" style="background:${R};color:#fff;border-radius:8px;padding:9px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer">+ LOG MEAL</button>
+  </div>
+  ${meals.length===0?'<p style="color:#9A9AB0;font-size:14px;text-align:center;padding:32px 0">No meals logged yet.</p>':''}
+  ${meals.map((m,i)=>`
+    <div class="card" style="margin-bottom:9px;padding:11px 13px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:${R}">${m.slot||m.time}</span>
+        <div style="display:flex;gap:7px;align-items:center">
+          <span style="font-size:10px;color:#5A5A75">${m.loggedAt||''}</span>
+          <button onclick="deleteMeal(${i})" style="background:none;border:none;color:#7A7A95;font-size:11px;cursor:pointer">Delete</button>
+        </div>
+      </div>
+      <p style="font-size:14px;color:#F0EDE6;margin-bottom:6px">${m.text}</p>
+      ${fb[m.id]&&fb[m.id]!=='loading'?`<div style="background:#13131E;border-left:3px solid ${R};border-radius:0 8px 8px 0;padding:10px 12px;margin-top:6px"><p style="font-size:10px;color:${R};font-weight:700;letter-spacing:0.1em;margin-bottom:4px;text-transform:uppercase">FUEL COACH</p><p style="font-size:13px;color:#E0E0F0;line-height:1.6">${renderMD(fb[m.id])}</p></div>`:''}
+    </div>
+  `).join('')}
+
+  <!-- COMPLETE DAY -->
+  ${meals.length>0?`<div style="margin-top:8px">
+    ${state.eodLoading?`<div class="card" style="text-align:center;padding:20px">
+
+    </div>`:''}
+    ${state.eodSummary&&state.logDone?`<div style="background:#13131E;border:1px solid ${R}40;border-radius:14px;padding:16px;margin-bottom:12px">
+      <p style="font-size:10px;color:${R};font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px">FUEL COACH — END OF DAY</p>
+      <p style="font-size:14px;color:#E0E0F0;line-height:1.7">${renderMD(state.eodSummary)}</p>
+    </div>`:''}
+    ${state.logDone&&!state.eodLoading?
+      `<div class="card" style="display:flex;align-items:center;gap:10px;background:#22C55E14;border:1px solid #22C55E40">
+        <span style="font-size:20px">✅</span>
+        <div><p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#22C55E">LOG SUBMITTED</p><p style="font-size:12px;color:#9A9AB0;margin-top:2px">Sent to Coach · ${nowStr()}</p></div>
+      </div>`:(()=>{
+        // Gate removed for testing — always active
+        if(!state.eodLoading){
+          return `
+          <div style="background:#1A0A0A;border:2px solid #DC2626;border-radius:14px;padding:16px;margin-top:8px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+              <span style="font-size:24px">🌙</span>
+              <div>
+                <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:#DC2626;letter-spacing:0.08em;text-transform:uppercase">End of Day Only</p>
+                <p style="font-size:12px;color:#C8C8E0;line-height:1.5;margin-top:2px">Only tap after ALL meals, water, and skill work are logged for the day.</p>
+              </div>
+            </div>
+            <button onclick="completeDailyLog()" style="width:100%;background:#DC2626;color:#fff;border:none;border-radius:13px;padding:15px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;letter-spacing:0.08em;cursor:pointer">SUBMIT DAILY LOG →</button>
+          </div>`;
+        }      })()
+    }
+  </div>`:''}`;
+}
+
+// MARKDOWN RENDERER — converts **bold** and newlines to HTML
+function renderMD(text){
+  if(!text)return '';
+  return text
+    .replace(/\*\*(.+?)\*\*/g,'<strong style="color:#F0EDE6;font-weight:700">$1</strong>')
+    .replace(/\n\n/g,'</p><p style="font-size:14px;color:#E0E0F0;line-height:1.7;margin-top:8px">')
+    .replace(/\n/g,'<br/>');
+}
+
+// SCHEDULE QUICK POPUP
+const SCHED_OPTS=['FWAY Training','Skill Training','Game','Tournament','Practice','Recovery Day','Off Day'];
+let schedPopupSel=[];
+
+function showSchedulePopup(){
+  schedPopupSel=Array.isArray(state.ciAns?.schedule)?[...state.ciAns.schedule]:[];
+  renderSchedOpts();
+  document.getElementById('sched-overlay').style.display='flex';
+}
+function closeSchedulePopup(){
+  save('fw_sched_dismissed_'+state.todayDate,'true');
+  document.getElementById('sched-overlay').style.display='none';
+  renderAthlete();
+}
+function renderSchedOpts(){
+  const icons={'FWAY Training':'⚡','Skill Training':'💪','Game':'🏆','Tournament':'🏅','Practice':'🏃','Recovery Day':'🔄','Off Day':'😴'};
+  document.getElementById('sched-opts').innerHTML=SCHED_OPTS.map(o=>{
+    const sel=schedPopupSel.includes(o);
+    return `<button onclick="toggleSchedOpt('${o}')" style="width:100%;background:${sel?'#22C55E18':'#111118'};border:2px solid ${sel?'#22C55E':'#2A2A3E'};border-radius:13px;padding:13px 16px;color:${sel?'#22C55E':'#F0EDE6'};font-family:'Barlow',sans-serif;font-size:16px;font-weight:600;text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+      <span>${icons[o]||'•'} ${o}</span>
+      ${sel?'<span style="font-size:18px;font-weight:900">✓</span>':''}
+    </button>`;
+  }).join('');
+}
+function toggleSchedOpt(o){
+  const idx=schedPopupSel.indexOf(o);
+  if(idx>-1)schedPopupSel.splice(idx,1);
+  else schedPopupSel.push(o);
+  renderSchedOpts();
+}
+function saveScheduleAndCheck(){
+  if(!schedPopupSel.length)return;
+  if(!state.ciAns)state.ciAns={};
+  state.ciAns.schedule=schedPopupSel;
+  save('fw_s'+state.todayDate,schedPopupSel);
+  save('fw_ans_'+state.todayDate,state.ciAns);
+  save('fw_sched_dismissed_'+state.todayDate,'true');
+  document.getElementById('sched-overlay').style.display='none';
+  // Fire check-in reminder if FWAY Training selected and not yet checked in
+  if(schedPopupSel.includes('FWAY Training')&&!state.done){
+    setTimeout(()=>showCheckinReminder(),300);
+  } else {
+    renderAthlete();
+  }
+}
+function showCheckinReminder(){
+  document.getElementById('checkin-reminder').style.display='flex';
+}
+function dismissCheckinReminder(){
+  document.getElementById('checkin-reminder').style.display='none';
+  renderAthlete();
+}
+function goDoCheckin(){
+  document.getElementById('checkin-reminder').style.display='none';
+  aTab('checkin');
+}
+// saveSchedulePopup now routes through saveScheduleAndCheck
+function saveSchedulePopup(){saveScheduleAndCheck();}
+
+function editSchedule(){
+  // Reset dismissed flag so popup shows again
+  save('fw_sched_dismissed_'+state.todayDate,'false');
+  schedPopupSel=Array.isArray(state.ciAns?.schedule)?[...state.ciAns.schedule]:[];
+  renderSchedOpts();
+  document.getElementById('sched-overlay').style.display='flex';
+}
+function toggleProtocol(){
+  const el=document.getElementById('proto-steps');
+  const btn=document.getElementById('proto-toggle');
+  if(!el)return;
+  const hidden=el.style.display==='none';
+  el.style.display=hidden?'block':'none';
+  if(btn)btn.textContent=hidden?'▾':'▸';
+}
+function setColdShower(v){
+  state.coldShower=v;
+  save('fw_cold_'+state.todayDate,v);
+}
+function addWater(amt){
+  state.waterOz=Math.round((state.waterOz+amt)*10)/10;
+  save('fw_woz_'+state.todayDate,state.waterOz);
+  const goal=getWaterGoal();
+  if(state.waterOz>=goal){
+    const today=state.todayDate,lastHyd=load('fw_hyd_last', '');
+    if(lastHyd!==today){const yesterday=new Date(Date.now()-86400000).toLocaleDateString();const cur=parseInt(load('fw_hyd_streak', '0')||'0');state.hydStreak=lastHyd===yesterday?cur+1:1;save('fw_hyd_streak',state.hydStreak);save('fw_hyd_last',today);}
+  }
+  schedulePush(); // silent push after water update
+  renderAthlete();
+}
+function resetWater(){state.waterOz=0;save('fw_woz_'+state.todayDate,'0');renderAthlete();}
+function deleteMeal(i){state.meals.splice(i,1);save('fw_meals_'+state.todayDate,state.meals);renderAthlete();}
+
+function getLYLOContext(){
+  try{
+    const profile=JSON.parse(load('fw_profile', null)||'null');
+    const a=state.ciAns&&Object.keys(state.ciAns).length?state.ciAns:{};
+    const pa=state.pulseAnswers||{};
+    const sched=Array.isArray(a.schedule)?a.schedule.join(', '):'not set';
+    const mealCount=state.meals.length;
+    const hour=new Date().getHours();
+    const timeOfDay=hour<10?'morning':hour<14?'midday':hour<18?'afternoon':'evening';
+    const lines=[];
+    if(profile?.position) lines.push('Athlete: '+profile.position+(profile.sport?' '+profile.sport:'')+(profile.gradYear?', Class of '+profile.gradYear:''));
+    if(profile?.bodyGoal) lines.push('Body goal: '+profile.bodyGoal);
+    if(profile?.weight) lines.push('Weight: '+profile.weight+'lbs');
+    if(sched!=='not set') lines.push('Schedule today: '+sched);
+    if(a.energy) lines.push('Energy check-in: '+a.energy);
+    if(a.ate) lines.push('Ate before training: '+a.ate);
+    if(a.soreness) lines.push('Soreness: '+a.soreness);
+    lines.push('Meals logged so far today: '+mealCount);
+    lines.push('Time of day: '+timeOfDay);
+    lines.push('Water today: '+Math.round(state.waterOz)+'oz of '+getWaterGoal()+'oz goal');
+    if(state.streak>0) lines.push('Consistency streak: '+state.streak+' days');
+    return lines.join('\n');
+  }catch{return '';}
+}
+
+const LYLO_SYSTEM=`You are the Fonoti Way Fuel Coach — a performance nutrition coaching tool built by Coach Fonoti at Fonoti Way Performance. You are NOT a dietitian. You give athletes honest, direct, performance-based coaching feedback on their fueling.
+
+YOUR VOICE:
+- Direct, warm, faith-grounded. You say what needs to be said.
+- You talk like a coach, not a dietitian. No clinical language.
+- Short sentences. 5th grade reading level.
+- You acknowledge wins AND call out problems clearly.
+- If something is wrong, you say it plainly and tell them exactly what to do next.
+- If something is right, you tell them that too — athletes need to hear both.
+- Never more than 3 sentences for per-meal feedback. Never more than 6 sentences for end-of-day summary.
+- You are not afraid to say "that's not going to work" or "this is the problem."
+- You never shame them. You challenge them.
+- End game day feedback with something that fires them up.
+- You are NOT a Registered Dietitian. You give performance-based coaching feedback only.
+- If you see signs of disordered eating, respond ONLY with: "Hey — some of what you shared has me wanting to check in on you. Talk to me directly at laauli@fonotiway.us before we go further."
+
+THE THREE PERFORMANCE VILLAINS — know these and call them out by name when relevant:
+- WALLIS PAIN: Caused by not fueling properly 2-4 hours before competition. Heavy legs, low energy at game time, body running on empty. Fought by eating the right pre-game meal 4 hours out and a high-carb snack 2 hours out.
+- CHARLIE HORSEMAN: Caused by poor hydration leading up to a game. Cramps, heavy legs, brain fog, dizziness. Fought by drinking baseline oz throughout the day + electrolytes 1 hour before.
+- DR. DRAIN: Caused by not staying fueled DURING the game. Energy fading in 4th quarter, losing explosiveness when it matters most. Fought by following the in-game fueling plan.
+
+THE 4-2-1-0 GAME DAY PROTOCOL:
+- 4 HOURS BEFORE: Big meal — high carbs, moderate protein, low fat. Examples: chicken + rice, turkey sub, pasta + lean meat, oatmeal + chicken sausage, protein fruit smoothie.
+- 2 HOURS BEFORE: High carb snack + 16oz water. Examples: apple + granola bar + fruit leather, dried mango + PopCorners, Lärabar + applesauce, clementines + Wheat Thins, dates + raisins.
+- 1 HOUR BEFORE: 12-20oz water + electrolytes. Sip slow and steady. Options: water + Liquid IV, BodyArmor + 1/8 tsp salt, pretzels + water.
+- DURING (0): Follow sport-specific in-game plan. Football/Soccer/Rugby: BodyArmor + applesauce each half, honey sandwich at halftime. Basketball/Volleyball: BodyArmor each half, Clif Mini + Liquid IV at halftime. Baseball/Golf: 16-20oz fluids + half Liquid IV packet every hour + light snack.
+- 1 HOUR AFTER: Recovery plate — 1/2 plate carbs (rice, potatoes, pasta), 1/4 plate protein (chicken, turkey, beef, greek yogurt), 1/5 plate fats (avocado, nuts, olive oil), 1 fruit + 1 veggie.
+
+TOURNAMENT / 1:1 RULE:
+Between games, match minutes available to carbs consumed. After 60+ min, add protein.
+- 15 min: applesauce pouch or granola bar
+- 30 min: apple + pretzels or granola bar + applesauce
+- 45 min: banana + Wheat Thins or Clif bar
+- 60 min: PB&J + grapes or banana + granola bar + jerky
+- 90 min: PB&J + grapes + beef stick
+- 2.5+ hrs: mini version of 4-2-1-0
+
+RECOVERY DAY / REST DAY: Protein at every meal, moderate carbs to replenish glycogen, anti-inflammatory foods (berries, greens, salmon), hit full water baseline.
+
+HOW TO USE CONTEXT:
+- If schedule includes Game or Tournament — reference the 4-2-1-0 and the three villains directly.
+- If it's 4+ hours before game time and they ate well — confirm they're on track, remind them what's coming next.
+- If it's 2 hours before and they haven't eaten a high-carb snack — call out Wallis Pain by name.
+- If energy was logged as low or tank empty — factor that into feedback immediately.
+- If they haven't logged many meals and it's late — call that out clearly.
+- If water is below goal — mention Charlie Horseman if it's a game day.
+- If streak is strong — acknowledge it. If streak is low — challenge them.
+- If body goal is gain muscle — emphasize protein at every meal.
+- If body goal is get faster — emphasize carb timing around training.`;
+
+function getMealFeedback(){} // AI feedback disabled — coming soon
+
+
+// Auto-fire after meal save — no button needed
+async function autoMealFeedback(id,idx){
+  await getMealFeedback(id,idx);
+}
+
+async function getEndOfDaySummary(){
+  if(!state.meals.length)return;
+  state.eodLoading=true;state.eodSummary=null;
+  renderAthlete();
+  const ctx=getLYLOContext();
+  const sched=Array.isArray(state.ciAns?.schedule)?state.ciAns.schedule:[];
+  const isGameDay=sched.includes('Game')||sched.includes('Tournament');
+  const mealLog=state.meals.map((m,i)=>`${i+1}. ${m.slot}: ${m.text}`).join('\n');
+  const gameNote=isGameDay?`\nThis was a GAME/TOURNAMENT DAY. Evaluate their full day against the 4-2-1-0 protocol. Did they fight off Wallis Pain, Charlie Horseman, and Dr. Drain? Be honest about what they did and didn't do.`:'';
+  const prompt=`ATHLETE CONTEXT:\n${ctx}\n\nFULL DAY OF EATING:\n${mealLog}\n\nWater: ${Math.round(state.waterOz)}oz of ${getWaterGoal()}oz goal${gameNote}\n\nWrite an end-of-day coaching summary. Use EXACTLY this structure:\n\n**End-of-Day Coaching Summary**\n[2-3 sentences acknowledging what they did well today — be specific about what they ate and when]\n\n[1-2 sentences calling out the ONE main problem honestly — name the villain if relevant (Charlie Horseman, Wallis Pain, Dr. Drain)]\n\n**Tomorrow's ONE fix: [the fix in 3 words or less]** [one sentence explaining the specific action and the number/target]\n\n[One final sentence challenging them directly — make it personal and fire them up]\n\nBe specific. Use their actual food, their schedule, their numbers. Talk directly to the athlete.`;
+  try{
+    const r={ok:false,json:async()=>({})}; // AI EOD disabled
+    const d=await r.json();
+    const txt=d?.content?.find(b=>b.type==='text')?.text||'';
+    state.eodSummary=txt||'';
+  }catch{state.eodSummary='';}
+  state.eodLoading=false;
+  save('fw_eod_'+state.todayDate,state.eodSummary);
+  renderAthlete();
+}
+
+async function completeDailyLog(){
+  if(state.logDone)return;
+  state.logDone=true;
+  save('fw_logdone_'+state.todayDate,'true');
+  updateScore();
+  renderAthlete();
+  // AI EOD summary disabled — coming soon
+
+  // Push meals to Meal Entries DB
+  // Final complete push to Daily Athlete Summary — fires immediately (no debounce)
+  await silentPushToNotion();
+  flash('Log sent to Coach ✓');
+}
+
+
+// ── ATHLETE NUTRITION LOG — individual meal entries ─────────────────────────
+const NUTRITION_DB='b3486b60-3cd8-4231-aab7-3d9944a45cfe';
+const DAILY_DB='47eef612-6214-4a9a-9397-b10c9a93356b';
+const CLIPS_DB='4dabf896-f29e-412d-ae67-7ba80e901948';
+const FOOD_LOG_DB='0cdeee61-fd24-4f1d-9022-341162755e8f';
 async function pushMealToNutritionLog(meal){
   if(localStorage.getItem('fw_testing_mode')==='true')return;
   if(!meal||!meal.text)return;
@@ -1686,35 +2140,140 @@ function saveMeal(){
 // CLIP
 function renderClip(){
   const clip=state.coachClip;
-  if(!clip)return `<p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">TODAY'S CLIP</p><p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Watch it. Lock it in.</p><div style="background:#1C1C2E;border:1px dashed #2A2A3E;border-radius:12px;padding:40px 24px;text-align:center"><p style="font-size:32px;margin-bottom:12px">▶</p><p style="font-size:14px;color:#9A9AB0">No clip for today. Check back soon.</p></div>`;
-  const watched=state.clipWatched;
-  const ytId=clip.ytId||clip.videoId||getYTId(clip.url||'');
-  return `
+  const ytId=clip?.url?clip.url.match(/(?:youtu\.be\/|v=)([^&?/]+)/)?.[1]:null;
+  const thumb=ytId?'https://img.youtube.com/vi/'+ytId+'/hqdefault.jpg':null;
+  if(!clip||!clip.title){
+    return `
     <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">TODAY'S CLIP</p>
-    <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Watch it. Lock it in.</p>
-    <div style="background:#13131E;border:1px solid ${watched?'#22C55E60':R+'40'};border-radius:16px;overflow:hidden;margin-bottom:14px">
-      ${ytId?`<div style="position:relative;width:100%;padding-bottom:52%;background:#000"><iframe src="https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"></iframe></div>`
-        :`<a href="${clip.url||'#'}" target="_blank" rel="noreferrer" style="display:flex;align-items:center;gap:12px;background:#0A0A12;padding:16px;text-decoration:none">
-          <div style="width:40px;height:40px;border-radius:50%;background:${R}20;border:2px solid ${R};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;color:${R}">▶</div>
-          <div style="flex:1"><p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:${R}">CLICK HERE TO WATCH</p><p style="font-size:11px;color:#9A9AB0;margin-top:2px">Tap to open</p></div>
-          <span style="color:${R};font-size:14px">→</span>
-        </a>`}
-      <div style="padding:15px 17px 18px">
-        <p style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;margin-bottom:8px">${clip.title||"Today's Clip"}</p>
-        ${clip.takeaway?`<p style="font-size:10px;color:${R};font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Key Takeaway</p><p style="font-size:14px;color:#E0E0F0;line-height:1.5;margin-bottom:12px">${clip.takeaway}</p>`:''}
-        <div style="height:1px;background:#1E1E2E;margin-bottom:12px"></div>
-        ${watched
-          ?`<div style="background:#22C55E14;border:1px solid #22C55E50;border-radius:11px;padding:12px 14px;display:flex;align-items:center;gap:10px"><span style="font-size:20px">✅</span><p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#22C55E">MARKED COMPLETE</p></div>`
-          :state.showReflection?`<div>
-            <p style="font-size:12px;color:#9A9AB0;margin-bottom:6px">In one sentence, your takeaway:</p>
-            <textarea id="clip-ref-input" rows="2" placeholder="What did you take from this clip..." style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:9px 12px;font-size:14px;outline:none;resize:none;margin-bottom:8px">${state.clipReflection}</textarea>
-            <button onclick="submitClipReflection()" style="width:100%;background:#22C55E;color:#fff;border:none;border-radius:11px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.1em;cursor:pointer">SUBMIT REFLECTION</button>
-          </div>`
-          :`<button onclick="showClipReflection()" style="width:100%;background:${R};color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.1em;cursor:pointer">✓ MARK COMPLETE</button>`
-        }
-      </div>
+    <p style="font-size:12px;color:#9A9AB0;margin-bottom:20px">Watch it. Lock it in.</p>
+    <div style="background:#13131E;border:1px solid #1E1E2E;border-radius:14px;padding:40px 20px;text-align:center">
+      <p style="font-size:32px;margin-bottom:12px">🎬</p>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:18px;color:#9A9AB0">No clip assigned yet</p>
+      <p style="font-size:12px;color:#555;margin-top:6px">Check back after practice</p>
+      <button onclick="fetchActiveClip()" style="margin-top:16px;background:#1C1C2E;border:1px solid #303050;border-radius:10px;color:#9A9AB0;padding:10px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;cursor:pointer">REFRESH</button>
     </div>`;
+  }
+  const catColors={Speed:'#F59E0B',Strength:'#DC2626',Mental:'#3B82F6',Nutrition:'#22C55E',Recovery:'#8B5CF6',Film:'#9A9AB0'};
+  const catColor=catColors[clip.category]||'#9A9AB0';
+  const watched=state.clipWatched;
+  return `
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:2px">TODAY'S CLIP</p>
+  <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Watch it. Lock it in.</p>
+  <div class="card" style="padding:0;overflow:hidden;border:1px solid ${watched?'#22C55E40':'#1E1E2E'}">
+    ${thumb?`<div onclick="window.open('${clip.url}','_blank')" style="cursor:pointer;position:relative">
+      <img src="${thumb}" style="width:100%;display:block;border-radius:0" loading="lazy"/>
+      <div style="position:absolute;inset:0;background:#00000060;display:flex;align-items:center;justify-content:center;border-radius:0">
+        <div style="width:60px;height:60px;border-radius:50%;background:#DC2626;display:flex;align-items:center;justify-content:center">
+          <span style="font-size:24px;margin-left:4px">▶</span>
+        </div>
+      </div>
+    </div>`:''}
+    <div style="padding:14px 16px">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px">
+        <div style="flex:1">
+          <p style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:#F0EDE6;margin-bottom:4px">${clip.title}</p>
+          ${clip.category?`<span style="background:${catColor}20;color:${catColor};border:1px solid ${catColor}40;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">${clip.category.toUpperCase()}</span>`:''}
+        </div>
+        ${watched?'<span style="font-size:22px">✅</span>':''}
+      </div>
+      <button onclick="window.open('${clip.url||'#'}','_blank')" style="width:100%;background:#DC2626;border:none;border-radius:11px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;padding:13px;cursor:pointer;margin-bottom:8px;letter-spacing:0.05em">WATCH NOW ▶</button>
+      ${!watched?`<button onclick="state.clipWatched=true;schedulePush();renderAthlete()" style="width:100%;background:#13131E;border:1px solid #303050;border-radius:11px;color:#9A9AB0;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;padding:11px;cursor:pointer">MARK AS WATCHED</button>`:''}
+    </div>
+  </div>
+  ${watched&&!state.showReflection?`
+  <div class="card" style="margin-top:10px">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;margin-bottom:8px">YOUR TAKEAWAY</p>
+    <textarea id="clip-ref" placeholder="One thing you're locking in from this..." style="width:100%;background:#0C0C14;border:1px solid #2A2A3E;border-radius:10px;color:#F0EDE6;font-size:14px;font-family:'Barlow',sans-serif;padding:12px;resize:none;min-height:90px;outline:none" onchange="state.clipReflection=this.value;schedulePush()">${state.clipReflection||''}</textarea>
+    <button onclick="if(document.getElementById('clip-ref'))state.clipReflection=document.getElementById('clip-ref').value;schedulePush();flash('Saved','#22C55E')" style="margin-top:8px;width:100%;background:#22C55E;border:none;border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;padding:11px;cursor:pointer">SAVE REFLECTION</button>
+  </div>`:''}
+  <button onclick="fetchActiveClip()" style="margin-top:10px;width:100%;background:transparent;border:none;color:#555;font-family:'Barlow Condensed',sans-serif;font-size:12px;padding:8px;cursor:pointer">refresh clip</button>
+  `;
 }
+
+// Fetch current active clip from Notion and populate state
+async function fetchActiveClip(){
+  try{
+    const res=await notionFetch('https://api.notion.com/v1/databases/'+CLIPS_DB+'/query','POST',{
+      filter:{property:'Active',select:{equals:'Yes'}},
+      sorts:[{property:'Date Assigned',direction:'descending'}],
+      page_size:1
+    });
+    if(res.object==='error'){console.error('Fetch clip error:',res.message);return;}
+    if(res.results&&res.results.length>0){
+      const p=res.results[0].properties;
+      const url=(p['URL']?.rich_text||[])[0]?.plain_text||'';
+      const title=(p['Clip']?.title||[])[0]?.plain_text||'';
+      const cat=p['Category']?.select?.name||'';
+      const date=p['Date Assigned']?.date?.start||'';
+      state.coachClip={title,url,category:cat,date,id:res.results[0].id};
+      save('fw_coach_clip',state.coachClip);
+      renderAthlete();
+    }
+  }catch(e){console.error('fetchActiveClip failed:',e.message);}
+}
+
+// Coach: push new clip to Notion, deactivate old ones
+async 
+function renderCoachClip(){
+  const today=new Date().toISOString().split('T')[0];
+  const selCat=state.clipCategory||'Film';
+  const cats=['Speed','Strength','Mental','Nutrition','Recovery','Film'];
+  const catColors={Speed:'#F59E0B',Strength:'#DC2626',Mental:'#3B82F6',Nutrition:'#22C55E',Recovery:'#8B5CF6',Film:'#9A9AB0'};
+  return `
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;margin-bottom:4px">ASSIGN CLIP</p>
+  <p style="font-size:12px;color:#9A9AB0;margin-bottom:16px">Paste a link. All athletes see it instantly.</p>
+  <div class="card" style="margin-bottom:12px">
+    <span class="lbl">Clip Title</span>
+    <input id="clip-title-inp" type="text" class="inp" placeholder="e.g. Hip Hinge Mechanics" style="background:#0C0C14;margin-bottom:12px"/>
+    <span class="lbl">Video URL</span>
+    <input id="clip-url-inp" type="url" class="inp" placeholder="Paste YouTube or any video link" style="background:#0C0C14;margin-bottom:12px"/>
+    <span class="lbl">Category</span>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+      ${cats.map(cat=>`<button onclick="state.clipCategory='${cat}';renderCoach()" style="padding:6px 12px;border-radius:20px;border:1px solid ${selCat===cat?catColors[cat]:'#2A2A3E'};background:${selCat===cat?catColors[cat]+'20':'#111118'};color:${selCat===cat?catColors[cat]:'#9A9AB0'};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer">${cat}</button>`).join('')}
+    </div>
+    <button onclick="pushClip(document.getElementById('clip-title-inp')?.value,document.getElementById('clip-url-inp')?.value,state.clipCategory)" style="width:100%;background:#DC2626;border:none;border-radius:12px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;padding:14px;cursor:pointer;letter-spacing:0.08em">SEND TO ALL ATHLETES ▶</button>
+  </div>
+  `;
+}
+
+function pushClip(title,url,category){
+  if(!title||!url){flash('Add a title and URL first','#DC2626');return;}
+  flash('Pushing clip...','#9A9AB0');
+  const today=new Date().toISOString().split('T')[0];
+  try{
+    // Deactivate all current active clips
+    const active=await notionFetch('https://api.notion.com/v1/databases/'+CLIPS_DB+'/query','POST',{
+      filter:{property:'Active',select:{equals:'Yes'}},page_size:50
+    });
+    if(active.results){
+      await Promise.all(active.results.map(r=>
+        notionFetch('https://api.notion.com/v1/pages/'+r.id,'PATCH',{
+          properties:{"Active":{select:{name:'No'}}}
+        })
+      ));
+    }
+    // Create new active clip
+    const res=await notionFetch('https://api.notion.com/v1/pages','POST',{
+      parent:{database_id:CLIPS_DB},
+      properties:{
+        "Clip":{title:[{text:{content:title}}]},
+        "URL":{rich_text:[{text:{content:url}}]},
+        "Date Assigned":{date:{start:today}},
+        "Active":{select:{name:'Yes'}},
+        "Assigned By":{rich_text:[{text:{content:'Coach Fonoti'}}]},
+        "Category":{select:{name:category||'Film'}}
+      }
+    });
+    if(res.object==='error'){flash('Error: '+res.message.slice(0,60),'#DC2626');return;}
+    flash('Clip sent to all athletes!','#22C55E');
+    // Clear inputs
+    document.getElementById('clip-title-inp').value='';
+    document.getElementById('clip-url-inp').value='';
+    state.clipCategory='Film';
+    renderCoach();
+  }catch(e){flash('Push failed: '+e.message,'#DC2626');}
+}
+
 function showClipReflection(){state.showReflection=true;renderAthlete();}
 function submitClipReflection(){
   const ref=document.getElementById('clip-ref-input')?.value||'';
@@ -2179,7 +2738,8 @@ function pickExercise(name){
   closePicker();renderWBExercises();
 }
 
-function renderCoachClip(){
+// old
+function _OLD_renderCoachClip(){
   const pushed=state.clipPushed||(state.lastClipPushed&&state.lastClipPushed.pushedDate===state.todayDate);
   if(pushed){
     return `<p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;margin-bottom:14px">CLIP</p>
@@ -2477,7 +3037,7 @@ async function testWorker(){
   const el=document.getElementById('sync-result');
   if(el){el.style.display='block';el.textContent='Reading Notion database schemas...';}
   const dbs=[
-    {name:'Daily Athlete Summary',id:'47eef612-6214-4a9a-9397-b10c9a93356b'},
+    {name:'Daily Athlete Summary',id:'a959edf0-b1ac-48ee-9536-759462f8dda7'},
     {name:'Athlete Nutrition Log',id:'b3486b60-3cd8-4231-aab7-3d9944a45cfe'},
     {name:'Athlete Profiles',id:'80ee4bf5-ce5b-4aaf-8b35-2e5f6e2c93b5'},
   ];
@@ -2808,8 +3368,7 @@ function saveProfile(){
 const NOTION_TOKEN='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';
 const WORKER_URL='https://summer-snowflake-b830.lyloholdings.workers.dev/';
 const PROFILES_DB='80ee4bf5-ce5b-4aaf-8b35-2e5f6e2c93b5';
-const DAILY_DB='47eef612-6214-4a9a-9397-b10c9a93356b';
-const FOOD_LOG_DB='0cdeee61-fd24-4f1d-9022-341162755e8f';
+const DAILY_DB='a959edf0-b1ac-48ee-9536-759462f8dda7';
 // Notification DB uses Daily Athlete Summary for now
 const FWAY_NOTIF_DB='fway_notifications';
 
