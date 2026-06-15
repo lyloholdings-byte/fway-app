@@ -26,7 +26,7 @@ input,textarea,select{font-size:16px!important;font-family:inherit;touch-action:
 @keyframes sIn{from{opacity:0.7;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .hdr{padding:max(12px,env(safe-area-inset-top)) 16px 12px;border-bottom:1px solid #1E1E2E;display:flex;align-items:center;justify-content:space-between;background:#09090E;z-index:50;flex-shrink:0}
 .hdr-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:0.1em}
-.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px 84px;min-height:0}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px 96px;min-height:0}
 .bnav{position:fixed;bottom:0;left:0;right:0;background:#0C0C14;border-top:1px solid #1E1E2E;display:flex;z-index:200;height:64px;flex-shrink:0}
 .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:none;cursor:pointer;border-top:2px solid transparent;color:#9A9AB0;font-size:7px;font-family:'Barlow',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:0.05em}
 .bnav-btn.active{border-top-color:#DC2626;color:#DC2626}
@@ -258,8 +258,8 @@ select option{background:#13131E}
 
 <!-- PIN ENTRY SCREEN — returning athletes -->
 <div id="s-pin-entry" class="screen" style="overflow-y:auto;background:#09090E">
-  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px">
-    <div style="text-align:center;margin-bottom:32px;width:100%">
+  <div style="display:flex;flex-direction:column;align-items:center;padding:36px 28px 60px">
+    <div style="text-align:center;margin-bottom:24px;width:100%">
       <button onclick="backToLogin()" style="background:none;border:1px solid #2A2A3E;border-radius:8px;color:#555;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;padding:5px 12px;margin-bottom:20px;display:block">← Back</button>
       <p id="pin-entry-label" style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;margin-bottom:8px">ENTER YOUR PIN</p>
       <p id="pin-entry-name" style="font-size:13px;color:#9A9AB0"></p>
@@ -271,19 +271,19 @@ select option{background:#13131E}
       <div class="pin-dot" id="edot-3"></div>
     </div>
     <p id="pin-entry-err" style="display:none;font-size:12px;color:#DC2626;margin-bottom:16px;text-align:center"></p>
-    <div style="display:grid;grid-template-columns:repeat(3,72px);gap:12px;justify-content:center;margin:16px 0 20px">
-      <button onclick="pinEntryKey('1')" class="kp-btn" style="width:72px;height:72px">1</button>
-      <button onclick="pinEntryKey('2')" class="kp-btn" style="width:72px;height:72px">2</button>
-      <button onclick="pinEntryKey('3')" class="kp-btn" style="width:72px;height:72px">3</button>
-      <button onclick="pinEntryKey('4')" class="kp-btn" style="width:72px;height:72px">4</button>
-      <button onclick="pinEntryKey('5')" class="kp-btn" style="width:72px;height:72px">5</button>
-      <button onclick="pinEntryKey('6')" class="kp-btn" style="width:72px;height:72px">6</button>
-      <button onclick="pinEntryKey('7')" class="kp-btn" style="width:72px;height:72px">7</button>
-      <button onclick="pinEntryKey('8')" class="kp-btn" style="width:72px;height:72px">8</button>
-      <button onclick="pinEntryKey('9')" class="kp-btn" style="width:72px;height:72px">9</button>
+    <div style="display:grid;grid-template-columns:repeat(3,60px);gap:10px;justify-content:center;margin:16px 0 20px">
+      <button onclick="pinEntryKey('1')" class="kp-btn" style="width:60px;height:60px">1</button>
+      <button onclick="pinEntryKey('2')" class="kp-btn" style="width:60px;height:60px">2</button>
+      <button onclick="pinEntryKey('3')" class="kp-btn" style="width:60px;height:60px">3</button>
+      <button onclick="pinEntryKey('4')" class="kp-btn" style="width:60px;height:60px">4</button>
+      <button onclick="pinEntryKey('5')" class="kp-btn" style="width:60px;height:60px">5</button>
+      <button onclick="pinEntryKey('6')" class="kp-btn" style="width:60px;height:60px">6</button>
+      <button onclick="pinEntryKey('7')" class="kp-btn" style="width:60px;height:60px">7</button>
+      <button onclick="pinEntryKey('8')" class="kp-btn" style="width:60px;height:60px">8</button>
+      <button onclick="pinEntryKey('9')" class="kp-btn" style="width:60px;height:60px">9</button>
       <div></div>
-      <button onclick="pinEntryKey('0')" class="kp-btn" style="width:72px;height:72px">0</button>
-      <button onclick="pinEntryKey('⌫')" style="width:72px;height:72px;border-radius:50%;background:transparent;border:none;color:#F0EDE6;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:auto">⌫</button>
+      <button onclick="pinEntryKey('0')" class="kp-btn" style="width:60px;height:60px">0</button>
+      <button onclick="pinEntryKey('⌫')" style="width:60px;height:60px;border-radius:50%;background:transparent;border:none;color:#F0EDE6;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:auto">⌫</button>
     </div>
     <button onclick="requestPinResetFromEntry()" style="background:none;border:none;color:#6A6A85;font-size:12px;cursor:pointer;text-decoration:underline">Forgot your PIN? Request a reset</button>
     <div id="entry-reset-msg" style="display:none;font-size:12px;color:#22C55E;text-align:center;margin-top:10px"></div>
@@ -292,7 +292,7 @@ select option{background:#13131E}
 
 <!-- PIN CREATION SCREEN -->
 <div id="s-pin-create" class="screen" style="overflow-y:auto;background:#09090E">
-  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px">
+  <div style="display:flex;flex-direction:column;align-items:center;padding:36px 28px 60px">
     
     <!-- Header -->
     <div style="text-align:center;margin-bottom:32px;width:100%">
@@ -311,19 +311,19 @@ select option{background:#13131E}
     <p id="pin-create-label" style="font-size:12px;color:#6A6A85;margin-bottom:28px;min-height:18px;text-align:center"></p>
 
     <!-- Keypad -->
-    <div style="display:grid;grid-template-columns:repeat(3,72px);gap:12px;justify-content:center;margin-bottom:24px">
-      <button onclick="pinCreateKey('1')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;cursor:pointer">1</button>
-      <button onclick="pinCreateKey('2')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;cursor:pointer">2</button>
-      <button onclick="pinCreateKey('3')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;cursor:pointer">3</button>
-      <button onclick="pinCreateKey('4')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;cursor:pointer">4</button>
-      <button onclick="pinCreateKey('5')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;cursor:pointer">5</button>
-      <button onclick="pinCreateKey('6')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;cursor:pointer">6</button>
-      <button onclick="pinCreateKey('7')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;cursor:pointer">7</button>
-      <button onclick="pinCreateKey('8')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;cursor:pointer">8</button>
-      <button onclick="pinCreateKey('9')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;cursor:pointer">9</button>
+    <div style="display:grid;grid-template-columns:repeat(3,60px);gap:10px;justify-content:center;margin-bottom:24px">
+      <button onclick="pinCreateKey('1')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer">1</button>
+      <button onclick="pinCreateKey('2')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer">2</button>
+      <button onclick="pinCreateKey('3')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer">3</button>
+      <button onclick="pinCreateKey('4')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer">4</button>
+      <button onclick="pinCreateKey('5')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer">5</button>
+      <button onclick="pinCreateKey('6')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer">6</button>
+      <button onclick="pinCreateKey('7')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer">7</button>
+      <button onclick="pinCreateKey('8')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer">8</button>
+      <button onclick="pinCreateKey('9')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer">9</button>
       <div></div>
-      <button onclick="pinCreateKey('0')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;cursor:pointer">0</button>
-      <button onclick="pinCreateKey('⌫')" style="width:72px;height:72px;border-radius:50%;background:transparent;border:none;color:#F0EDE6;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center">⌫</button>
+      <button onclick="pinCreateKey('0')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer">0</button>
+      <button onclick="pinCreateKey('⌫')" style="width:60px;height:60px;border-radius:50%;background:transparent;border:none;color:#F0EDE6;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">⌫</button>
     </div>
 
     <p style="font-size:11px;color:#5A5A75;text-align:center">You can reset your PIN anytime from the login screen.</p>
