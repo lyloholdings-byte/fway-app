@@ -659,7 +659,7 @@ function initState(){
     state.done=false;state.ciStep=0;state.ciAns={};state.ciFlags=[];
     state.ciRedFlags=[];state.ciYellowFlags=[];
     state.logDone=false;state.eodSummary=null;
-    state.clipWatched=false;state.clipReflection='';
+    state.clipWatched=false;state.clipReflection='';state.fuelView='plan';
     console.log('🌅 New day detected after 5am — state cleared');
   }
   // Update todayDate and todayKey to use 8am-anchored date
@@ -1653,6 +1653,21 @@ function getTodayProtocol(){
   };
 }
 
+function switchFuelView(v){
+  state.fuelView=v;
+  const plan=document.getElementById('fuel-plan');
+  const log=document.getElementById('fuel-log');
+  const btnP=document.getElementById('ftab-plan');
+  const btnL=document.getElementById('ftab-log');
+  if(!plan||!log)return;
+  plan.style.display=v==='plan'?'block':'none';
+  log.style.display=v==='log'?'block':'none';
+  btnP.style.background=v==='plan'?'#DC2626':'transparent';
+  btnP.style.color=v==='plan'?'#fff':'#6A6A85';
+  btnL.style.background=v==='log'?'#DC2626':'transparent';
+  btnL.style.color=v==='log'?'#fff':'#6A6A85';
+}
+
 function renderFuel(){
   const waterGoal=getWaterGoal();
   const oz=state.waterOz,pct=Math.min((oz/waterGoal)*100,100);
@@ -1660,10 +1675,15 @@ function renderFuel(){
   const totals=meals.reduce((acc,m)=>({cal:acc.cal+(m.cal||0),pro:acc.pro+(m.pro||0),carb:acc.carb+(m.carb||0)}),{cal:0,pro:0,carb:0});
   const fb=state.mealFeedback;
   const proto=getTodayProtocol();
+  const fp=state.fuelView||'plan';
   return `
-  <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:2px">FUEL LOG</p>
-  <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</p>
-
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:2px">FUEL</p>
+  <p style="font-size:12px;color:#9A9AB0;margin-bottom:10px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</p>
+  <div style="display:flex;gap:6px;margin-bottom:14px;background:#0C0C14;border:1px solid #1E1E2E;border-radius:12px;padding:4px">
+    <button id="ftab-plan" onclick="switchFuelView('plan')" style="flex:1;padding:9px;border-radius:9px;border:none;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;cursor:pointer;background:${fp==='plan'?'#DC2626':'transparent'};color:${fp==='plan'?'#fff':'#6A6A85'}">PLAN</button>
+    <button id="ftab-log" onclick="switchFuelView('log')" style="flex:1;padding:9px;border-radius:9px;border:none;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;cursor:pointer;background:${fp==='log'?'#DC2626':'transparent'};color:${fp==='log'?'#fff':'#6A6A85'}">LOG</button>
+  </div>
+  <div id="fuel-plan" style="display:${fp==='plan'?'block':'none'}">
   <!-- TODAY'S PROTOCOL -->
   <div style="background:#13131E;border:1px solid ${proto.color}40;border-radius:14px;margin-bottom:14px;overflow:hidden">
     <div style="background:${proto.color}18;padding:12px 14px;border-bottom:1px solid ${proto.color}30;display:flex;align-items:center;gap:10px">
@@ -1695,6 +1715,8 @@ function renderFuel(){
   </div>`:''}
 
   <!-- WATER -->
+  </div>
+  <div id="fuel-log" style="display:${fp==='log'?'block':'none'}">
   <div class="card" style="margin-bottom:12px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <span class="lbl" style="margin:0">💧 Water Intake</span>
