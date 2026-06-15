@@ -1494,60 +1494,49 @@ async function silentPushToNotion(){
   const sched=Array.isArray(a.schedule)?a.schedule.join(', '):'';
   const mealText=state.meals.map((m,i)=>(i+1)+'. '+(m.loggedAt||'')+' '+m.slot+': '+m.text).join('\n');
   const submitted=new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
+  const properties={
+    "Entry":{title:[{text:{content:name+' '+today}}]},
+    "Athlete":{rich_text:[{text:{content:name}}]},
+    "Date":{date:{start:today}},
+    "Schedule Today":{rich_text:[{text:{content:sched}}]},
+    "Energy":{select:{name:a.energy||pa.energy||'Good'}},
+    "Body Feeling":{select:{name:a.body||pa.body||'Good'}},
+    "Soreness Level":{select:{name:a.soreness||'0 - No soreness'}},
+    "Sleep":{select:{name:a.sleep||pa.sleep||'7-8 hrs'}},
+    "Pain Level":{select:{name:a.pain||'No pain'}},
+    "Mental State":{select:{name:a.mental||pa.mental||'Good'}},
+    "Ate Before Training":{select:{name:a.ate||'A little'}},
+    "Motivation":{select:{name:a.motivation||'3 - Im here'}},
+    "Red Flags":{rich_text:[{text:{content:(state.ciRedFlags||[]).join(', ')||''}}]},
+    "Check-In Status":{select:{name:state.done?((state.ciRedFlags||[]).length?'Flagged':'All Clear'):pa.sleep?'Pulse':'Check-In Needed'}},
+    "Skill Work Done":{select:{name:skillEntry?skillEntry.did?'Yes':'No':'Not Answered'}},
+    "Skill Work Details":{rich_text:[{text:{content:skillEntry?.details||''}}]},
+    "Consistency Streak":{number:state.streak},
+    "Submitted At":{rich_text:[{text:{content:submitted}}]},
+    "Today Protocol":{rich_text:[{text:{content:protoText}}]},
+    "Meals Logged":{number:state.meals.length},
+    "Meal Log":{rich_text:[{text:{content:mealText.slice(0,2000)}}]},
+    "Water Oz Logged":{number:Math.round(state.waterOz)},
+    "Water Goal Oz":{number:waterGoal},
+    "Water Goal Hit":{select:{name:state.waterOz>=waterGoal?'Yes':'No'}},
+    "Fuel Score":{number:score}
+  };
+  const DB='47eef612-6214-4a9a-9397-b10c9a93356b';
   try{
-    const [ci,fl]=await Promise.all([
-      notionPush('47eef612-6214-4a9a-9397-b10c9a93356b',{
-        "Entry":{title:[{text:{content:name+' '+today}}]},
-        "Athlete":{rich_text:[{text:{content:name}}]},
-        "Date":{date:{start:today}},
-        "Schedule Today":{rich_text:[{text:{content:sched}}]},
-        "Energy":{select:{name:a.energy||pa.energy||'Good'}},
-        "Body Feeling":{select:{name:a.body||pa.body||'Good'}},
-        "Soreness Level":{select:{name:a.soreness||'0 - No soreness'}},
-        "Sleep":{select:{name:a.sleep||pa.sleep||'7-8 hrs'}},
-        "Pain Level":{select:{name:a.pain||'No pain'}},
-        "Mental State":{select:{name:a.mental||pa.mental||'Good'}},
-        "Ate Before Training":{select:{name:a.ate||'A little'}},
-        "Motivation":{select:{name:a.motivation||'3 - Im here'}},
-        "Red Flags":{rich_text:[{text:{content:(state.ciRedFlags||[]).join(', ')||''}}]},
-        "Check-In Status":{select:{name:state.done?((state.ciRedFlags||[]).length?'Flagged':'All Clear'):pa.sleep?'Pulse':'Check-In Needed'}},
-        "Skill Work Done":{select:{name:skillEntry?skillEntry.did?'Yes':'No':'Not Answered'}},
-        "Skill Work Details":{rich_text:[{text:{content:skillEntry?.details||''}}]},
-        "Consistency Streak":{number:state.streak},
-        "Submitted At":{rich_text:[{text:{content:submitted}}]}
-      },name,today),
-      notionPush('0cdeee61-fd24-4f1d-9022-341162755e8f',{
-        "Entry":{title:[{text:{content:name+' '+today}}]},
-        "Athlete":{rich_text:[{text:{content:name}}]},
-        "Date":{date:{start:today}},
-        "Schedule Today":{rich_text:[{text:{content:sched}}]},
-        "Today Protocol":{rich_text:[{text:{content:protoText}}]},
-        "Meals Logged":{number:state.meals.length},
-        "Meal Log":{rich_text:[{text:{content:mealText.slice(0,2000)}}]},
-        "Water Oz Logged":{number:Math.round(state.waterOz)},
-        "Water Goal Oz":{number:waterGoal},
-        "Water Goal Hit":{select:{name:state.waterOz>=waterGoal?'Yes':'No'}},
-        "Fuel Score":{number:score},
-        "Log Complete":{select:{name:state.logDone?'Yes':'In Progress'}}
-      },name,today)
-    ]);
-    if(ci.err||fl.err){flash('Notion: '+(ci.err||fl.err).slice(0,60),'#DC2626');}
-    else{flash('Synced','#22C55E');}
-  }catch(e){flash('Sync failed','#DC2626');}
-}
-async function notionPush(dbId,properties,name,today){
-  try{
-    const s=await notionFetch('https://api.notion.com/v1/databases/'+dbId+'/query','POST',{
+    const s=await notionFetch('https://api.notion.com/v1/databases/'+DB+'/query','POST',{
       filter:{and:[{property:'Athlete',rich_text:{contains:name.split(' ')[0]}},{property:'Date',date:{equals:today}}]},page_size:1
     });
-    if(s.object==='error')return{err:s.message};
+    if(s.object==='error'){flash('Notion: '+s.message.slice(0,60),'#DC2626');return;}
     if(s.results&&s.results.length){
       const u=await notionFetch('https://api.notion.com/v1/pages/'+s.results[0].id,'PATCH',{properties});
-      return u.object==='error'?{err:u.message}:{ok:1};
+      if(u.object==='error'){flash('Notion: '+u.message.slice(0,60),'#DC2626');}
+      else{flash('Synced','#22C55E');}
+    } else {
+      const c=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:DB},properties});
+      if(c.object==='error'){flash('Notion: '+c.message.slice(0,60),'#DC2626');}
+      else{flash('Synced','#22C55E');}
     }
-    const c=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:dbId},properties});
-    return c.object==='error'?{err:c.message}:{ok:1};
-  }catch(e){return{err:e.message};}
+  }catch(e){flash('Sync failed','#DC2626');}
 }
 
 
