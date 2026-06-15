@@ -21,10 +21,10 @@ input,textarea,select{font-size:16px!important;font-family:inherit;touch-action:
 ::-webkit-scrollbar{display:none}
 *{-ms-overflow-style:none;scrollbar-width:none}
 #app{height:100vh;width:100%;max-width:430px;margin:0 auto;display:flex;flex-direction:column;position:relative;background:#09090E;box-shadow:0 0 60px rgba(0,0,0,0.8)}
-.screen{display:none;flex-direction:column;height:100vh;overflow:hidden}
+.screen{display:none;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
 .screen.active{display:flex;animation:sIn 0.18s ease}
 @keyframes sIn{from{opacity:0.7;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.hdr{padding:max(12px,env(safe-area-inset-top)) 16px 12px;border-bottom:1px solid #1E1E2E;display:flex;align-items:center;justify-content:space-between;background:#09090E;z-index:50;flex-shrink:0}
+.hdr{padding:max(8px,env(safe-area-inset-top)) 16px 8px;border-bottom:1px solid #1E1E2E;display:flex;align-items:center;justify-content:space-between;background:#09090E;z-index:50;flex-shrink:0}
 .hdr-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:0.1em}
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px 200px;min-height:0}
 .bnav{position:fixed;bottom:0;left:0;right:0;background:#0C0C14;border-top:1px solid #1E1E2E;display:flex;z-index:200;height:64px;flex-shrink:0}
@@ -43,7 +43,7 @@ input,textarea,select{font-size:16px!important;font-family:inherit;touch-action:
 .toast{position:fixed;top:68px;left:50%;transform:translateX(-50%);background:#22C55E;color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;z-index:600;white-space:nowrap;pointer-events:none}
 .overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:#1C1C24;border-radius:22px 22px 0 0;padding:24px 20px 32px;width:100%;max-width:430px;max-height:88vh;overflow-y:auto;border-top:1px solid #2E2E3E}
-.opt-btn{width:100%;background:#13131E;border:2px solid #2A2A3E;border-radius:13px;padding:14px 16px;color:#F0EDE6;font-family:'Barlow',sans-serif;font-size:16px;font-weight:600;text-align:left;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.opt-btn{width:100%;background:#13131E;border:2px solid #2A2A3E;border-radius:13px;padding:clamp(9px,1.6vh,14px) 16px;color:#F0EDE6;font-family:'Barlow',sans-serif;font-size:clamp(14px,2vh,16px);font-weight:600;text-align:left;cursor:pointer;margin-bottom:clamp(5px,0.9vh,8px);display:flex;align-items:center;justify-content:space-between}
 .opt-btn.sel{background:#22C55E18;border-color:#22C55E;color:#22C55E}
 input::placeholder,textarea::placeholder{color:#5A5A75}
 select option{background:#13131E}
@@ -98,7 +98,7 @@ select option{background:#13131E}
       <button onclick="doLogout()" style="background:none;border:1px solid #303050;border-radius:8px;color:#6A6A85;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;padding:4px 10px">Sign out</button>
     </div>
   </div>
-  <div class="scroll" id="a-content" style="height:calc(100vh - 124px);box-sizing:border-box"></div>
+  <div class="scroll" id="a-content" style="height:calc(100dvh - 124px)" style="height:calc(100vh - 124px);box-sizing:border-box"></div>
   <nav class="bnav" id="a-nav">
     <button class="bnav-btn active" onclick="aTab('home')" id="an-home"><span class="icon">🏠</span>Home</button>
     <button class="bnav-btn" onclick="aTab('checkin')" id="an-checkin"><span class="icon">✅</span>Daily</button>
@@ -120,7 +120,7 @@ select option{background:#13131E}
       <button onclick="doLogout()" style="background:none;border:1px solid #303050;border-radius:8px;color:#6A6A85;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;padding:4px 10px">Sign out</button>
     </div>
   </div>
-  <div class="scroll" id="c-content" style="height:calc(100vh - 124px);box-sizing:border-box"></div>
+  <div class="scroll" id="c-content" style="height:calc(100dvh - 124px)" style="height:calc(100vh - 124px);box-sizing:border-box"></div>
   <nav class="bnav" id="c-nav">
     <button class="bnav-btn active" onclick="cTab('roster')" id="cn-roster"><span class="icon">👥</span>Roster<span id="badge-roster" style="display:none;background:#DC2626;color:#fff;border-radius:50%;width:8px;height:8px;position:absolute;top:4px;right:4px"></span></button>
     <button class="bnav-btn" onclick="cTab('clip')" id="cn-clip"><span class="icon">▶</span>Clip</button>
