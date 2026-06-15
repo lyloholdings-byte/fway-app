@@ -1068,8 +1068,7 @@ function aTab(t){
   state.aTab=t;
   document.querySelectorAll('#a-nav .bnav-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('an-'+t);if(btn)btn.classList.add('active');
-  if(t==='clip')fetchActiveClip();
-  else renderAthlete();
+  renderAthlete();
 }
 function renderAthlete(){
   const el=document.getElementById('a-content');
@@ -1482,9 +1481,7 @@ function schedulePush(){
 }
 
 async function silentPushToNotion(){
-  if(localStorage.getItem('fw_testing_mode')==='true'||localStorage.getItem('fw_dev_mode')==='true'){
-    flash('Push skipped - Testing Mode ON','#F59E0B');return;
-  }
+  if(localStorage.getItem('fw_testing_mode')==='true'){flash('Push skipped','#F59E0B');return;}
   const name=getSessionName();if(!name)return;
   const today=new Date().toISOString().split('T')[0];
   const a=state.ciAns&&Object.keys(state.ciAns).length?state.ciAns:{};
@@ -1495,66 +1492,62 @@ async function silentPushToNotion(){
   const protoText=proto?proto.title+': '+proto.steps.map(s=>s.t).join(' | '):'';
   const skillEntry=state.skillLog?.find(s=>s.date===today);
   const sched=Array.isArray(a.schedule)?a.schedule.join(', '):'';
-  const mealText=state.meals.map((m,i)=>(i+1)+'. '+(m.loggedAt?m.loggedAt+' - ':'')+m.slot+': '+m.text).join('\n');
-  const submitted=new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
-  const checkinProps={
-    "Entry":{title:[{text:{content:name+' - '+today}}]},
-    "Athlete":{rich_text:[{text:{content:name}}]},
-    "Date":{date:{start:today}},
-    "Schedule Today":{rich_text:[{text:{content:sched}}]},
-    "Energy":{select:{name:a.energy||pa.energy||'Good'}},
-    "Body Feeling":{select:{name:a.body||pa.body||'Good'}},
-    "Soreness Level":{select:{name:a.soreness||'0 - No soreness'}},
-    "Sleep":{select:{name:a.sleep||pa.sleep||'7-8 hrs'}},
-    "Pain Level":{select:{name:a.pain||'No pain'}},
-    "Mental State":{select:{name:a.mental||pa.mental||'Good'}},
-    "Ate Before Training":{select:{name:a.ate||'A little'}},
-    "Motivation":{select:{name:a.motivation||'3 - Im here'}},
-    "Red Flags":{rich_text:[{text:{content:(state.ciRedFlags||[]).join(', ')||''}}]},
-    "Check-In Status":{select:{name:state.done?((state.ciRedFlags||[]).length?'Flagged':'All Clear'):pa.sleep?'Pulse':'Check-In Needed'}},
-    "Skill Work Done":{select:{name:skillEntry?skillEntry.did?'Yes':'No':'Not Answered'}},
-    "Skill Work Details":{rich_text:[{text:{content:skillEntry?.details||''}}]},
-    "Consistency Streak":{number:state.streak},
-    "Submitted At":{rich_text:[{text:{content:submitted}}]}
-  };
-  const foodLogProps={
-    "Entry":{title:[{text:{content:name+' - '+today}}]},
-    "Athlete":{rich_text:[{text:{content:name}}]},
-    "Date":{date:{start:today}},
-    "Schedule Today":{rich_text:[{text:{content:sched}}]},
-    "Today Protocol":{rich_text:[{text:{content:protoText}}]},
-    "Meals Logged":{number:state.meals.length},
-    "Meal Log":{rich_text:[{text:{content:mealText.slice(0,2000)||''}}]},
-    "Water Oz Logged":{number:Math.round(state.waterOz)},
-    "Water Goal Oz":{number:waterGoal},
-    "Water Goal Hit":{select:{name:state.waterOz>=waterGoal?'Yes':'No'}},
-    "Fuel Score":{number:score},
-    "Log Complete":{select:{name:state.logDone?'Yes':'In Progress'}}
-  };
+  const mealText=state.meals.map((m,i)=>(i+1)+'. '+(m.loggedAt||'')+' '+m.slot+': '+m.text).join('\n');
+  const submitted=new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
   try{
-    const [ciRes,flRes]=await Promise.all([
-      pushToDb(DAILY_DB,checkinProps,name,today),
-      pushToDb(FOOD_LOG_DB,foodLogProps,name,today)
+    const [ci,fl]=await Promise.all([
+      notionPush('47eef612-6214-4a9a-9397-b10c9a93356b',{
+        "Entry":{title:[{text:{content:name+' '+today}}]},
+        "Athlete":{rich_text:[{text:{content:name}}]},
+        "Date":{date:{start:today}},
+        "Schedule Today":{rich_text:[{text:{content:sched}}]},
+        "Energy":{select:{name:a.energy||pa.energy||'Good'}},
+        "Body Feeling":{select:{name:a.body||pa.body||'Good'}},
+        "Soreness Level":{select:{name:a.soreness||'0 - No soreness'}},
+        "Sleep":{select:{name:a.sleep||pa.sleep||'7-8 hrs'}},
+        "Pain Level":{select:{name:a.pain||'No pain'}},
+        "Mental State":{select:{name:a.mental||pa.mental||'Good'}},
+        "Ate Before Training":{select:{name:a.ate||'A little'}},
+        "Motivation":{select:{name:a.motivation||'3 - Im here'}},
+        "Red Flags":{rich_text:[{text:{content:(state.ciRedFlags||[]).join(', ')||''}}]},
+        "Check-In Status":{select:{name:state.done?((state.ciRedFlags||[]).length?'Flagged':'All Clear'):pa.sleep?'Pulse':'Check-In Needed'}},
+        "Skill Work Done":{select:{name:skillEntry?skillEntry.did?'Yes':'No':'Not Answered'}},
+        "Skill Work Details":{rich_text:[{text:{content:skillEntry?.details||''}}]},
+        "Consistency Streak":{number:state.streak},
+        "Submitted At":{rich_text:[{text:{content:submitted}}]}
+      },name,today),
+      notionPush('0cdeee61-fd24-4f1d-9022-341162755e8f',{
+        "Entry":{title:[{text:{content:name+' '+today}}]},
+        "Athlete":{rich_text:[{text:{content:name}}]},
+        "Date":{date:{start:today}},
+        "Schedule Today":{rich_text:[{text:{content:sched}}]},
+        "Today Protocol":{rich_text:[{text:{content:protoText}}]},
+        "Meals Logged":{number:state.meals.length},
+        "Meal Log":{rich_text:[{text:{content:mealText.slice(0,2000)}}]},
+        "Water Oz Logged":{number:Math.round(state.waterOz)},
+        "Water Goal Oz":{number:waterGoal},
+        "Water Goal Hit":{select:{name:state.waterOz>=waterGoal?'Yes':'No'}},
+        "Fuel Score":{number:score},
+        "Log Complete":{select:{name:state.logDone?'Yes':'In Progress'}}
+      },name,today)
     ]);
-    if(ciRes.error||flRes.error){flash('Notion: '+(ciRes.error||flRes.error).slice(0,60),'#DC2626');}
+    if(ci.err||fl.err){flash('Notion: '+(ci.err||fl.err).slice(0,60),'#DC2626');}
     else{flash('Synced','#22C55E');}
-  }catch(e){flash('Sync failed: '+(e.message||'error'),'#DC2626');}
+  }catch(e){flash('Sync failed','#DC2626');}
 }
-
-async function pushToDb(dbId,properties,name,today){
+async function notionPush(dbId,properties,name,today){
   try{
-    const search=await notionFetch('https://api.notion.com/v1/databases/'+dbId+'/query','POST',{
-      filter:{and:[{property:'Athlete',rich_text:{contains:name.split(' ')[0]||''}},{property:'Date',date:{equals:today}}]},page_size:1
+    const s=await notionFetch('https://api.notion.com/v1/databases/'+dbId+'/query','POST',{
+      filter:{and:[{property:'Athlete',rich_text:{contains:name.split(' ')[0]}},{property:'Date',date:{equals:today}}]},page_size:1
     });
-    if(search.object==='error')return{error:search.message};
-    if(search.results&&search.results.length>0){
-      const res=await notionFetch('https://api.notion.com/v1/pages/'+search.results[0].id,'PATCH',{properties});
-      return res.object==='error'?{error:res.message}:{ok:true};
-    } else {
-      const res=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:dbId},properties});
-      return res.object==='error'?{error:res.message}:{ok:true};
+    if(s.object==='error')return{err:s.message};
+    if(s.results&&s.results.length){
+      const u=await notionFetch('https://api.notion.com/v1/pages/'+s.results[0].id,'PATCH',{properties});
+      return u.object==='error'?{err:u.message}:{ok:1};
     }
-  }catch(e){return{error:e.message};}
+    const c=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:dbId},properties});
+    return c.object==='error'?{err:c.message}:{ok:1};
+  }catch(e){return{err:e.message};}
 }
 
 
@@ -2023,9 +2016,6 @@ async function completeDailyLog(){
 
 // ── ATHLETE NUTRITION LOG — individual meal entries ─────────────────────────
 const NUTRITION_DB='b3486b60-3cd8-4231-aab7-3d9944a45cfe';
-const DAILY_DB='47eef612-6214-4a9a-9397-b10c9a93356b';
-const CLIPS_DB='4dabf896-f29e-412d-ae67-7ba80e901948';
-const FOOD_LOG_DB='0cdeee61-fd24-4f1d-9022-341162755e8f';
 async function pushMealToNutritionLog(meal){
   if(localStorage.getItem('fw_testing_mode')==='true')return;
   if(!meal||!meal.text)return;
@@ -2140,140 +2130,35 @@ function saveMeal(){
 // CLIP
 function renderClip(){
   const clip=state.coachClip;
-  const ytId=clip?.url?clip.url.match(/(?:youtu\.be\/|v=)([^&?/]+)/)?.[1]:null;
-  const thumb=ytId?'https://img.youtube.com/vi/'+ytId+'/hqdefault.jpg':null;
-  if(!clip||!clip.title){
-    return `
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">TODAY'S CLIP</p>
-    <p style="font-size:12px;color:#9A9AB0;margin-bottom:20px">Watch it. Lock it in.</p>
-    <div style="background:#13131E;border:1px solid #1E1E2E;border-radius:14px;padding:40px 20px;text-align:center">
-      <p style="font-size:32px;margin-bottom:12px">🎬</p>
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:18px;color:#9A9AB0">No clip assigned yet</p>
-      <p style="font-size:12px;color:#555;margin-top:6px">Check back after practice</p>
-      <button onclick="fetchActiveClip()" style="margin-top:16px;background:#1C1C2E;border:1px solid #303050;border-radius:10px;color:#9A9AB0;padding:10px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;cursor:pointer">REFRESH</button>
-    </div>`;
-  }
-  const catColors={Speed:'#F59E0B',Strength:'#DC2626',Mental:'#3B82F6',Nutrition:'#22C55E',Recovery:'#8B5CF6',Film:'#9A9AB0'};
-  const catColor=catColors[clip.category]||'#9A9AB0';
+  if(!clip)return `<p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">TODAY'S CLIP</p><p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Watch it. Lock it in.</p><div style="background:#1C1C2E;border:1px dashed #2A2A3E;border-radius:12px;padding:40px 24px;text-align:center"><p style="font-size:32px;margin-bottom:12px">▶</p><p style="font-size:14px;color:#9A9AB0">No clip for today. Check back soon.</p></div>`;
   const watched=state.clipWatched;
+  const ytId=clip.ytId||clip.videoId||getYTId(clip.url||'');
   return `
-  <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:2px">TODAY'S CLIP</p>
-  <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Watch it. Lock it in.</p>
-  <div class="card" style="padding:0;overflow:hidden;border:1px solid ${watched?'#22C55E40':'#1E1E2E'}">
-    ${thumb?`<div onclick="window.open('${clip.url}','_blank')" style="cursor:pointer;position:relative">
-      <img src="${thumb}" style="width:100%;display:block;border-radius:0" loading="lazy"/>
-      <div style="position:absolute;inset:0;background:#00000060;display:flex;align-items:center;justify-content:center;border-radius:0">
-        <div style="width:60px;height:60px;border-radius:50%;background:#DC2626;display:flex;align-items:center;justify-content:center">
-          <span style="font-size:24px;margin-left:4px">▶</span>
-        </div>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">TODAY'S CLIP</p>
+    <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Watch it. Lock it in.</p>
+    <div style="background:#13131E;border:1px solid ${watched?'#22C55E60':R+'40'};border-radius:16px;overflow:hidden;margin-bottom:14px">
+      ${ytId?`<div style="position:relative;width:100%;padding-bottom:52%;background:#000"><iframe src="https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"></iframe></div>`
+        :`<a href="${clip.url||'#'}" target="_blank" rel="noreferrer" style="display:flex;align-items:center;gap:12px;background:#0A0A12;padding:16px;text-decoration:none">
+          <div style="width:40px;height:40px;border-radius:50%;background:${R}20;border:2px solid ${R};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;color:${R}">▶</div>
+          <div style="flex:1"><p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:${R}">CLICK HERE TO WATCH</p><p style="font-size:11px;color:#9A9AB0;margin-top:2px">Tap to open</p></div>
+          <span style="color:${R};font-size:14px">→</span>
+        </a>`}
+      <div style="padding:15px 17px 18px">
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;margin-bottom:8px">${clip.title||"Today's Clip"}</p>
+        ${clip.takeaway?`<p style="font-size:10px;color:${R};font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Key Takeaway</p><p style="font-size:14px;color:#E0E0F0;line-height:1.5;margin-bottom:12px">${clip.takeaway}</p>`:''}
+        <div style="height:1px;background:#1E1E2E;margin-bottom:12px"></div>
+        ${watched
+          ?`<div style="background:#22C55E14;border:1px solid #22C55E50;border-radius:11px;padding:12px 14px;display:flex;align-items:center;gap:10px"><span style="font-size:20px">✅</span><p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#22C55E">MARKED COMPLETE</p></div>`
+          :state.showReflection?`<div>
+            <p style="font-size:12px;color:#9A9AB0;margin-bottom:6px">In one sentence, your takeaway:</p>
+            <textarea id="clip-ref-input" rows="2" placeholder="What did you take from this clip..." style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:9px 12px;font-size:14px;outline:none;resize:none;margin-bottom:8px">${state.clipReflection}</textarea>
+            <button onclick="submitClipReflection()" style="width:100%;background:#22C55E;color:#fff;border:none;border-radius:11px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.1em;cursor:pointer">SUBMIT REFLECTION</button>
+          </div>`
+          :`<button onclick="showClipReflection()" style="width:100%;background:${R};color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.1em;cursor:pointer">✓ MARK COMPLETE</button>`
+        }
       </div>
-    </div>`:''}
-    <div style="padding:14px 16px">
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px">
-        <div style="flex:1">
-          <p style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:#F0EDE6;margin-bottom:4px">${clip.title}</p>
-          ${clip.category?`<span style="background:${catColor}20;color:${catColor};border:1px solid ${catColor}40;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">${clip.category.toUpperCase()}</span>`:''}
-        </div>
-        ${watched?'<span style="font-size:22px">✅</span>':''}
-      </div>
-      <button onclick="window.open('${clip.url||'#'}','_blank')" style="width:100%;background:#DC2626;border:none;border-radius:11px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;padding:13px;cursor:pointer;margin-bottom:8px;letter-spacing:0.05em">WATCH NOW ▶</button>
-      ${!watched?`<button onclick="state.clipWatched=true;schedulePush();renderAthlete()" style="width:100%;background:#13131E;border:1px solid #303050;border-radius:11px;color:#9A9AB0;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;padding:11px;cursor:pointer">MARK AS WATCHED</button>`:''}
-    </div>
-  </div>
-  ${watched&&!state.showReflection?`
-  <div class="card" style="margin-top:10px">
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;margin-bottom:8px">YOUR TAKEAWAY</p>
-    <textarea id="clip-ref" placeholder="One thing you're locking in from this..." style="width:100%;background:#0C0C14;border:1px solid #2A2A3E;border-radius:10px;color:#F0EDE6;font-size:14px;font-family:'Barlow',sans-serif;padding:12px;resize:none;min-height:90px;outline:none" onchange="state.clipReflection=this.value;schedulePush()">${state.clipReflection||''}</textarea>
-    <button onclick="if(document.getElementById('clip-ref'))state.clipReflection=document.getElementById('clip-ref').value;schedulePush();flash('Saved','#22C55E')" style="margin-top:8px;width:100%;background:#22C55E;border:none;border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;padding:11px;cursor:pointer">SAVE REFLECTION</button>
-  </div>`:''}
-  <button onclick="fetchActiveClip()" style="margin-top:10px;width:100%;background:transparent;border:none;color:#555;font-family:'Barlow Condensed',sans-serif;font-size:12px;padding:8px;cursor:pointer">refresh clip</button>
-  `;
+    </div>`;
 }
-
-// Fetch current active clip from Notion and populate state
-async function fetchActiveClip(){
-  try{
-    const res=await notionFetch('https://api.notion.com/v1/databases/'+CLIPS_DB+'/query','POST',{
-      filter:{property:'Active',select:{equals:'Yes'}},
-      sorts:[{property:'Date Assigned',direction:'descending'}],
-      page_size:1
-    });
-    if(res.object==='error'){console.error('Fetch clip error:',res.message);return;}
-    if(res.results&&res.results.length>0){
-      const p=res.results[0].properties;
-      const url=(p['URL']?.rich_text||[])[0]?.plain_text||'';
-      const title=(p['Clip']?.title||[])[0]?.plain_text||'';
-      const cat=p['Category']?.select?.name||'';
-      const date=p['Date Assigned']?.date?.start||'';
-      state.coachClip={title,url,category:cat,date,id:res.results[0].id};
-      save('fw_coach_clip',state.coachClip);
-      renderAthlete();
-    }
-  }catch(e){console.error('fetchActiveClip failed:',e.message);}
-}
-
-// Coach: push new clip to Notion, deactivate old ones
-async 
-function renderCoachClip(){
-  const today=new Date().toISOString().split('T')[0];
-  const selCat=state.clipCategory||'Film';
-  const cats=['Speed','Strength','Mental','Nutrition','Recovery','Film'];
-  const catColors={Speed:'#F59E0B',Strength:'#DC2626',Mental:'#3B82F6',Nutrition:'#22C55E',Recovery:'#8B5CF6',Film:'#9A9AB0'};
-  return `
-  <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;margin-bottom:4px">ASSIGN CLIP</p>
-  <p style="font-size:12px;color:#9A9AB0;margin-bottom:16px">Paste a link. All athletes see it instantly.</p>
-  <div class="card" style="margin-bottom:12px">
-    <span class="lbl">Clip Title</span>
-    <input id="clip-title-inp" type="text" class="inp" placeholder="e.g. Hip Hinge Mechanics" style="background:#0C0C14;margin-bottom:12px"/>
-    <span class="lbl">Video URL</span>
-    <input id="clip-url-inp" type="url" class="inp" placeholder="Paste YouTube or any video link" style="background:#0C0C14;margin-bottom:12px"/>
-    <span class="lbl">Category</span>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
-      ${cats.map(cat=>`<button onclick="state.clipCategory='${cat}';renderCoach()" style="padding:6px 12px;border-radius:20px;border:1px solid ${selCat===cat?catColors[cat]:'#2A2A3E'};background:${selCat===cat?catColors[cat]+'20':'#111118'};color:${selCat===cat?catColors[cat]:'#9A9AB0'};font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer">${cat}</button>`).join('')}
-    </div>
-    <button onclick="pushClip(document.getElementById('clip-title-inp')?.value,document.getElementById('clip-url-inp')?.value,state.clipCategory)" style="width:100%;background:#DC2626;border:none;border-radius:12px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;padding:14px;cursor:pointer;letter-spacing:0.08em">SEND TO ALL ATHLETES ▶</button>
-  </div>
-  `;
-}
-
-function pushClip(title,url,category){
-  if(!title||!url){flash('Add a title and URL first','#DC2626');return;}
-  flash('Pushing clip...','#9A9AB0');
-  const today=new Date().toISOString().split('T')[0];
-  try{
-    // Deactivate all current active clips
-    const active=await notionFetch('https://api.notion.com/v1/databases/'+CLIPS_DB+'/query','POST',{
-      filter:{property:'Active',select:{equals:'Yes'}},page_size:50
-    });
-    if(active.results){
-      await Promise.all(active.results.map(r=>
-        notionFetch('https://api.notion.com/v1/pages/'+r.id,'PATCH',{
-          properties:{"Active":{select:{name:'No'}}}
-        })
-      ));
-    }
-    // Create new active clip
-    const res=await notionFetch('https://api.notion.com/v1/pages','POST',{
-      parent:{database_id:CLIPS_DB},
-      properties:{
-        "Clip":{title:[{text:{content:title}}]},
-        "URL":{rich_text:[{text:{content:url}}]},
-        "Date Assigned":{date:{start:today}},
-        "Active":{select:{name:'Yes'}},
-        "Assigned By":{rich_text:[{text:{content:'Coach Fonoti'}}]},
-        "Category":{select:{name:category||'Film'}}
-      }
-    });
-    if(res.object==='error'){flash('Error: '+res.message.slice(0,60),'#DC2626');return;}
-    flash('Clip sent to all athletes!','#22C55E');
-    // Clear inputs
-    document.getElementById('clip-title-inp').value='';
-    document.getElementById('clip-url-inp').value='';
-    state.clipCategory='Film';
-    renderCoach();
-  }catch(e){flash('Push failed: '+e.message,'#DC2626');}
-}
-
 function showClipReflection(){state.showReflection=true;renderAthlete();}
 function submitClipReflection(){
   const ref=document.getElementById('clip-ref-input')?.value||'';
@@ -2738,8 +2623,7 @@ function pickExercise(name){
   closePicker();renderWBExercises();
 }
 
-// old
-function _OLD_renderCoachClip(){
+function renderCoachClip(){
   const pushed=state.clipPushed||(state.lastClipPushed&&state.lastClipPushed.pushedDate===state.todayDate);
   if(pushed){
     return `<p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;margin-bottom:14px">CLIP</p>
@@ -2921,7 +2805,7 @@ async function loadNotionLogs(){
   state.loadingLogs=true;state.notionLogs=[];renderCoach();
   try{
     const today=new Date().toISOString().split('T')[0];
-    const r=await notionFetch('https://api.notion.com/v1/databases/'+DAILY_DB+'/query','POST',{filter:{property:'Date',date:{equals:today}},page_size:50,sorts:[{property:'Date',direction:'descending'}]});
+    const r=await notionFetch('https://api.notion.com/v1/databases/47eef612-6214-4a9a-9397-b10c9a93356b/query','POST',{filter:{property:'Date',date:{equals:today}},page_size:50,sorts:[{property:'Date',direction:'descending'}]});
     if(r.results&&Array.isArray(r.results)){
       state.notionLogs=r.results.map(p=>{
         const props=p.properties;
@@ -3037,7 +2921,7 @@ async function testWorker(){
   const el=document.getElementById('sync-result');
   if(el){el.style.display='block';el.textContent='Reading Notion database schemas...';}
   const dbs=[
-    {name:'Daily Athlete Summary',id:'a959edf0-b1ac-48ee-9536-759462f8dda7'},
+    {name:'Daily Athlete Summary',id:'47eef612-6214-4a9a-9397-b10c9a93356b'},
     {name:'Athlete Nutrition Log',id:'b3486b60-3cd8-4231-aab7-3d9944a45cfe'},
     {name:'Athlete Profiles',id:'80ee4bf5-ce5b-4aaf-8b35-2e5f6e2c93b5'},
   ];
@@ -3368,7 +3252,6 @@ function saveProfile(){
 const NOTION_TOKEN='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';
 const WORKER_URL='https://summer-snowflake-b830.lyloholdings.workers.dev/';
 const PROFILES_DB='80ee4bf5-ce5b-4aaf-8b35-2e5f6e2c93b5';
-const DAILY_DB='a959edf0-b1ac-48ee-9536-759462f8dda7';
 // Notification DB uses Daily Athlete Summary for now
 const FWAY_NOTIF_DB='fway_notifications';
 
