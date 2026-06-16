@@ -33,7 +33,7 @@ input,textarea,select{font-size:16px!important;font-family:inherit;touch-action:
 .bnav-btn .icon{font-size:15px;opacity:0.5}
 .bnav-btn.active .icon{font-size:18px;opacity:1}
 .card{background:#13131E;border:1px solid #252538;border-radius:13px;padding:13px 14px}
-.kp-btn{width:64px;height:64px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:auto}
+.kp-btn{width:64px;height:64px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:auto}
 .pin-dot{width:18px;height:18px;border-radius:50%;background:transparent;border:2px solid #303050;transition:all 0.15s;}
 .pin-dot.filled{background:#DC2626;border-color:#DC2626;}
 .btn-red{width:100%;background:#DC2626;color:#fff;border:none;border-radius:13px;padding:15px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer}
@@ -271,19 +271,19 @@ select option{background:#13131E}
       <div class="pin-dot" id="edot-3"></div>
     </div>
     <p id="pin-entry-err" style="display:none;font-size:12px;color:#DC2626;margin-bottom:16px;text-align:center"></p>
-    <div style="display:grid;grid-template-columns:repeat(3,60px);gap:10px;justify-content:center;margin:16px 0 20px">
-      <button onclick="pinEntryKey('1')" class="kp-btn" style="width:60px;height:60px">1</button>
-      <button onclick="pinEntryKey('2')" class="kp-btn" style="width:60px;height:60px">2</button>
-      <button onclick="pinEntryKey('3')" class="kp-btn" style="width:60px;height:60px">3</button>
-      <button onclick="pinEntryKey('4')" class="kp-btn" style="width:60px;height:60px">4</button>
-      <button onclick="pinEntryKey('5')" class="kp-btn" style="width:60px;height:60px">5</button>
-      <button onclick="pinEntryKey('6')" class="kp-btn" style="width:60px;height:60px">6</button>
-      <button onclick="pinEntryKey('7')" class="kp-btn" style="width:60px;height:60px">7</button>
-      <button onclick="pinEntryKey('8')" class="kp-btn" style="width:60px;height:60px">8</button>
-      <button onclick="pinEntryKey('9')" class="kp-btn" style="width:60px;height:60px">9</button>
+    <div style="display:grid;grid-template-columns:repeat(3,76px);gap:14px;justify-content:center;margin:20px 0 24px">
+      <button onclick="pinEntryKey('1')" class="kp-btn" style="width:76px;height:76px">1</button>
+      <button onclick="pinEntryKey('2')" class="kp-btn" style="width:76px;height:76px">2</button>
+      <button onclick="pinEntryKey('3')" class="kp-btn" style="width:76px;height:76px">3</button>
+      <button onclick="pinEntryKey('4')" class="kp-btn" style="width:76px;height:76px">4</button>
+      <button onclick="pinEntryKey('5')" class="kp-btn" style="width:76px;height:76px">5</button>
+      <button onclick="pinEntryKey('6')" class="kp-btn" style="width:76px;height:76px">6</button>
+      <button onclick="pinEntryKey('7')" class="kp-btn" style="width:76px;height:76px">7</button>
+      <button onclick="pinEntryKey('8')" class="kp-btn" style="width:76px;height:76px">8</button>
+      <button onclick="pinEntryKey('9')" class="kp-btn" style="width:76px;height:76px">9</button>
       <div></div>
-      <button onclick="pinEntryKey('0')" class="kp-btn" style="width:60px;height:60px">0</button>
-      <button onclick="pinEntryKey('⌫')" style="width:60px;height:60px;border-radius:50%;background:transparent;border:none;color:#F0EDE6;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:auto">⌫</button>
+      <button onclick="pinEntryKey('0')" class="kp-btn" style="width:76px;height:76px">0</button>
+      <button onclick="pinEntryKey('⌫')" style="width:76px;height:76px;border-radius:50%;background:transparent;border:none;color:#F0EDE6;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:auto">⌫</button>
     </div>
     <button onclick="requestPinResetFromEntry()" style="background:none;border:none;color:#6A6A85;font-size:12px;cursor:pointer;text-decoration:underline">Forgot your PIN? Request a reset</button>
     <div id="entry-reset-msg" style="display:none;font-size:12px;color:#22C55E;text-align:center;margin-top:10px"></div>
@@ -323,7 +323,7 @@ select option{background:#13131E}
       <button onclick="pinCreateKey('9')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer">9</button>
       <div></div>
       <button onclick="pinCreateKey('0')" style="width:72px;height:72px;border-radius:50%;background:#1C1C2E;border:1px solid #303050;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer">0</button>
-      <button onclick="pinCreateKey('⌫')" style="width:60px;height:60px;border-radius:50%;background:transparent;border:none;color:#F0EDE6;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">⌫</button>
+      <button onclick="pinCreateKey('⌫')" style="width:76px;height:76px;border-radius:50%;background:transparent;border:none;color:#F0EDE6;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center">⌫</button>
     </div>
 
     <p style="font-size:11px;color:#5A5A75;text-align:center">You can reset your PIN anytime from the login screen.</p>
@@ -460,7 +460,10 @@ function requestPinResetFromEntry(){
     if(d.results&&d.results[0]){
       notionFetch('https://api.notion.com/v1/pages/'+d.results[0].id,'PATCH',{properties:{"PIN Status":{select:{name:'PIN Reset Requested'}}}});
     }
-  }).catch(()=>{});
+  }).then(res=>{
+    if(res&&res.object==='error'){console.error('Profile push:',res.message);flash('Profile sync error: '+res.message.slice(0,50),'#DC2626');}
+    else if(res&&res.id){flash('Profile saved to Notion','#22C55E');}
+  }).catch(e=>console.error('Profile push failed:',e.message));
   document.getElementById('entry-reset-msg').textContent='Request sent — Coach Fonoti will reach out with your new PIN.';
   document.getElementById('entry-reset-msg').style.display='block';
 }
@@ -659,7 +662,7 @@ function initState(){
     state.done=false;state.ciStep=0;state.ciAns={};state.ciFlags=[];
     state.ciRedFlags=[];state.ciYellowFlags=[];
     state.logDone=false;state.eodSummary=null;
-    state.clipWatched=false;state.clipReflection='';state.fuelView='plan';
+    state.clipWatched=false;state.clipReflection='';state.fuelView='plan';state.planViewed=false;
     console.log('🌅 New day detected after 5am — state cleared');
   }
   // Update todayDate and todayKey to use 8am-anchored date
@@ -959,6 +962,7 @@ function showPinEntry(role){
 
 
 function loginSuccess(name,role){
+  initState(); // clear previous athlete's state
   localStorage.setItem('fw_session',JSON.stringify({name,role,loginTime:new Date().toISOString()}));
   state.role=role;
   showApp();
@@ -1006,6 +1010,7 @@ function checkWelcome(){
 }
 
 function doLogout(){
+  initState();
   localStorage.removeItem('fw_session');
   state.role='athlete';
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -1490,7 +1495,8 @@ async function silentPushToNotion(){
   const waterGoal=getWaterGoal();
   const proto=getTodayProtocol();
   const protoText=proto?proto.title+': '+proto.steps.map(s=>s.t).join(' | '):'';
-  const skillEntry=state.skillLog?.find(s=>s.date===today);
+  const skillLogs=loadJ('fw_work_logs_'+state.todayDate,[]);
+  const skillEntry=skillLogs.length>0?skillLogs[0]:null;
   const sched=Array.isArray(a.schedule)?a.schedule.join(', '):'';
   const mealText=state.meals.map((m,i)=>(i+1)+'. '+(m.loggedAt||'')+' '+m.slot+': '+m.text).join('\n');
   const submitted=new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
@@ -1510,7 +1516,7 @@ async function silentPushToNotion(){
     "Red Flags":{rich_text:[{text:{content:(state.ciRedFlags||[]).join(', ')||''}}]},
     "Check-In Status":{select:{name:state.done?((state.ciRedFlags||[]).length?'Flagged':'All Clear'):pa.sleep?'Pulse':'Check-In Needed'}},
     "Skill Work Done":{select:{name:skillEntry?skillEntry.did?'Yes':'No':'Not Answered'}},
-    "Skill Work Details":{rich_text:[{text:{content:skillEntry?.details||''}}]},
+    "Skill Work Details":{rich_text:[{text:{content:(skillEntry?.details||'')}}]},
     "Consistency Streak":{number:state.streak},
     "Submitted At":{rich_text:[{text:{content:submitted}}]},
     "Today Protocol":{rich_text:[{text:{content:protoText}}]},
@@ -1519,7 +1525,8 @@ async function silentPushToNotion(){
     "Water Oz Logged":{number:Math.round(state.waterOz)},
     "Water Goal Oz":{number:waterGoal},
     "Water Goal Hit":{select:{name:state.waterOz>=waterGoal?'Yes':'No'}},
-    "Fuel Score":{number:score}
+    "Fuel Score":{number:score},
+    "Plan Viewed":{select:{name:state.planViewed?'Yes':'No'}}
   };
   const DB='47eef612-6214-4a9a-9397-b10c9a93356b';
   try{
@@ -1647,6 +1654,7 @@ function getTodayProtocol(){
 
 function switchFuelView(v){
   state.fuelView=v;
+  if(v==='plan'&&!state.planViewed){state.planViewed=true;schedulePush();}
   const plan=document.getElementById('fuel-plan');
   const log=document.getElementById('fuel-log');
   const btnP=document.getElementById('ftab-plan');
@@ -3213,7 +3221,7 @@ function saveProfile(){
       "Graduation Year":{rich_text:[{text:{content:String(profile.gradYear||'')}}]},
       "Current Weight (lbs)":{number:parseFloat(profile.weight)||0},
       "Goal Weight (lbs)":{number:parseFloat(profile.goalWeight)||0},
-      "Body Goal":{select:{name:profile.bodyGoal||'Gain Muscle'}},
+      "Body Goal":{select:{name:(profile.bodyGoal||'Gain Muscle').split(',')[0].trim()||'Gain Muscle'}},
       "Height":{rich_text:[{text:{content:profile.height||''}}]},
       "Training Frequency":{select:{name:profile.trainingFreq||'3x per week'}},
       "PIN":{rich_text:[{text:{content:currentPin}}]},
