@@ -1091,11 +1091,12 @@ function renderHome(){
   const s=state.score,r=38,c2=2*Math.PI*r,f=(s/100)*c2;
   const redFlags=state.ciRedFlags||[];
   const yellowFlags=state.ciYellowFlags||[];
+  const checkDone=state.done||state.pulseDone;
   const hasRed=redFlags.length>0;
   const hasYellow=yellowFlags.length>0&&!hasRed;
-  const statusColor=hasRed?'#DC2626':state.done?'#22C55E':'#555';
-  const statusLabel=hasRed?'SEE COACH FIRST':state.done?'ALL CLEAR':'CHECK-IN NEEDED';
-  const statusIcon=hasRed?'🚨':state.done?'✓':'—';
+  const statusColor=hasRed?'#DC2626':checkDone?'#22C55E':'#555';
+  const statusLabel=hasRed?'SEE COACH FIRST':state.done?'ALL CLEAR':state.pulseDone?'PULSE DONE':'CHECK-IN NEEDED';
+  const statusIcon=hasRed?'🚨':checkDone?'✓':'—';
 
   // Skill work
   const skillLogs=loadJ('fw_work_logs_'+state.todayDate,[]);
@@ -1136,7 +1137,7 @@ function renderHome(){
   </div>
 
   <!-- TODAY'S STATUS BANNER — only show if checked in -->
-  ${state.done?`<div onclick="${hasRed||hasYellow?'aTab(\'checkin\')'  :''}" style="background:${statusColor}15;border:2px solid ${statusColor}50;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:${hasRed?'pointer':'default'}">
+  ${checkDone?`<div onclick="${hasRed||hasYellow?'aTab(\'checkin\')'  :''}" style="background:${statusColor}15;border:2px solid ${statusColor}50;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:${hasRed?'pointer':'default'}">
     <div style="width:36px;height:36px;border-radius:50%;background:${statusColor}20;border:2px solid ${statusColor};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${statusIcon}</div>
     <div style="flex:1">
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:${statusColor}">${statusLabel}</p>
@@ -1159,14 +1160,45 @@ function renderHome(){
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
 
     <!-- CHECK-IN -->
-    <div class="card" style="padding:12px;border:1px solid ${state.done?statusColor+'50':'#1E1E2E'};cursor:pointer" onclick="aTab('checkin')">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <p style="font-size:9px;color:#9A9AB0;font-weight:600;letter-spacing:0.08em;text-transform:uppercase">Check-In</p>
-        <span style="font-size:14px">${state.done?statusIcon:'○'}</span>
+    <div class="card" onclick="aTab('checkin')" style="padding:14px;border:2px solid ${checkDone?statusColor+'60':'#2A2A3E'};cursor:pointer;min-height:90px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <span style="font-size:9px;font-weight:900;color:#6A6A85;letter-spacing:0.1em">CHECK-IN</span>
+        <span style="font-size:18px;color:${checkDone?statusColor:'#555'}">${checkDone?'✓':'○'}</span>
       </div>
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:${state.done?statusColor:'#555'}">${state.done?statusLabel:'Not done'}</p>
-      ${state.done&&state.ciAns?.energy?`<p style="font-size:10px;color:#6A6A85;margin-top:3px">${state.ciAns.energy}</p>`:''}
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:${checkDone?statusColor:'#555'};margin-top:10px;line-height:1">${checkDone?(hasRed?'FLAG':'CLEAR'):'NOT DONE'}</p>
     </div>
+
+    <!-- MEALS -->
+    <div class="card" onclick="aTab('fuel')" style="padding:14px;border:2px solid ${state.meals.length>0?'#22C55E60':'#2A2A3E'};cursor:pointer;min-height:90px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <span style="font-size:9px;font-weight:900;color:#6A6A85;letter-spacing:0.1em">MEALS</span>
+        <span style="font-size:18px;color:${state.meals.length>0?'#22C55E':'#555'}">${state.meals.length>0?'✓':'○'}</span>
+      </div>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:${state.meals.length>0?'#22C55E':'#555'};margin-top:10px;line-height:1">${state.meals.length>0?state.meals.length+' LOGGED':'NONE YET'}</p>
+    </div>
+
+    <!-- WATER -->
+    <div class="card" onclick="aTab('fuel')" style="padding:14px;border:2px solid ${waterColor+'60'};cursor:pointer;min-height:90px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <span style="font-size:9px;font-weight:900;color:#6A6A85;letter-spacing:0.1em">WATER</span>
+        <span style="font-size:18px;color:${waterColor}">${state.waterOz>=waterGoal?'✓':state.waterOz>0?'◑':'○'}</span>
+      </div>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:${waterColor};margin-top:10px;line-height:1">${Math.round(state.waterOz)}oz</p>
+      <div style="height:3px;background:#1E1E2E;border-radius:2px;margin-top:6px">
+        <div style="height:3px;background:${waterColor};border-radius:2px;width:${waterPct}%"></div>
+      </div>
+    </div>
+
+    <!-- SKILL WORK -->
+    <div class="card" onclick="aTab('skill')" style="padding:14px;border:2px solid ${skillDone?'#22C55E60':'#2A2A3E'};cursor:pointer;min-height:90px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <span style="font-size:9px;font-weight:900;color:#6A6A85;letter-spacing:0.1em">SKILL WORK</span>
+        <span style="font-size:18px;color:${skillDone?'#22C55E':'#555'}">${skillDone?'✓':'○'}</span>
+      </div>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:${skillDone?'#22C55E':'#555'};margin-top:10px;line-height:1">${skillDone?'DONE':'NOT DONE'}</p>
+    </div>
+
+  </div>
 
     <!-- MEALS -->
     <div class="card" style="padding:12px;border:1px solid ${state.logDone?'#22C55E50':state.meals.length>0?'#F59E0B30':'#1E1E2E'};cursor:pointer" onclick="aTab('fuel')">
