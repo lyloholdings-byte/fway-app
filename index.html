@@ -24,6 +24,7 @@ input,textarea,select{font-size:16px!important;font-family:inherit;touch-action:
 .screen{display:none;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
 .screen.active{display:flex;animation:sIn 0.18s ease}
 @keyframes sIn{from{opacity:0.7;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulseDot{0%{box-shadow:0 0 0 0 #F59E0B60}70%{box-shadow:0 0 0 6px #F59E0B00}100%{box-shadow:0 0 0 0 #F59E0B00}}
 .hdr{padding:max(8px,env(safe-area-inset-top)) 16px 8px;border-bottom:1px solid #1E1E2E;display:flex;align-items:center;justify-content:space-between;background:#09090E;z-index:50;flex-shrink:0}
 .hdr-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;letter-spacing:0.1em}
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px 200px;min-height:0}
@@ -98,7 +99,7 @@ select option{background:#13131E}
       <button onclick="doLogout()" style="background:none;border:1px solid #303050;border-radius:8px;color:#6A6A85;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;padding:4px 10px">Sign out</button>
     </div>
   </div>
-  <div class="scroll" id="a-content" style="height:calc(100dvh - 124px)" style="height:calc(100vh - 124px);box-sizing:border-box"></div>
+  <div class="scroll" id="a-content" style="height:calc(100dvh - 124px);box-sizing:border-box"></div>
   <nav class="bnav" id="a-nav">
     <button class="bnav-btn active" onclick="aTab('home')" id="an-home"><span class="icon">🏠</span>Home</button>
     <button class="bnav-btn" onclick="aTab('checkin')" id="an-checkin"><span class="icon">✅</span>Daily</button>
@@ -120,7 +121,7 @@ select option{background:#13131E}
       <button onclick="doLogout()" style="background:none;border:1px solid #303050;border-radius:8px;color:#6A6A85;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;padding:4px 10px">Sign out</button>
     </div>
   </div>
-  <div class="scroll" id="c-content" style="height:calc(100dvh - 124px)" style="height:calc(100vh - 124px);box-sizing:border-box"></div>
+  <div class="scroll" id="c-content" style="height:calc(100dvh - 124px);box-sizing:border-box"></div>
   <nav class="bnav" id="c-nav">
     <button class="bnav-btn active" onclick="cTab('roster')" id="cn-roster"><span class="icon">👥</span>Roster<span id="badge-roster" style="display:none;background:#DC2626;color:#fff;border-radius:50%;width:8px;height:8px;position:absolute;top:4px;right:4px"></span></button>
     <button class="bnav-btn" onclick="cTab('clip')" id="cn-clip"><span class="icon">▶</span>Clip</button>
@@ -199,8 +200,17 @@ select option{background:#13131E}
     <p id="profile-heading" style="font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:900;line-height:1.05;margin-bottom:10px">LET'S BUILD YOUR<br/>PROFILE, <span style="color:#DC2626" id="profile-name-heading"></span></p>
     <p style="font-size:13px;color:#9A9AB0;line-height:1.6">This helps your coach track your path to college. Takes 10 seconds.</p>
   </div>
+  <div style="margin-bottom:24px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <span id="prof-progress-label" style="font-size:11px;color:#6A6A85;font-weight:700;letter-spacing:0.05em">GETTING STARTED</span>
+      <span id="prof-progress-pct" style="font-size:11px;color:#6A6A85;font-weight:700">0%</span>
+    </div>
+    <div style="height:5px;background:#1A1A28;border-radius:3px;overflow:hidden">
+      <div id="prof-progress-bar" style="height:100%;width:0%;background:#DC2626;border-radius:3px;transition:width 0.3s"></div>
+    </div>
+  </div>
   <div style="margin-bottom:18px">
-    <span class="lbl">Sport</span>
+    <span class="lbl">Sport <span style="color:#6A6A85;font-weight:400;text-transform:none;letter-spacing:0">— tap all that apply</span></span>
     <div id="prof-sports" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
     <input id="prof-other-sport" type="text" placeholder="Type your sport(s)..." oninput="addOtherSport(this.value)" style="display:none;width:100%;background:#13131E;border:1px solid #DC2626;border-radius:10px;color:#F0EDE6;padding:11px 14px;font-size:15px;outline:none"/>
   </div>
@@ -239,7 +249,7 @@ select option{background:#13131E}
     </div>
   </div>
   <div style="margin-bottom:32px">
-    <span class="lbl">Body Goal</span>
+    <span class="lbl">Body Goal <span style="color:#6A6A85;font-weight:400;text-transform:none;letter-spacing:0">— tap all that apply</span></span>
     <div id="prof-goals" style="display:flex;flex-wrap:wrap;gap:8px"></div>
   </div>
   <div style="margin-bottom:32px">
@@ -1073,6 +1083,7 @@ function aTab(t){
   state.aTab=t;
   document.querySelectorAll('#a-nav .bnav-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('an-'+t);if(btn)btn.classList.add('active');
+  const sc=document.getElementById('a-content');if(sc)sc.scrollTop=0;
   renderAthlete();
 }
 function renderAthlete(){
@@ -1711,9 +1722,16 @@ function renderFuel(){
   return `
   <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:2px">FUEL</p>
   <p style="font-size:12px;color:#9A9AB0;margin-bottom:10px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</p>
-  <div style="display:flex;gap:6px;margin-bottom:14px;background:#0C0C14;border:1px solid #1E1E2E;border-radius:12px;padding:4px">
-    <button id="ftab-plan" onclick="switchFuelView('plan')" style="flex:1;padding:9px;border-radius:9px;border:none;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;cursor:pointer;background:${fp==='plan'?'#DC2626':'transparent'};color:${fp==='plan'?'#fff':'#6A6A85'}">PLAN</button>
-    <button id="ftab-log" onclick="switchFuelView('log')" style="flex:1;padding:9px;border-radius:9px;border:none;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;cursor:pointer;background:${fp==='log'?'#DC2626':'transparent'};color:${fp==='log'?'#fff':'#6A6A85'}">LOG</button>
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <button id="ftab-plan" onclick="switchFuelView('plan')" style="flex:1;padding:14px 10px;border-radius:13px;border:2px solid ${fp==='plan'?'#DC2626':'#1E1E2E'};font-family:'Barlow Condensed',sans-serif;font-weight:900;cursor:pointer;background:${fp==='plan'?'#DC2626':'#0C0C14'};color:${fp==='plan'?'#fff':'#4A4A60'};display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s;${fp==='plan'?'box-shadow:0 4px 14px #DC262640':''}">
+      <span style="font-size:${fp==='plan'?'18px':'15px'}">${fp==='plan'?'📋':'📋'}</span>
+      <span style="font-size:${fp==='plan'?'16px':'14px'}">PLAN</span>
+    </button>
+    <button id="ftab-log" onclick="switchFuelView('log')" style="flex:1;padding:14px 10px;border-radius:13px;border:2px solid ${fp==='log'?'#DC2626':'#1E1E2E'};font-family:'Barlow Condensed',sans-serif;font-weight:900;cursor:pointer;background:${fp==='log'?'#DC2626':'#0C0C14'};color:${fp==='log'?'#fff':'#4A4A60'};display:flex;align-items:center;justify-content:center;gap:6px;position:relative;transition:all 0.15s;${fp==='log'?'box-shadow:0 4px 14px #DC262640':''}">
+      <span style="font-size:${fp==='log'?'18px':'15px'}">✏️</span>
+      <span style="font-size:${fp==='log'?'16px':'14px'}">LOG</span>
+      ${(state.meals.length===0&&fp!=='log')?'<span style="position:absolute;top:6px;right:10px;width:9px;height:9px;border-radius:50%;background:#F59E0B;box-shadow:0 0 0 3px #F59E0B30;animation:pulseDot 1.5s infinite"></span>':''}
+    </button>
   </div>
   <div id="fuel-plan" style="display:${fp==='plan'?'block':'none'}">
   <!-- TODAY'S PROTOCOL -->
@@ -2313,6 +2331,7 @@ function cTab(t){
   state.cTab=t;
   document.querySelectorAll('#c-nav .bnav-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('cn-'+t);if(btn)btn.classList.add('active');
+  const sc=document.getElementById('c-content');if(sc)sc.scrollTop=0;
   // Load logs once per session — board uses same data all week
   if(t==='logs')loadNotionLogs();
   if(t==='roster'&&!state.rosterProfiles.length)loadRoster();
@@ -3201,6 +3220,17 @@ function formatHeight(input){
 function getFormattedHeight(){return profState.height||'';}
 function checkProfReady(){
   const pos=document.getElementById('prof-position')?.value.trim()||'';
+  const weight=document.getElementById('prof-weight')?.value||'';
+  const fields=[profState.sports.length>0,!!pos,!!profState.gradYear,!!profState.height,!!weight,profState.bodyGoals.length>0,!!profState.trainingFreq];
+  const filled=fields.filter(Boolean).length;
+  const pct=Math.round((filled/fields.length)*100);
+  const bar=document.getElementById('prof-progress-bar');
+  const pctLabel=document.getElementById('prof-progress-pct');
+  const stepLabel=document.getElementById('prof-progress-label');
+  if(bar)bar.style.width=pct+'%';
+  if(pctLabel)pctLabel.textContent=pct+'%';
+  if(stepLabel)stepLabel.textContent=pct===100?'ALMOST THERE — TAP CONTINUE':pct>=60?'KEEP GOING':pct>=30?'NICE START':'GETTING STARTED';
+  if(bar)bar.style.background=pct===100?'#22C55E':'#DC2626';
   const ready=profState.sports.length>0&&profState.gradYear&&pos&&profState.bodyGoals.length>0;
   document.getElementById('prof-save-btn').disabled=!ready;
 }
@@ -3209,6 +3239,7 @@ function onWeightInput(input,dispId){
   input.value=raw;
   const d=document.getElementById(dispId);
   if(d)d.textContent=raw?raw+' lbs':'';
+  checkProfReady();
 }
 function onHeightInput(input){
   const raw=input.value.replace(/\D/g,'').slice(0,3);
