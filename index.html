@@ -215,7 +215,7 @@ select option{background:#13131E}
     <input id="prof-other-sport" type="text" placeholder="Type your sport(s)..." oninput="addOtherSport(this.value)" style="display:none;width:100%;background:#13131E;border:1px solid #DC2626;border-radius:10px;color:#F0EDE6;padding:11px 14px;font-size:15px;outline:none"/>
   </div>
   <div style="margin-bottom:18px">
-    <span class="lbl">Position</span>
+    <span class="lbl">Positions <span style="color:#6A6A85;font-weight:400;text-transform:none;letter-spacing:0">— e.g. WR/CB</span></span>
     <input id="prof-position" class="inp" placeholder="e.g. WR, PG, OH..." oninput="checkProfReady()" style="background:#13131E"/>
   </div>
   <div style="margin-bottom:18px">
@@ -661,7 +661,9 @@ function initState(){
   const hours=now.getHours();
   // Use yesterday's date key if it's before 8am (data belongs to yesterday)
   const dateForKey=hours<5?new Date(now.getTime()-86400000):now;
-  const today=dateForKey.toLocaleDateString();
+  const rawDate=dateForKey.toLocaleDateString();
+  const uname=getSessionName().toLowerCase().replace(/\s+/g,'_');
+  const today=uname+'_'+rawDate; // namespaced per athlete — prevents data bleed on shared devices
   const lastLoad=localStorage.getItem('fw_last_load_date');
 
   // Detect reset window: it's a new day AND it's past 8am
@@ -705,6 +707,8 @@ function initState(){
   state.lastPushed=JSON.parse(localStorage.getItem('fw_last_push')||'null');
   state.lastClipPushed=JSON.parse(localStorage.getItem('fw_last_clip')||'null');
   state.clipBank=JSON.parse(localStorage.getItem('fway_clip_bank')||'[]');
+  state.fuelView=load('fw_fuelview_'+state.todayDate,'plan')||'plan';
+  state.planViewed=load('fw_plan_viewed_'+state.todayDate,'')==='true';
   // auto-select closest meal slot
   const h=new Date().getHours();
   const slotH=h<5?5:h>22?22:h;
@@ -972,9 +976,10 @@ function showPinEntry(role){
 
 
 function loginSuccess(name,role){
-  initState(); // clear previous athlete's state
   localStorage.setItem('fw_session',JSON.stringify({name,role,loginTime:new Date().toISOString()}));
+  initState(); // now builds per-athlete namespaced keys
   state.role=role;
+  state.aTab='home'; // always land on Home, never a stale tab
   showApp();
 }
 
@@ -1020,7 +1025,7 @@ function checkWelcome(){
 }
 
 function doLogout(){
-  initState();
+  state.aTab='home';state.cTab='roster';
   localStorage.removeItem('fw_session');
   state.role='athlete';
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -1062,14 +1067,10 @@ function showApp(){
   } else {
     // Load profile by name-specific key to prevent cross-athlete contamination
     const nameKey=(sess?.name||'').toLowerCase().replace(/\s+/g,'_');
-    const profile=localStorage.getItem(nameKey+'_fw_profile')||load('fw_profile',null);
+    const profile=localStorage.getItem(nameKey+'_fw_profile');
     if(!profile){
       showProfileSetup(sess?.name||'Athlete');
     } else {
-      // Store as active profile for this session
-      if(profile&&!localStorage.getItem(nameKey+'_fw_profile')){
-        localStorage.setItem(nameKey+'_fw_profile',typeof profile==='string'?profile:JSON.stringify(profile));
-      }
       document.getElementById('s-athlete').classList.add('active');
       const nameEl=document.getElementById('a-username');
       if(nameEl)nameEl.textContent=(sess?.name||'').toUpperCase();
@@ -1209,39 +1210,6 @@ function renderHome(){
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:${skillDone?'#22C55E':'#555'};margin-top:10px;line-height:1">${skillDone?'DONE':'NOT DONE'}</p>
     </div>
 
-  </div>
-
-    <!-- MEALS -->
-    <div class="card" style="padding:12px;border:1px solid ${state.logDone?'#22C55E50':state.meals.length>0?'#F59E0B30':'#1E1E2E'};cursor:pointer" onclick="aTab('fuel')">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <p style="font-size:9px;color:#9A9AB0;font-weight:600;letter-spacing:0.08em;text-transform:uppercase">Meals</p>
-        <span style="font-size:14px">${state.logDone?'✓':state.meals.length>0?'●':'○'}</span>
-      </div>
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:${state.logDone?'#22C55E':state.meals.length>0?'#F59E0B':'#555'}">${state.logDone?'Log done':state.meals.length>0?state.meals.length+' logged':'None yet'}</p>
-      ${state.meals.length>0?`<p style="font-size:10px;color:#6A6A85;margin-top:3px">${state.meals[state.meals.length-1].slot}</p>`:''}
-    </div>
-
-    <!-- WATER -->
-    <div class="card" style="padding:12px;border:1px solid ${state.waterOz>=waterGoal?'#22C55E50':state.waterOz>0?'#3B82F630':'#1E1E2E'};cursor:pointer" onclick="aTab('fuel')">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <p style="font-size:9px;color:#9A9AB0;font-weight:600;letter-spacing:0.08em;text-transform:uppercase">Water</p>
-        <span style="font-size:14px">${state.waterOz>=waterGoal?'✓':state.waterOz>0?'●':'○'}</span>
-      </div>
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:${waterColor}">${Math.round(state.waterOz)}oz <span style="font-size:11px;color:#6A6A85">/ ${waterGoal}oz</span></p>
-      <div style="height:3px;background:#1C1C2E;border-radius:2px;margin-top:5px;overflow:hidden">
-        <div style="height:100%;width:${waterPct}%;background:${waterColor};border-radius:2px;transition:width 0.3s"></div>
-      </div>
-    </div>
-
-    <!-- SKILL WORK -->
-    <div class="card" style="padding:12px;border:1px solid ${skillDone?'#22C55E50':'#1E1E2E'};cursor:pointer" onclick="aTab('work')">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <p style="font-size:9px;color:#9A9AB0;font-weight:600;letter-spacing:0.08em;text-transform:uppercase">Skill Work</p>
-        <span style="font-size:14px">${skillDone?'✓':'○'}</span>
-      </div>
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:${skillColor}">${skillDone?(skillEntry?.did?'Yes':'No'):'Not logged'}</p>
-      ${skillEntry?.details?`<p style="font-size:10px;color:#6A6A85;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${skillEntry.details}</p>`:''}
-    </div>
   </div>`;
 }
 
@@ -1593,9 +1561,22 @@ async function silentPushToNotion(){
 
 
 // FUEL
+function getMyProfileKey(){
+  const sess=JSON.parse(localStorage.getItem('fw_session')||'null');
+  const nameKey=(sess?.name||'').toLowerCase().replace(/\s+/g,'_');
+  return nameKey+'_fw_profile';
+}
+function getMyProfile(){
+  try{
+    const raw=localStorage.getItem(getMyProfileKey());
+    if(raw)return JSON.parse(raw);
+    return null; // no legacy fallback — prevents cross-athlete bleed
+  }catch{return null;}
+}
+
 function getWaterGoal(){
   try{
-    const p=JSON.parse(load('fw_profile', null)||'null');
+    const p=getMyProfile();
     const w=parseFloat(p?.weight||0);
     if(!w)return 100;
     // GAIN System: ~half body weight in oz, rounded to nearest 5
@@ -1697,18 +1678,19 @@ function getTodayProtocol(){
 
 function switchFuelView(v){
   state.fuelView=v;
-  if(v==='plan'&&!state.planViewed){state.planViewed=true;schedulePush();}
+  save('fw_fuelview_'+state.todayDate,v);
+  if(v==='plan'&&!state.planViewed){state.planViewed=true;save('fw_plan_viewed_'+state.todayDate,'true');schedulePush();}
   const plan=document.getElementById('fuel-plan');
   const log=document.getElementById('fuel-log');
   const btnP=document.getElementById('ftab-plan');
   const btnL=document.getElementById('ftab-log');
+  const pill=document.getElementById('ftab-pill');
   if(!plan||!log)return;
   plan.style.display=v==='plan'?'block':'none';
   log.style.display=v==='log'?'block':'none';
-  btnP.style.background=v==='plan'?'#DC2626':'transparent';
-  btnP.style.color=v==='plan'?'#fff':'#6A6A85';
-  btnL.style.background=v==='log'?'#DC2626':'transparent';
-  btnL.style.color=v==='log'?'#fff':'#6A6A85';
+  if(pill)pill.style.left=v==='plan'?'3px':'calc(50% + 1px)';
+  if(btnP)btnP.style.color=v==='plan'?'#fff':'#6A6A85';
+  if(btnL)btnL.style.color=v==='log'?'#fff':'#6A6A85';
 }
 
 function renderFuel(){
@@ -1722,16 +1704,10 @@ function renderFuel(){
   return `
   <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:2px">FUEL</p>
   <p style="font-size:12px;color:#9A9AB0;margin-bottom:10px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</p>
-  <div style="display:flex;gap:8px;margin-bottom:16px">
-    <button id="ftab-plan" onclick="switchFuelView('plan')" style="flex:1;padding:14px 10px;border-radius:13px;border:2px solid ${fp==='plan'?'#DC2626':'#1E1E2E'};font-family:'Barlow Condensed',sans-serif;font-weight:900;cursor:pointer;background:${fp==='plan'?'#DC2626':'#0C0C14'};color:${fp==='plan'?'#fff':'#4A4A60'};display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s;${fp==='plan'?'box-shadow:0 4px 14px #DC262640':''}">
-      <span style="font-size:${fp==='plan'?'18px':'15px'}">${fp==='plan'?'📋':'📋'}</span>
-      <span style="font-size:${fp==='plan'?'16px':'14px'}">PLAN</span>
-    </button>
-    <button id="ftab-log" onclick="switchFuelView('log')" style="flex:1;padding:14px 10px;border-radius:13px;border:2px solid ${fp==='log'?'#DC2626':'#1E1E2E'};font-family:'Barlow Condensed',sans-serif;font-weight:900;cursor:pointer;background:${fp==='log'?'#DC2626':'#0C0C14'};color:${fp==='log'?'#fff':'#4A4A60'};display:flex;align-items:center;justify-content:center;gap:6px;position:relative;transition:all 0.15s;${fp==='log'?'box-shadow:0 4px 14px #DC262640':''}">
-      <span style="font-size:${fp==='log'?'18px':'15px'}">✏️</span>
-      <span style="font-size:${fp==='log'?'16px':'14px'}">LOG</span>
-      ${(state.meals.length===0&&fp!=='log')?'<span style="position:absolute;top:6px;right:10px;width:9px;height:9px;border-radius:50%;background:#F59E0B;box-shadow:0 0 0 3px #F59E0B30;animation:pulseDot 1.5s infinite"></span>':''}
-    </button>
+  <div style="position:relative;display:flex;background:#13131E;border-radius:11px;padding:3px;margin-bottom:16px">
+    <div id="ftab-pill" style="position:absolute;top:3px;left:${fp==='plan'?'3px':'calc(50% + 1px)'};width:calc(50% - 4px);height:calc(100% - 6px);background:#DC2626;border-radius:9px;transition:left 0.25s cubic-bezier(.4,0,.2,1)"></div>
+    <button id="ftab-plan" onclick="switchFuelView('plan')" style="flex:1;padding:10px 0;border:none;background:transparent;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;letter-spacing:0.04em;cursor:pointer;position:relative;z-index:1;color:${fp==='plan'?'#fff':'#6A6A85'};transition:color 0.2s">PLAN</button>
+    <button id="ftab-log" onclick="switchFuelView('log')" style="flex:1;padding:10px 0;border:none;background:transparent;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;letter-spacing:0.04em;cursor:pointer;position:relative;z-index:1;color:${fp==='log'?'#fff':'#6A6A85'};transition:color 0.2s">LOG${(state.meals.length===0&&fp!=='log')?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#F59E0B;margin-left:5px;vertical-align:middle"></span>':''}</button>
   </div>
   <div id="fuel-plan" style="display:${fp==='plan'?'block':'none'}">
   <!-- TODAY'S PROTOCOL -->
@@ -1740,20 +1716,20 @@ function renderFuel(){
       <span style="font-size:20px">${proto.icon}</span>
       <div style="flex:1">
         <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;color:${proto.color};letter-spacing:0.08em">${proto.title}</p>
-        <p style="font-size:11px;color:#9A9AB0;margin-top:1px">${proto.sub}</p>
+        <p style="font-size:12px;color:#9A9AB0;margin-top:2px;line-height:1.4">${proto.sub}</p>
       </div>
       <button onclick="editSchedule()" style="background:none;border:1px solid #303050;border-radius:7px;color:#9A9AB0;font-size:10px;font-family:'Barlow',sans-serif;font-weight:600;cursor:pointer;padding:4px 8px;flex-shrink:0;margin-right:4px">edit</button>
       <button onclick="toggleProtocol()" id="proto-toggle" style="background:none;border:none;color:#9A9AB0;font-size:18px;cursor:pointer;flex-shrink:0;padding:4px">▾</button>
     </div>
     <div id="proto-steps" style="display:block">
       ${proto.steps.map((s,i)=>`
-        <div style="padding:10px 14px;${i<proto.steps.length-1?'border-bottom:1px solid #1A1A28':''}display:flex;align-items:flex-start;gap:10px">
-          <div style="width:20px;height:20px;border-radius:50%;background:${proto.color}20;border:1px solid ${proto.color}60;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
-            <span style="font-size:9px;font-family:'Barlow Condensed',sans-serif;font-weight:900;color:${proto.color}">${i+1}</span>
+        <div style="padding:12px 16px;${i<proto.steps.length-1?'border-bottom:1px solid #1A1A28':''}display:flex;align-items:center;gap:12px">
+          <div style="width:22px;height:22px;border-radius:50%;background:${proto.color}20;border:1px solid ${proto.color}60;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <span style="font-size:10px;font-family:'Barlow Condensed',sans-serif;font-weight:900;color:${proto.color};line-height:1">${i+1}</span>
           </div>
-          <div>
-            <p style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:#F0EDE6;margin-bottom:2px">${s.t}</p>
-            <p style="font-size:12px;color:#9A9AB0;line-height:1.5">${s.d}</p>
+          <div style="flex:1;min-width:0">
+            <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;color:#F0EDE6;line-height:1.3;margin-bottom:2px">${s.t}</p>
+            <p style="font-size:12px;color:#9A9AB0;line-height:1.4">${s.d}</p>
           </div>
         </div>`).join('')}
       ${proto.steps.length===0?`<p style="font-size:13px;color:#6A6A85;text-align:center;padding:16px">Complete your daily check-in first.</p>`:''}
@@ -1944,7 +1920,7 @@ function deleteMeal(i){state.meals.splice(i,1);save('fw_meals_'+state.todayDate,
 
 function getLYLOContext(){
   try{
-    const profile=JSON.parse(load('fw_profile', null)||'null');
+    const profile=getMyProfile();
     const a=state.ciAns&&Object.keys(state.ciAns).length?state.ciAns:{};
     const pa=state.pulseAnswers||{};
     const sched=Array.isArray(a.schedule)?a.schedule.join(', '):'not set';
@@ -3269,7 +3245,7 @@ function saveProfile(){
     bodyGoal:profState.bodyGoals.join(', '),
     trainingFreq:profState.trainingFreq||'3x per week'
   };
-  save('fw_profile',profile);
+  localStorage.setItem(saveNameKey+'_fw_profile',JSON.stringify(profile));
   // Also save under name-specific key to prevent cross-athlete issues
   // Push to Notion Athlete Profiles DB — single source of truth
   // Save profile to Notion Athlete Profiles directly
@@ -3303,8 +3279,11 @@ function saveProfile(){
   document.getElementById('s-athlete').classList.add('active');
   const nameEl=document.getElementById('a-username');
   if(nameEl)nameEl.textContent=(sessNow?.name||'').toUpperCase();
+  state.aTab='home'; // always land fresh on Home, never a leftover tab
+  document.querySelectorAll('#a-nav .bnav-btn').forEach(b=>b.classList.remove('active'));
+  const homeBtn=document.getElementById('an-home');if(homeBtn)homeBtn.classList.add('active');
   renderAthlete();
-  flash('Profile saved ✓ Welcome to FWAY!');
+  flash('Profile saved! Next: tap DAILY to do your check-in →','#22C55E');
 }
 
 
