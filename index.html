@@ -1552,14 +1552,14 @@ async function silentPushToNotion(){
     if(s.object==='error'){flash('Notion: '+s.message.slice(0,60),'#DC2626');return;}
     if(s.results&&s.results.length){
       const u=await notionFetch('https://api.notion.com/v1/pages/'+s.results[0].id,'PATCH',{properties});
-      if(u.object==='error'){flash('Notion: '+u.message.slice(0,60),'#DC2626');}
+      if(u.object==='error'){flash('N: '+u.message.slice(0,70),'#DC2626');console.error('Notion PATCH:',u.message);}
       else{flash('Synced','#22C55E');}
     } else {
       const c=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:DB},properties});
-      if(c.object==='error'){flash('Notion: '+c.message.slice(0,60),'#DC2626');}
+      if(c.object==='error'){flash('N: '+c.message.slice(0,70),'#DC2626');console.error('Notion POST:',c.message);}
       else{flash('Synced','#22C55E');}
     }
-  }catch(e){flash('Sync failed','#DC2626');}
+  }catch(e){const msg=(e&&e.message)||String(e)||'unknown';flash('ERR: '+msg.slice(0,70),'#DC2626');console.error('Push error:',e);}
 }
 
 
