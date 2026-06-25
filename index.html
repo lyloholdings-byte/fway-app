@@ -139,17 +139,33 @@ select option{background:#13131E}
 <!-- MEAL SHEET -->
 <div id="meal-overlay" class="overlay" style="display:none">
   <div class="sheet">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900" id="meal-sheet-title">LOG MEAL</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div>
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900" id="meal-context-label">LOG MEAL</p>
+        <p style="font-size:11px;color:#8A8AAA;margin-top:1px">Coach can see your log</p>
+      </div>
       <button onclick="closeMeal()" style="background:#2A2A3A;border-radius:50%;width:32px;height:32px;color:#CCC;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
-    <p style="font-size:12px;color:#8A8AAA;margin-bottom:14px">Tap what meal it is → type what you ate → done.</p>
-    <span class="lbl">Meal</span>
-    <div id="meal-time-slots" style="margin-bottom:14px"></div>
-    <span class="lbl">What did you eat?</span>
-    <p style="font-size:11px;color:#8A8AAA;margin-bottom:6px">Be specific — amounts help your coach see the full picture.</p>
-    <textarea id="meal-text" rows="3" placeholder="e.g. 2 cups rice, grilled chicken breast, broccoli, water" style="width:100%;background:#252530;border:1px solid #363648;border-radius:10px;color:#FFF;padding:12px 14px;font-size:15px;outline:none;resize:none;margin-bottom:14px"></textarea>
-    <button class="btn-red" onclick="saveMeal()" id="meal-save-btn">LOG IT →</button>
+
+    <div id="meal-type-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px"></div>
+
+    <textarea id="meal-text" rows="4" placeholder="What did you eat? Just type it out — rice, chicken, 2 eggs, shake, whatever..." style="width:100%;background:#1A1A28;border:1.5px solid #2A2A3E;border-radius:12px;color:#F0EDE6;padding:14px;font-size:16px;font-family:'Barlow',sans-serif;outline:none;resize:none;margin-bottom:12px;line-height:1.5;box-sizing:border-box"></textarea>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <span style="font-size:12px;color:#8A8AAA">⏱ Logged at <strong id="meal-time-display" style="color:#F0EDE6"></strong></span>
+      <button onclick="toggleMealTimePicker()" style="background:none;border:1px solid #303050;border-radius:7px;padding:4px 10px;color:#8A8AAA;font-size:11px;cursor:pointer">change</button>
+    </div>
+    <div id="meal-time-picker" style="display:none;margin-bottom:14px">
+      <div style="display:flex;gap:6px">
+        <select id="meal-hour" onchange="updateMealTimeDisplay()" style="flex:1;background:#13131E;border:1px solid #303050;border-radius:8px;color:#F0EDE6;padding:9px;font-size:15px;outline:none;text-align:center"></select>
+        <select id="meal-min" onchange="updateMealTimeDisplay()" style="flex:1;background:#13131E;border:1px solid #303050;border-radius:8px;color:#F0EDE6;padding:9px;font-size:15px;outline:none;text-align:center"></select>
+        <select id="meal-ampm" onchange="updateMealTimeDisplay()" style="flex:1;background:#13131E;border:1px solid #303050;border-radius:8px;color:#F0EDE6;padding:9px;font-size:15px;outline:none;text-align:center">
+          <option>AM</option><option>PM</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-red" onclick="saveMeal()" style="width:100%;font-size:17px;padding:15px;letter-spacing:0.08em">LOG IT →</button>
   </div>
 </div>
 
@@ -376,7 +392,46 @@ select option{background:#13131E}
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900" id="ath-name">Athlete</p>
       <button onclick="closeAthlete()" style="color:#9A9AB0;font-size:20px">✕</button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="ath-stats"></div>
+    ${(()=>{
+    const h=new Date().getHours();
+    const meals=state.meals||[];
+    const proto=getTodayProtocol();
+    const dayType=(proto?.title||'').toUpperCase();
+    const isGame=dayType.includes('GAME');
+    const isTraining=dayType.includes('TRAINING')||dayType.includes('FWAY');
+    const isRest=dayType.includes('REST')||dayType.includes('RECOVERY')||dayType.includes('OFF');
+    const slots={
+      breakfast:meals.some(m=>m.slot==='Breakfast'),
+      lunch:meals.some(m=>m.slot==='Lunch'),
+      preWorkout:meals.some(m=>['Pre-Workout','Morning Snack'].includes(m.slot)),
+      postWorkout:meals.some(m=>['Post-Workout','Dinner'].includes(m.slot)),
+      gameSnack:meals.some(m=>['Afternoon Snack','Pre-Workout'].includes(m.slot))
+    };
+    let label,slot,icon,logged=false,sub='Tap to log — coach sees this';
+    if(h<10){
+      label='Log breakfast';slot='Breakfast';icon='🍳';logged=slots.breakfast;
+      sub=isGame?'Big meal — high carbs + protein before game day':isTraining?'Fuel up — training day starts with food':'Still eat on rest days';
+    } else if(h>=10&&h<14){
+      label='Log lunch';slot='Lunch';icon='🥗';logged=slots.lunch;
+      sub=isGame?'Light carbs + hydration — game is coming':'Tap to log — coach sees this';
+    } else if(isGame&&h>=13&&h<17&&!slots.gameSnack){
+      label='Pre-game snack time';slot='Pre-Workout';icon='⚡';logged=slots.gameSnack;
+      sub='High carb snack + 16oz water — game fuel window';
+    } else if(isTraining&&h>=13&&h<16&&!slots.preWorkout){
+      label='Pre-workout fuel needed';slot='Pre-Workout';icon='⚡';logged=slots.preWorkout;
+      sub='Eat now or your energy tanks mid-practice';
+    } else if(!isRest&&h>=16&&h<21){
+      label=isGame?'Post-game recovery meal':'Post-practice meal';
+      slot='Post-Workout';icon='🍗';logged=slots.postWorkout;
+      sub='Within 45 min — protein + carbs. This is when you rebuild';
+    } else{label=null;}
+    if(!label)return '';
+    if(logged){
+      return '<div style="background:#22C55E15;border:1.5px solid #22C55E40;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px"><span style="font-size:20px">'+icon+'</span><div style="flex:1"><p style="font-family:\'Barlow Condensed\',sans-serif;font-size:15px;font-weight:900;color:#22C55E">'+label.toUpperCase()+' — LOGGED ✓</p><p style="font-size:11px;color:#22C55E80">Good work. Keep it going.</p></div></div>';
+    }
+    return '<div onclick="state.mealSlot=\''+slot+'\';openMeal()" style="background:#DC262615;border:1.5px solid #DC262650;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer"><span style="font-size:20px">'+icon+'</span><div style="flex:1"><p style="font-family:\'Barlow Condensed\',sans-serif;font-size:15px;font-weight:900;color:#F0EDE6">'+label.toUpperCase()+'</p><p style="font-size:11px;color:#8A8AAA">'+sub+'</p></div><span style="font-size:20px;color:#DC2626">+</span></div>';
+  })()}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="ath-stats"></div>
   </div>
 </div>
 
@@ -1109,11 +1164,12 @@ function renderHome(){
   const redFlags=state.ciRedFlags||[];
   const yellowFlags=state.ciYellowFlags||[];
   const checkDone=state.done||state.pulseDone;
+  const milestone=getMilestoneUnlocked();
   const hasRed=redFlags.length>0;
   const hasYellow=yellowFlags.length>0&&!hasRed;
   const statusColor=hasRed?'#DC2626':checkDone?'#22C55E':'#555';
-  const statusLabel=hasRed?'SEE COACH FIRST':state.done?'ALL CLEAR':state.pulseDone?'PULSE DONE':'CHECK-IN NEEDED';
-  const statusIcon=hasRed?'🚨':checkDone?'✓':'—';
+  const statusLabel=state.done?((state.ciRedFlags||[]).length?'FLAGGED':'ALL CLEAR'):state.pulseDone?'PULSE DONE':'CHECK-IN NEEDED';
+  const statusIcon=checkDone?'✓':'—';
 
   // Skill work
   const skillLogs=loadJ('fw_work_logs_'+state.todayDate,[]);
@@ -1127,6 +1183,15 @@ function renderHome(){
   const waterColor=state.waterOz>=waterGoal?'#22C55E':state.waterOz>=(waterGoal*0.75)?'#F59E0B':'#555';
 
   return `
+  ${milestone?`<div style="background:#1A1200;border:2px solid #F59E0B;border-radius:16px;padding:20px;margin-bottom:14px;text-align:center">
+    <div style="font-size:44px;margin-bottom:8px">${milestone===28?'🏆':milestone===14?'🥈':'🥉'}</div>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:#F59E0B;letter-spacing:0.06em">${milestone} DAY STREAK</p>
+    <p style="font-size:12px;color:#F59E0BB0;margin:4px 0 16px">${milestone===28?'LEGENDARY — 28 days locked in':milestone===14?'COMMITTED — 2 weeks straight':'STARTED — 7 days strong'}</p>
+    <div style="background:#F59E0B;border-radius:11px;padding:13px;cursor:pointer">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:#000;letter-spacing:0.08em">🏅 SHOW COACH FOR YOUR PRIZE</p>
+    </div>
+    <button onclick="dismissMilestone(${milestone})" style="margin-top:10px;background:none;border:none;color:#F59E0B60;font-size:11px;cursor:pointer;display:block;width:100%">I showed coach — dismiss</button>
+  </div>`:''}
   ${isCoachViewing?`<div style="background:#DC262620;border-bottom:1px solid #DC262640;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;margin:-16px -16px 14px -16px">
     <p style="font-size:12px;color:#DC2626;font-weight:600">👁 Viewing as athlete</p>
     <button onclick="backToCoach()" style="background:#DC2626;border:none;border-radius:8px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;padding:4px 12px;cursor:pointer">← Back to Coach</button>
@@ -1154,7 +1219,7 @@ function renderHome(){
     <div style="width:36px;height:36px;border-radius:50%;background:${statusColor}20;border:2px solid ${statusColor};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${statusIcon}</div>
     <div style="flex:1">
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:${statusColor}">${statusLabel}</p>
-      <p style="font-size:11px;color:#9A9AB0;margin-top:1px">${hasRed?redFlags[0]:'Check-in complete — good to go'}</p>
+      <p style="font-size:11px;color:#9A9AB0;margin-top:1px">${hasRed?getReadinessReason(state.ciAns||{}):'Check-in complete — good to go'}</p>
     </div>
     ${hasRed?'<span style="font-size:11px;color:#8A8AAA">tap ›</span>':''}
   </div>`:''}
@@ -1169,6 +1234,20 @@ function renderHome(){
         <button onclick="editSchedule()" style="background:none;border:1px solid #303050;border-radius:7px;color:#9A9AB0;font-size:10px;font-family:'Barlow',sans-serif;font-weight:600;cursor:pointer;padding:3px 8px">${sched.length>0?'edit':'+ add'}</button>
       </div>
     </div>`;
+  })()}
+  ${(()=>{
+    const h=new Date().getHours();
+    const meals=state.meals||[];
+    const slots={breakfast:meals.some(m=>m.slot==='Breakfast'),lunch:meals.some(m=>m.slot==='Lunch'),snack:meals.some(m=>m.slot==='Snack'||m.slot==='Pre-Workout'),dinner:meals.some(m=>m.slot==='Dinner'||m.slot==='Post-Workout'||m.slot==='Evening')};
+    let label,slot,icon,logged=false;
+    if(h<10){label='Log breakfast';slot='Breakfast';icon='🍳';logged=slots.breakfast;}
+    else if(h>=10&&h<14){label='Log lunch';slot='Lunch';icon='🥗';logged=slots.lunch;}
+    else if(h>=15&&h<21){label='Log post-practice meal';slot='Post-Workout';icon='🍗';logged=slots.dinner;}
+    else{label=null;slot=null;icon=null;logged=false;}
+    if(logged){
+      return '<div style="background:#22C55E15;border:1.5px solid #22C55E40;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px"><span style="font-size:20px">'+icon+'</span><div style="flex:1"><p style="font-family:\'Barlow Condensed\',sans-serif;font-size:15px;font-weight:900;color:#22C55E">'+label.toUpperCase()+' — LOGGED ✓</p><p style="font-size:11px;color:#22C55E80">Good work. Keep it going.</p></div></div>';
+    }
+    return '<div onclick="state.mealSlot=\''+slot+'\';openMeal()" style="background:#DC262615;border:1.5px solid #DC262650;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer"><span style="font-size:20px">'+icon+'</span><div style="flex:1"><p style="font-family:\'Barlow Condensed\',sans-serif;font-size:15px;font-weight:900;color:#F0EDE6">'+label.toUpperCase()+'</p><p style="font-size:11px;color:#8A8AAA">'+sub+'</p></div><span style="font-size:20px;color:#DC2626">+</span></div>';
   })()}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
 
@@ -1343,6 +1422,41 @@ function resetCheckin(){state.done=false;state.ciStep=0;state.ciAns={};state.ciF
 // Points: Check-in(20) + No flags(+10) + 3+meals(20) + 1-2meals(10)
 //         Water goal(15) + Water 75%(8) + Complete log(15)
 //         Streak 5-9(+5) + 10-14(+10) + 15+(+15) - Flag penalty(-10ea max-20)
+
+function checkStreakMilestone(streak){
+  const milestones=[7,14,28];
+  if(!milestones.includes(streak))return;
+  const key='fw_milestone_shown_'+streak;
+  if(localStorage.getItem(key)==='true')return;
+  localStorage.setItem('fw_milestone_'+streak,'true');
+  flash('🏆 '+streak+' DAY STREAK UNLOCKED — Show Coach!','#F59E0B');
+}
+
+function getMilestoneUnlocked(){
+  const streak=state.streak||0;
+  // Find the highest milestone earned but not yet dismissed
+  for(const m of [28,14,7]){
+    if(streak>=m&&localStorage.getItem('fw_milestone_'+m)==='true'&&localStorage.getItem('fw_milestone_dismissed_'+m)!=='true'){
+      return m;
+    }
+  }
+  return null;
+}
+
+function dismissMilestone(days){
+  localStorage.setItem('fw_milestone_dismissed_'+days,'true');
+  renderAthlete();
+}
+
+function getReadinessReason(a){
+  if(a.energy&&a.energy.includes('Tank Empty'))return 'Energy critically low — light activity only';
+  if(a.body&&a.body.includes('Hurting'))return 'Body reporting pain — movement will be modified';
+  if(a.pain&&(a.pain.includes('Severe')||a.pain.includes('High')))return 'High pain level reported — reduced load today';
+  if(a.soreness&&a.soreness.includes('5 - Cannot'))return 'Max soreness — recovery protocol in effect';
+  if(a.readiness&&a.readiness.includes('1 - Not ready'))return 'Low readiness reported — session adjusted accordingly';
+  return 'Check-in flagged — session will be adjusted';
+}
+
 function calcDailyScore(){
   let pts=0;
   const f=state.ciFlags||[];
@@ -1749,7 +1863,7 @@ function renderFuel(){
       <button onclick="editSchedule()" style="background:none;border:1px solid #303050;border-radius:7px;color:#9A9AB0;font-size:10px;font-family:'Barlow',sans-serif;font-weight:600;cursor:pointer;padding:4px 8px;flex-shrink:0;margin-right:4px">edit</button>
       <button onclick="toggleProtocol()" id="proto-toggle" style="background:none;border:none;color:#9A9AB0;font-size:18px;cursor:pointer;flex-shrink:0;padding:4px">▾</button>
     </div>
-    <div style="padding:7px 14px 9px;border-top:1px solid rgba(128,128,128,0.15)"><p style="font-size:11px;color:#8A8AAA;font-style:italic">Tap SEE PLAN for today's nutrition timing &#8594;</p></div><div id="proto-steps" style="display:none">
+    <div style="padding:7px 14px 9px;border-top:1px solid rgba(128,128,128,0.15)"><p style="font-size:11px;color:#8A8AAA;font-style:italic;color:#F59E0B90">Tap SEE PLAN for today's nutrition timing &#8594;</p></div><div id="proto-steps" style="display:none">
       ${proto.steps.map((s,i)=>`
         <div style="padding:12px 16px;${i<proto.steps.length-1?'border-bottom:1px solid #1A1A28;':''}display:flex;align-items:center;gap:12px">
           <div style="width:22px;height:22px;border-radius:50%;background:${proto.color}20;border:1px solid ${proto.color}60;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -2092,48 +2206,55 @@ async function pushMealToNutritionLog(meal){
 
 // MEAL SHEET
 function openMeal(){
-  document.getElementById('meal-sheet-title').textContent='LOG MEAL';
+  const now=new Date();
+  const h=now.getHours();
+  const m=now.getMinutes();
+  const dispH=h===0?12:h>12?h-12:h;
+  const dispM=m<8?'00':m<23?'15':m<38?'30':'45';
+  const ap=h>=12?'PM':'AM';
+  // Set time pickers
+  const hourSel=document.getElementById('meal-hour');
+  const minSel=document.getElementById('meal-min');
+  const apSel=document.getElementById('meal-ampm');
+  if(hourSel)hourSel.innerHTML=Array.from({length:12},(_,i)=>`<option value="${i+1}" ${i+1===dispH?'selected':''}>${i+1}</option>`).join('');
+  if(minSel)minSel.innerHTML=['00','15','30','45'].map(v=>`<option ${v===dispM?'selected':''}>${v}</option>`).join('');
+  if(apSel)apSel.value=ap;
+  _customTime=dispH+':'+dispM+' '+ap;
+  updateMealTimeDisplay();
+  // Auto-select slot based on time + set context label
+  const autoSlot=h<10?'Breakfast':h<14?'Lunch':h<21?'Post-Workout':'Dinner';
+  const ctxLabel=h<10?'🍳 Log breakfast':h<14?'🥗 Log lunch':h<21?'🍗 Log post-practice meal':'🍽️ Log your meal';
+  if(!state.mealSlot)state.mealSlot=autoSlot;
+  const lbl=document.getElementById('meal-context-label');
+  if(lbl)lbl.textContent=ctxLabel;
   document.getElementById('meal-text').value='';
-  document.getElementById('meal-save-btn').textContent='LOG MEAL';
-  renderMealTimeSlots();
+  document.getElementById('meal-time-picker').style.display='none';
+  renderMealChips();
   document.getElementById('meal-overlay').style.display='flex';
+  setTimeout(()=>document.getElementById('meal-text')?.focus(),200);
+}
+function renderMealChips(){
+  const chips=document.getElementById('meal-type-chips');
+  if(!chips)return;
+  const types=['Breakfast','Morning Snack','Lunch','Afternoon Snack','Pre-Workout','Post-Workout','Dinner','Late Night'];
+  chips.innerHTML=types.map(t=>`<button onclick="state.mealSlot='${t}';renderMealChips()" style="padding:6px 13px;border-radius:20px;border:2px solid ${state.mealSlot===t?'#DC2626':'#2A2A3E'};background:${state.mealSlot===t?'#DC262620':'#111118'};color:${state.mealSlot===t?'#fff':'#9A9AB0'};font-size:13px;font-family:'Barlow',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap">${t}</button>`).join('');
+}
+function updateMealTimeDisplay(){
+  const h=document.getElementById('meal-hour')?.value||'12';
+  const m=document.getElementById('meal-min')?.value||'00';
+  const ap=document.getElementById('meal-ampm')?.value||'PM';
+  const disp=document.getElementById('meal-time-display');
+  if(disp)disp.textContent=h+':'+m+' '+ap;
+  _customTime=h+':'+m+' '+ap;
+}
+function toggleMealTimePicker(){
+  const p=document.getElementById('meal-time-picker');
+  if(p)p.style.display=p.style.display==='none'?'block':'none';
 }
 function closeMeal(){document.getElementById('meal-overlay').style.display='none';}
 let _customTime='';
-function renderMealTimeSlots(){
-  const cont=document.getElementById('meal-time-slots');
-  if(!cont)return;
-  // Only re-render the buttons, not the time input — prevents glitch
-  let btnDiv=cont.querySelector('#slot-btns');
-  if(!btnDiv){
-    // First render — build full layout
-    const nowH=new Date().getHours();
-    const nowM=new Date().getMinutes();
-    const defH=nowH===0?12:nowH>12?nowH-12:nowH;
-    const defAP=nowH>=12?'PM':'AM';
-    const defM=nowM<8?'00':nowM<23?'15':nowM<38?'30':'45';
-    cont.innerHTML=`<div id="slot-btns" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px"></div>
-    <div style="margin-top:4px">
-      <p style="font-size:11px;color:#8A8AAA;margin-bottom:6px">Exact time <span style="color:#5A5A70">(optional)</span></p>
-      <div style="display:flex;gap:6px">
-        <select id="meal-hour" onchange="setTimeFromPicker()" style="background:#13131E;border:1px solid #303050;border-radius:8px;color:#F0EDE6;padding:9px 8px;font-size:15px;outline:none;flex:1;text-align:center">
-          ${Array.from({length:12},(_,i)=>`<option value="${i+1}" ${i+1===defH?'selected':''}>${i+1}</option>`).join('')}
-        </select>
-        <select id="meal-min" onchange="setTimeFromPicker()" style="background:#13131E;border:1px solid #303050;border-radius:8px;color:#F0EDE6;padding:9px 8px;font-size:15px;outline:none;flex:1;text-align:center">
-          ${['00','15','30','45'].map(m=>`<option value="${m}" ${m===defM?'selected':''}>${m}</option>`).join('')}
-        </select>
-        <select id="meal-ampm" onchange="setTimeFromPicker()" style="background:#13131E;border:1px solid #303050;border-radius:8px;color:#F0EDE6;padding:9px 8px;font-size:15px;outline:none;flex:1;text-align:center">
-          <option value="AM" ${defAP==='AM'?'selected':''}>AM</option>
-          <option value="PM" ${defAP==='PM'?'selected':''}>PM</option>
-        </select>
-      </div>
-    </div>`;
-    btnDiv=cont.querySelector('#slot-btns');
-  }
-  // Only update buttons
-  btnDiv.innerHTML=MEAL_SLOTS.map(s=>`<button onclick="setMealSlot('${s.value}')" style="background:${state.mealSlot===s.value?R:'#111118'};color:${state.mealSlot===s.value?'#fff':'#888'};border:2px solid ${state.mealSlot===s.value?R:'#2A2A3E'};border-radius:20px;padding:8px 14px;font-size:13px;font-family:'Barlow',sans-serif;font-weight:600;cursor:pointer">${s.label}</button>`).join('');
-}
-function setMealSlot(v){state.mealSlot=v;renderMealTimeSlots();}
+
+function setMealSlot(v){state.mealSlot=v;renderMealChips();}
 function setTimeFromPicker(){
   const h=document.getElementById('meal-hour')?.value||'12';
   const m=document.getElementById('meal-min')?.value||'00';
@@ -2165,7 +2286,7 @@ function saveMeal(){
   }
   const id=Date.now();
   const idx=state.meals.length;
-  state.meals.push({id,slot:state.mealSlot,text,loggedAt:(()=>{const d=new Date();let h=d.getHours(),m=d.getMinutes(),ap=h>=12?'PM':'AM';h=h===0?12:h>12?h-12:h;return h+':'+(m<10?'0':'')+m+' '+ap;})(),cal:0,pro:0,carb:0});
+  state.meals.push({id,slot:state.mealSlot,text,loggedAt:_customTime||document.getElementById('meal-time-display')?.textContent,cal:0,pro:0,carb:0});
   save('fw_meals_'+state.todayDate,state.meals);
   updateScore();
   setTimeout(()=>silentPushToNotion(),300); // push daily summary immediately after meal
@@ -2407,7 +2528,7 @@ function renderRoster(){
 
       <!-- PIN RESET ALERT -->
       ${showPinReset?`<div style="background:#DC262615;border:1px solid #DC262640;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px">
-        <span>🚨</span>
+        <i class="ti ti-alert-circle" style="font-size:16px;color:#DC2626"></i>
         <p style="font-size:12px;color:#DC2626;flex:1">PIN reset requested</p>
         <button onclick="showPinResetPanel('${name}')" style="background:#DC2626;border:none;border-radius:7px;color:#fff;font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;cursor:pointer;padding:5px 12px">RESET NOW</button>
       </div>`:''}
@@ -2799,7 +2920,7 @@ function renderLogs(){
     const isClear=status==='All Clear';
     const borderColor=isRed?R2:isYellow?'#F59E0B':isClear?'#22C55E40':'#1E1E2E';
     const statusColor=isRed?R2:isYellow?'#F59E0B':isClear?'#22C55E':'#888';
-    const statusIcon=isRed?'🚨':isYellow?'⚠️':isClear?'✓':'—';
+    const statusIcon=isRed?'●':isYellow?'◐':isClear?'✓':'—';
     return `<div style="background:#13131E;border:1px solid ${borderColor};border-radius:13px;padding:14px;margin-bottom:10px">
       <!-- HEADER -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -2905,6 +3026,20 @@ function renderBoard(){
   const checkedIn=hasLive?logs.length:ATHLETES.filter(a=>a.lastActive==='Today').length;
   return `<p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;margin-bottom:4px">BOARD</p>
   <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">${hasLive?'Live from Notion':'Open Logs tab to refresh'}</p>
+  ${(()=>{
+    const h=new Date().getHours();
+    const meals=state.meals||[];
+    const slots={breakfast:meals.some(m=>m.slot==='Breakfast'),lunch:meals.some(m=>m.slot==='Lunch'),snack:meals.some(m=>m.slot==='Snack'||m.slot==='Pre-Workout'),dinner:meals.some(m=>m.slot==='Dinner'||m.slot==='Post-Workout'||m.slot==='Evening')};
+    let label,slot,icon,logged=false;
+    if(h<10){label='Log breakfast';slot='Breakfast';icon='🍳';logged=slots.breakfast;}
+    else if(h>=10&&h<14){label='Log lunch';slot='Lunch';icon='🥗';logged=slots.lunch;}
+    else if(h>=15&&h<21){label='Log post-practice meal';slot='Post-Workout';icon='🍗';logged=slots.dinner;}
+    else{label=null;slot=null;icon=null;logged=false;}
+    if(logged){
+      return '<div style="background:#22C55E15;border:1.5px solid #22C55E40;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px"><span style="font-size:20px">'+icon+'</span><div style="flex:1"><p style="font-family:\'Barlow Condensed\',sans-serif;font-size:15px;font-weight:900;color:#22C55E">'+label.toUpperCase()+' — LOGGED ✓</p><p style="font-size:11px;color:#22C55E80">Good work. Keep it going.</p></div></div>';
+    }
+    return '<div onclick="state.mealSlot=\''+slot+'\';openMeal()" style="background:#DC262615;border:1.5px solid #DC262650;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer"><span style="font-size:20px">'+icon+'</span><div style="flex:1"><p style="font-family:\'Barlow Condensed\',sans-serif;font-size:15px;font-weight:900;color:#F0EDE6">'+label.toUpperCase()+'</p><p style="font-size:11px;color:#8A8AAA">'+sub+'</p></div><span style="font-size:20px;color:#DC2626">+</span></div>';
+  })()}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
     ${[['Checked In',checkedIn,'today'],['Flags',flagCount,'flagged'],['Athletes',athleteCount,'total']].map(([l,v,s])=>`<div class="card" style="text-align:center;padding:14px 10px"><p style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:${l==='Flags'&&v>0?R2:'#F0EDE6'}">${v}</p><p style="font-size:10px;color:#9A9AB0;text-transform:uppercase;letter-spacing:0.08em">${l}</p><p style="font-size:9px;color:#9A9AB8">${s}</p></div>`).join('')}
   </div>
