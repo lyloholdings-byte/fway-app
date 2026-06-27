@@ -94,6 +94,22 @@ select option{background:#13131E}
 </div>
 
 <!-- ATHLETE APP -->
+<div id="add-athlete-modal" style="display:none;position:fixed;inset:0;background:#000000B0;z-index:9999;align-items:flex-end;justify-content:center">
+  <div style="background:#13131E;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900">ADD ATHLETE</p>
+      <button onclick="closeAddAthlete()" style="background:#2A2A3A;border-radius:50%;width:30px;height:30px;border:none;color:#CCC;font-size:16px;cursor:pointer">✕</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <div style="flex:1"><p style="font-size:11px;font-weight:700;color:#6A6A85;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">First Name</p><input id="new-ath-first" class="inp" placeholder="First" autocapitalize="words" style="background:#0A0A12"/></div>
+      <div style="flex:1"><p style="font-size:11px;font-weight:700;color:#6A6A85;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Last Name</p><input id="new-ath-last" class="inp" placeholder="Last" autocapitalize="words" style="background:#0A0A12"/></div>
+    </div>
+    <div style="margin-bottom:16px"><p style="font-size:11px;font-weight:700;color:#6A6A85;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Sport</p><input id="new-ath-sport" class="inp" placeholder="e.g. Football, Basketball" style="background:#0A0A12"/></div>
+    <div style="margin-bottom:16px"><p style="font-size:11px;font-weight:700;color:#6A6A85;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Email (parent or athlete)</p><input id="new-ath-email" type="email" class="inp" placeholder="email@example.com" autocapitalize="none" style="background:#0A0A12"/></div>
+    <button onclick="saveNewAthlete()" style="width:100%;background:#DC2626;border:none;border-radius:11px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;color:#fff;cursor:pointer;letter-spacing:0.06em">ADD TO ROSTER</button>
+    <div id="add-ath-status" style="display:none;text-align:center;padding:10px;font-size:13px;color:#22C55E"></div>
+  </div>
+</div>
 <div id="sched-modal" style="display:none;position:fixed;inset:0;background:#000000B0;z-index:9999;align-items:flex-end;justify-content:center">
   <div style="background:#13131E;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -1141,8 +1157,9 @@ function showApp(){
   } else {
     const nameKey=(sess?.name||'').toLowerCase().replace(/\s+/g,'_');
     const profile=localStorage.getItem(nameKey+'_fw_profile');
-    if(!profile){
-      // No local profile — try pulling from Notion first
+    const setupDone=localStorage.getItem(nameKey+'_fw_setup_done')==='true';
+    if(!profile&&!setupDone){
+      // No local profile and never done setup — try pulling from Notion first
       pullProfileFromNotion(sess?.name||'Athlete', nameKey);
     } else {
       document.getElementById('s-athlete').classList.add('active');
@@ -1869,6 +1886,7 @@ async function pullProfileFromNotion(name, nameKey){
         trainingFreq:p['Training Frequency']?.select?.name||''
       };
       localStorage.setItem(nameKey+'_fw_profile',JSON.stringify(profile));
+      localStorage.setItem(nameKey+'_fw_setup_done','true');
       flash('Profile restored from Notion','#22C55E');
       loadDiv.remove();
       document.getElementById('s-athlete').classList.add('active');
@@ -2614,7 +2632,13 @@ function cTab(t){
   // Load logs once per session — board uses same data all week
   if(t==='logs')loadNotionLogs();
   if(t==='roster'&&!state.rosterProfiles.length)loadRoster();
-  if(t==='alerts')loadAlerts();
+  if(t==='alerts'){
+    // Mark all current alerts as seen so badge clears immediately
+    const notifs=JSON.parse(localStorage.getItem('fw_coach_notifs')||'[]');
+    const cleared=notifs.map(n=>({...n,seen:true}));
+    localStorage.setItem('fw_coach_notifs',JSON.stringify(cleared));
+    loadAlerts();
+  }
   renderCoach();
 }
 function renderCoach(){
@@ -2629,6 +2653,63 @@ function renderCoach(){
 
 let schedEditAthlete='';
 let schedEditDays={Mon:'Off Day',Tue:'Off Day',Wed:'Off Day',Thu:'Off Day',Fri:'Off Day',Sat:'Off Day',Sun:'Off Day'};
+
+
+function openAddAthlete(){
+  document.getElementById('add-athlete-modal').style.display='flex';
+  document.getElementById('new-ath-first').value='';
+  document.getElementById('new-ath-last').value='';
+  document.getElementById('new-ath-sport').value='';
+  document.getElementById('new-ath-email').value='';
+  document.getElementById('add-ath-status').style.display='none';
+  setTimeout(()=>document.getElementById('new-ath-first')?.focus(),200);
+}
+
+function closeAddAthlete(){
+  document.getElementById('add-athlete-modal').style.display='none';
+}
+
+async function saveNewAthlete(){
+  const first=(document.getElementById('new-ath-first')?.value||'').trim();
+  const last=(document.getElementById('new-ath-last')?.value||'').trim();
+  const sport=(document.getElementById('new-ath-sport')?.value||'').trim();
+  const email=(document.getElementById('new-ath-email')?.value||'').trim();
+  if(!first||!last){flash('Enter first and last name','#F59E0B');return;}
+  const fullName=first+' '+last;
+  const statusEl=document.getElementById('add-ath-status');
+  statusEl.style.display='block';statusEl.style.color='#9A9AB0';statusEl.textContent='Adding...';
+  try{
+    const res=await notionFetch('https://api.notion.com/v1/pages','POST',{
+      parent:{database_id:'80ee4bf5-ce5b-4aaf-8b35-2e5f6e2c93b5'},
+      properties:{
+        'Athlete':{title:[{text:{content:fullName}}]},
+        'First Name':{rich_text:[{text:{content:first}}]},
+        'Last Name':{rich_text:[{text:{content:last}}]},
+        'Sport':{rich_text:[{text:{content:sport}}]},
+        'Email':{rich_text:[{text:{content:email}}]}
+      }
+    });
+    if(res&&res.id){
+      statusEl.style.color='#22C55E';statusEl.textContent='Added! They can now log in.';
+      flash(fullName+' added to roster','#22C55E');
+      state.rosterProfiles=[];
+      setTimeout(()=>{closeAddAthlete();loadRoster();},1500);
+    } else {throw new Error(res?.message||'Failed');}
+  }catch(e){
+    statusEl.style.color='#DC2626';statusEl.textContent='Error: '+e.message.slice(0,60);
+  }
+}
+
+async function removeAthlete(name, pageId){
+  if(!confirm('Remove '+name+' from the roster? This cannot be undone.'))return;
+  if(!pageId){flash('No page ID — refresh roster and try again','#F59E0B');return;}
+  try{
+    await notionFetch('https://api.notion.com/v1/pages/'+pageId,'PATCH',{archived:true});
+    flash(name+' removed from roster','#22C55E');
+    state.rosterProfiles=state.rosterProfiles.filter(p=>p.name!==name);
+    renderCoach();
+  }catch(e){flash('Remove failed: '+e.message.slice(0,50),'#DC2626');}
+}
 
 function openScheduleEditor(athleteName, currentSchedule){
   schedEditAthlete=athleteName;
@@ -2859,6 +2940,7 @@ async function loadRoster(){
         };
         return{
           name:g('Athlete','title'),
+          pageId:page.id,
           schedule:g('Schedule','rich_text'),
           sport:g('Sport','rich_text'),
           position:g('Position','rich_text'),
@@ -3841,8 +3923,9 @@ function updateBadges(){
   const notifs=JSON.parse(localStorage.getItem('fw_coach_notifs')||'[]');
   const cutoff=Date.now()-(14*24*60*60*1000);
   const active=notifs.filter(n=>n.status==='new'&&new Date(n.ts).getTime()>cutoff);
-  const pinResets=active.filter(n=>n.type==='PIN Reset Requested'||n.type==='New Athlete');
-  const flags=active.filter(n=>n.type==='Red Flag'||n.type==='Yellow Flag');
+  const unseen=notifs.filter(n=>n.status==='new'&&!n.seen&&new Date(n.ts).getTime()>cutoff);
+  const pinResets=unseen.filter(n=>n.type==='PIN Reset Requested'||n.type==='New Athlete');
+  const flags=unseen.filter(n=>n.type==='Red Flag'||n.type==='Yellow Flag');
   // Badge on Roster
   const br=document.getElementById('badge-roster');
   if(br)br.style.display=pinResets.length?'block':'none';
@@ -3851,7 +3934,7 @@ function updateBadges(){
   if(bl)bl.style.display=flags.length?'block':'none';
   // Badge on Alerts
   const ba=document.getElementById('badge-alerts');
-  if(ba)ba.style.display=active.length?'block':'none';
+  if(ba)ba.style.display=unseen.length?'block':'none';
 }
 
 async function loadAlerts(){
@@ -3945,6 +4028,7 @@ function renderAlerts(){
   const notifs=JSON.parse(localStorage.getItem('fw_coach_notifs')||'[]');
   const cutoff=Date.now()-(14*24*60*60*1000);
   const active=notifs.filter(n=>n.status==='new'&&new Date(n.ts).getTime()>cutoff);
+  const unseen=notifs.filter(n=>n.status==='new'&&!n.seen&&new Date(n.ts).getTime()>cutoff);
   const resolved=notifs.filter(n=>n.status==='resolved'&&new Date(n.ts).getTime()>cutoff);
 
   const typeColor={'Red Flag':'#DC2626','Athlete Report':'#DC2626','Low Score Alert':'#F59E0B','New Athlete':'#22C55E','PIN Reset Requested':'#3B82F6','Yellow Flag':'#F59E0B'};
