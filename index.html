@@ -734,7 +734,7 @@ function initState(){
     state.done=false;state.ciStep=0;state.ciAns={};state.ciFlags=[];
     state.ciRedFlags=[];state.ciYellowFlags=[];
     state.logDone=false;state.eodSummary=null;
-    state.clipWatched=false;state.clipReflection='';state.fuelView='plan';state.planViewed=false;
+    state.clipWatched=false;state.clipReflection='';state.fuelView='plan';state.planViewed=false;state.eodLoading=false;state.eodSummary=null;
     console.log('🌅 New day detected after 5am — state cleared');
   }
   // Update todayDate and todayKey to use 8am-anchored date
@@ -1167,8 +1167,11 @@ function renderHome(){
   const milestone=getMilestoneUnlocked();
   const hasRed=redFlags.length>0;
   const hasYellow=yellowFlags.length>0&&!hasRed;
-  const statusColor=hasRed?'#DC2626':checkDone?'#22C55E':'#555';
-  const statusLabel=state.done?((state.ciRedFlags||[]).length?'FLAGGED':'ALL CLEAR'):state.pulseDone?'PULSE DONE':'CHECK-IN NEEDED';
+  const statusColor=hasRed?'#F59E0B':hasYellow?'#F59E0B':checkDone?'#22C55E':'#555';
+  const statusLabel=state.done?(
+    (state.ciRedFlags||[]).length?'MODIFIED DAY':
+    (state.ciYellowFlags||[]).length?'MONITOR':'ALL CLEAR'
+  ):state.pulseDone?'PULSE DONE':'CHECK-IN NEEDED';
   const statusIcon=checkDone?'✓':'—';
 
   // Skill work
@@ -1215,15 +1218,16 @@ function renderHome(){
   </div>
 
   <!-- TODAY'S STATUS BANNER — only show if checked in -->
-  ${checkDone?`<div onclick="${hasRed||hasYellow?'aTab(\'checkin\')'  :''}" style="background:${statusColor}15;border:2px solid ${statusColor}50;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:${hasRed?'pointer':'default'}">
+  ${checkDone?`<div onclick="${hasRed||hasYellow?'aTab(\'checkin\')'  :''}" style="background:${statusColor}15;border:2px solid ${statusColor}50;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:default">
     <div style="width:36px;height:36px;border-radius:50%;background:${statusColor}20;border:2px solid ${statusColor};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${statusIcon}</div>
     <div style="flex:1">
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:${statusColor}">${statusLabel}</p>
-      <p style="font-size:11px;color:#9A9AB0;margin-top:1px">${hasRed?getReadinessReason(state.ciAns||{}):'Check-in complete — good to go'}</p>
+      <p style="font-size:11px;color:#9A9AB0;margin-top:1px">${(hasRed||hasYellow)?getReadinessReason(state.ciAns||{}):'Check-in complete — good to go'}</p>
     </div>
-    ${hasRed?'<span style="font-size:11px;color:#8A8AAA">tap ›</span>':''}
+    
   </div>`:''}
 
+  ${state.eodLoading?`<div style="background:#13131E;border:1px solid #2A2A3E;border-radius:12px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px"><div style="width:16px;height:16px;border:2px solid #F59E0B40;border-top-color:#F59E0B;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0"></div><p style="font-size:13px;color:#9A9AB0">Sending day summary to Coach Fonoti...</p></div>`:state.eodSummary?`<div style="background:#22C55E10;border:1px solid #22C55E30;border-radius:12px;padding:12px 16px;margin-bottom:10px"><p style="font-size:11px;font-weight:700;color:#22C55E;letter-spacing:0.06em;margin-bottom:4px">DAY SUMMARY SENT TO COACH ✓</p><p style="font-size:12px;color:#9A9AB0;line-height:1.5">${state.eodSummary}</p></div>`:''}
   <!-- TODAY'S SCHEDULE -->
   ${(()=>{
     const sched=Array.isArray(state.ciAns?.schedule)?state.ciAns.schedule:[];
@@ -1257,7 +1261,7 @@ function renderHome(){
         <span style="font-size:9px;font-weight:900;color:#8A8AAA;letter-spacing:0.1em">CHECK-IN</span>
         <span style="font-size:18px;color:${checkDone?statusColor:'#555'}">${checkDone?'✓':'○'}</span>
       </div>
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:${checkDone?statusColor:'#555'};margin-top:10px;line-height:1">${checkDone?(hasRed?'FLAG':'CLEAR'):'NOT DONE'}</p>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:${checkDone?statusColor:'#555'};margin-top:10px;line-height:1">${checkDone?(hasRed?'MODIFIED':'CLEAR'):'NOT DONE'}</p>
     </div>
 
     <!-- MEALS -->
@@ -1449,12 +1453,62 @@ function dismissMilestone(days){
 }
 
 function getReadinessReason(a){
-  if(a.energy&&a.energy.includes('Tank Empty'))return 'Energy critically low — light activity only';
-  if(a.body&&a.body.includes('Hurting'))return 'Body reporting pain — movement will be modified';
-  if(a.pain&&(a.pain.includes('Severe')||a.pain.includes('High')))return 'High pain level reported — reduced load today';
-  if(a.soreness&&a.soreness.includes('5 - Cannot'))return 'Max soreness — recovery protocol in effect';
-  if(a.readiness&&a.readiness.includes('1 - Not ready'))return 'Low readiness reported — session adjusted accordingly';
-  return 'Check-in flagged — session will be adjusted';
+  if(a.energy&&a.energy.includes('Tank Empty'))return 'Energy critically low — session adjusted to match';
+  if(a.body&&a.body.includes('Hurting'))return 'Pain reported — session modified to protect you';
+  if(a.pain&&(a.pain.includes('Severe')||a.pain.includes('High')||a.pain.includes('4 - Severe')))return 'High pain reported — load reduced today';
+  if(a.soreness&&a.soreness.includes('5 - Cannot'))return 'Max soreness — today is recovery and movement';
+  if(a.readiness&&a.readiness.includes('1 - Not ready'))return 'Low readiness flagged — session dialed back';
+  if(a.pain&&a.pain.includes('Moderate'))return 'Moderate pain noted — coach will monitor movement today';
+  if(a.soreness&&a.soreness.includes('4 - Hard'))return 'High soreness — intensity may adjust mid-session';
+  if(a.readiness&&a.readiness.includes('2 - Below'))return 'Below-par readiness — give what you have, coach knows';
+  if(a.motivation&&a.motivation.includes("1 - Don"))return 'Low motivation today — show up, the work handles the rest';
+  return 'Check-in received — all good';
+}
+
+
+async function generateEODSummary(){
+  if(state.eodSummary||state.eodLoading)return;
+  state.eodLoading=true;
+  const name=getSessionName();
+  const a=state.ciAns||{};
+  const meals=state.meals||[];
+  const proto=getTodayProtocol();
+  const mealLog=meals.map((m,i)=>`${i+1}. ${m.slot} (${m.loggedAt||'?'}): ${m.text||m.description||'logged'}`).join('\n')||'No meals logged';
+  const prompt=`You are Coach LYLO Fonoti's AI assistant writing a brief end-of-day nutrition summary for his athlete dashboard in Notion. Write 2-3 sentences MAX. Be direct, specific, use coach language — not clinical. Flag what matters, acknowledge what was good.
+
+Athlete: ${name}
+Day type: ${proto?.title||'Unknown'}
+Check-in — Energy: ${a.energy||'?'}, Sleep: ${a.sleep||'?'}, Body: ${a.body||'?'}, Pain: ${a.pain||'?'}, Soreness: ${a.soreness||'?'}, Ate before training: ${a.ate||'?'}
+Water: ${Math.round(state.waterOz||0)}oz of ${getWaterGoal()}oz goal
+Meals logged:
+${mealLog}
+
+Write the summary now. No intro, no label, just the sentences.`;
+
+  try{
+    const data=await aiFetch({model:'claude-sonnet-4-6',max_tokens:200,messages:[{role:'user',content:prompt}]});
+    const summary=data.content?.find(b=>b.type==='text')?.text||'';
+    if(!summary){state.eodLoading=false;return;}
+    state.eodSummary=summary;
+    state.eodLoading=false;
+    // Push to Notion Fuel Coach EOD Summary field
+    const today=new Date().toISOString().split('T')[0];
+    const entryName=name+' '+today;
+    const existing=await notionFetch('https://api.notion.com/v1/databases/47eef612-6214-4a9a-9397-b10c9a93356b/query','POST',{
+      filter:{and:[{property:'Athlete',rich_text:{contains:name.split(' ')[0]}},{property:'Date',date:{equals:today}}]},page_size:1
+    });
+    if(existing.results&&existing.results.length>0){
+      const pageId=existing.results[0].id;
+      await notionFetch('https://api.notion.com/v1/pages/'+pageId,'PATCH',{
+        properties:{'Fuel Coach EOD Summary':{rich_text:[{text:{content:summary}}]}}
+      });
+      flash('Day summary sent to Coach ✓','#22C55E');
+    }
+    renderAthlete();
+  }catch(e){
+    state.eodLoading=false;
+    console.error('EOD summary failed:',e);
+  }
 }
 
 function calcDailyScore(){
@@ -1651,7 +1705,9 @@ async function silentPushToNotion(){
     "Water Goal Oz":{number:waterGoal},
     "Water Goal Hit":{select:{name:state.waterOz>=waterGoal?'Yes':'No'}},
     "Fuel Score":{number:score},
-    "Plan Viewed":{select:{name:state.planViewed?'Yes':'No'}}
+    "Plan Viewed":{select:{name:state.planViewed?'Yes':'No'}},
+    "Clip Watched":{select:{name:state.clipWatched?'Yes':'No'}},
+    "Clip Reflection":{rich_text:[{text:{content:state.clipReflection||''}}]}
   };
   const DB='47eef612-6214-4a9a-9397-b10c9a93356b';
   try{
@@ -2294,6 +2350,11 @@ function saveMeal(){
   flash('Meal logged');closeMeal();renderAthlete();
   // Auto-fire nutrition feedback — no button needed
   setTimeout(()=>autoMealFeedback(id,idx),300);
+  // Auto-generate EOD summary when logging evening/post-practice meal after 4pm
+  const mealHour=new Date().getHours();
+  if(mealHour>=16&&(state.mealSlot==='Post-Workout'||state.mealSlot==='Dinner'||state.mealSlot==='Evening'||state.mealSlot==='Late Night')){
+    setTimeout(()=>generateEODSummary(),3000);
+  }
 }
 
 // CLIP
