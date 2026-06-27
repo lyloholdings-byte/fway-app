@@ -94,11 +94,54 @@ select option{background:#13131E}
 </div>
 
 <!-- ATHLETE APP -->
+<div id="sched-modal" style="display:none;position:fixed;inset:0;background:#000000B0;z-index:9999;align-items:flex-end;justify-content:center">
+  <div style="background:#13131E;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900">EDIT SCHEDULE</p>
+      <button onclick="document.getElementById('sched-modal').style.display='none'" style="background:#2A2A3A;border-radius:50%;width:30px;height:30px;border:none;color:#CCC;font-size:16px;cursor:pointer">✕</button>
+    </div>
+    <p id="sched-modal-name" style="font-size:13px;color:#9A9AB0;margin-bottom:14px"></p>
+    <div id="sched-days-container" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+    <button onclick="saveAthleteSchedule()" style="width:100%;background:#DC2626;border:none;border-radius:11px;padding:13px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;color:#fff;cursor:pointer;letter-spacing:0.06em">SAVE SCHEDULE</button>
+  </div>
+</div>
+
+<div id="s-report" class="screen" style="background:#09090E">
+  <div style="height:100%;display:flex;flex-direction:column">
+    <!-- Header -->
+    <div style="background:#DC262610;border-bottom:2px solid #DC262640;padding:16px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0">
+      <button onclick="closeReport()" style="background:#1A0A0A;border:1px solid #DC262640;border-radius:50%;width:36px;height:36px;color:#DC2626;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+      <div>
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#DC2626;letter-spacing:0.04em">REPORT AN ISSUE</p>
+        <p style="font-size:11px;color:#DC262680">Goes straight to Coach Fonoti — urgent</p>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px">
+
+      <!-- Category chips -->
+      <p style="font-size:11px;font-weight:700;color:#6A6A85;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px">What is it?</p>
+      <div id="report-cats" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px"></div>
+
+      <!-- Description -->
+      <p style="font-size:11px;font-weight:700;color:#6A6A85;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px">Tell us what happened</p>
+      <textarea id="report-text" rows="6" placeholder="Describe what went wrong or what you need help with..." style="width:100%;background:#13131E;border:1.5px solid #DC262640;border-radius:12px;color:#F0EDE6;padding:14px;font-size:16px;font-family:'Barlow',sans-serif;outline:none;resize:none;line-height:1.6;box-sizing:border-box;margin-bottom:20px"></textarea>
+
+      <!-- Submit -->
+      <button onclick="submitReport()" id="report-submit-btn" style="width:100%;background:#DC2626;border:none;border-radius:13px;padding:16px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:#fff;cursor:pointer;letter-spacing:0.08em;margin-bottom:10px">SEND REPORT</button>
+      <p style="font-size:11px;color:#555;text-align:center">Your name and time are included automatically</p>
+
+      <div id="report-status" style="display:none;text-align:center;padding:20px"></div>
+    </div>
+  </div>
+</div>
 <div id="s-athlete" class="screen">
   <div class="hdr" style="padding:0 16px;height:52px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1A1A28">
     <span style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:#8A8AAA;font-style:italic;letter-spacing:0.02em">Let's Develop Together</span>
     <div style="display:flex;align-items:center;gap:10px">
       <span id="a-username" style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:#8A8AAA;letter-spacing:0.06em;text-transform:uppercase"></span>
+      <button onclick="openReport()" style="background:#DC262615;border:1px solid #DC262650;border-radius:8px;color:#DC2626;font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;cursor:pointer;padding:4px 9px;letter-spacing:0.04em">⚠ REPORT</button>
       <button onclick="refreshDay()" style="background:none;border:1px solid #303050;border-radius:8px;color:#8A8AAA;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;padding:4px 10px">↻</button>
       <button onclick="doLogout()" style="background:none;border:1px solid #303050;border-radius:8px;color:#8A8AAA;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;padding:4px 10px">Sign out</button>
     </div>
@@ -122,6 +165,7 @@ select option{background:#13131E}
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <button onclick="viewAsAthlete()" style="background:none;border:1px solid #303050;border-radius:8px;color:#9A9AB0;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;padding:4px 10px">👁 Athlete view</button>
+      <button onclick="openReport()" style="background:#DC262615;border:1px solid #DC262650;border-radius:8px;color:#DC2626;font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;cursor:pointer;padding:4px 9px;letter-spacing:0.04em">⚠ REPORT</button>
       <button onclick="refreshDay()" style="background:none;border:1px solid #303050;border-radius:8px;color:#8A8AAA;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;padding:4px 10px">↻</button>
       <button onclick="doLogout()" style="background:none;border:1px solid #303050;border-radius:8px;color:#8A8AAA;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;padding:4px 10px">Sign out</button>
     </div>
@@ -238,6 +282,10 @@ select option{background:#13131E}
   <div style="margin-bottom:18px">
     <span class="lbl">Positions <span style="color:#8A8AAA;font-weight:400;text-transform:none;letter-spacing:0">— e.g. WR/CB</span></span>
     <input id="prof-position" class="inp" placeholder="e.g. WR, PG, OH..." oninput="checkProfReady()" style="background:#13131E"/>
+  </div>
+  <div style="margin-bottom:18px">
+    <span class="lbl">Email <span style="color:#8A8AAA;font-weight:400;text-transform:none;letter-spacing:0">— parent or athlete</span></span>
+    <input id="prof-email" type="email" class="inp" placeholder="email@example.com" oninput="checkProfReady()" style="background:#13131E" autocapitalize="none" autocorrect="off"/>
   </div>
   <div style="margin-bottom:18px">
     <span class="lbl">Graduation Year</span>
@@ -710,7 +758,7 @@ let state={
   alerts:[],alertsLoading:false,
   clipForm:{url:'',title:'',takeaway:'',action:''},
   clipDraft:null,clipPushed:false,lastClipPushed:null,editingLive:false,
-  clipBank:[],lastPushed:null,
+  clipBank:[],lastPushed:null,logView:'today',weeklyLogs:[],
   msgs:[{id:1,from:'coach',text:'Board chat active. Athletes can message here.'}],
   syncing:false,syncOk:false
 };
@@ -734,7 +782,7 @@ function initState(){
     state.done=false;state.ciStep=0;state.ciAns={};state.ciFlags=[];
     state.ciRedFlags=[];state.ciYellowFlags=[];
     state.logDone=false;state.eodSummary=null;
-    state.clipWatched=false;state.clipReflection='';state.fuelView='plan';state.planViewed=false;state.eodLoading=false;state.eodSummary=null;
+    state.clipWatched=false;state.clipReflection='';state.fuelView='plan';state.planViewed=false;state.eodLoading=false;state.logView='today';state.weeklyLogs={};state.eodSummary=null;
     console.log('🌅 New day detected after 5am — state cleared');
   }
   // Update todayDate and todayKey to use 8am-anchored date
@@ -1124,6 +1172,8 @@ function showApp(){
   state.role=sess?.role||'athlete';
   if(state.role==='coach'){
     document.getElementById('s-coach').classList.add('active');renderCoach();
+    // Request notification permission when coach logs in
+    setTimeout(()=>requestPushPermission(),1500);
   } else {
     const nameKey=(sess?.name||'').toLowerCase().replace(/\s+/g,'_');
     const profile=localStorage.getItem(nameKey+'_fw_profile');
@@ -1194,6 +1244,14 @@ function renderHome(){
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:#000;letter-spacing:0.08em">🏅 SHOW COACH FOR YOUR PRIZE</p>
     </div>
     <button onclick="dismissMilestone(${milestone})" style="margin-top:10px;background:none;border:none;color:#F59E0B60;font-size:11px;cursor:pointer;display:block;width:100%">I showed coach — dismiss</button>
+  </div>`:''}
+  ${showCheckinNudge?`<div onclick="aTab('checkin')" style="background:#DC262615;border:1.5px solid #DC262650;border-radius:13px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer">
+    <span style="font-size:22px">📋</span>
+    <div style="flex:1">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;color:#F0EDE6">DO YOUR DAILY CHECK-IN</p>
+      <p style="font-size:11px;color:#8A8AAA;margin-top:2px">Takes 60 seconds — coach needs this before your session</p>
+    </div>
+    <span style="color:#DC2626;font-size:20px;font-weight:900">›</span>
   </div>`:''}
   ${isCoachViewing?`<div style="background:#DC262620;border-bottom:1px solid #DC262640;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;margin:-16px -16px 14px -16px">
     <p style="font-size:12px;color:#DC2626;font-weight:600">👁 Viewing as athlete</p>
@@ -1300,24 +1358,8 @@ function renderHome(){
 
 // CHECK-IN
 function renderCheckin(){
-  // ROUTING SCREEN — no mode selected yet
-  if(!state.done&&!state.pulseDone&&!state.ciMode){
-    return `
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">DAILY CHECK-IN</p>
-    <p style="font-size:12px;color:#9A9AB0;margin-bottom:20px">What kind of day is it?</p>
-    <div onclick="startFullCI()" style="background:#1A0A0A;border:2px solid #DC2626;border-radius:16px;padding:22px 20px;margin-bottom:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">
-      <p style="font-size:28px;margin-bottom:8px">⚡</p>
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:#DC2626;letter-spacing:0.05em">TRAINING WITH COACH</p>
-      <p style="font-size:13px;color:#C8C8E0;margin-top:4px;line-height:1.5">Training with Coach Fonoti today</p>
-      <p style="font-size:11px;color:#9A9AB0;margin-top:6px">Full check-in · 9 questions · ~60 seconds</p>
-    </div>
-    <div onclick="startPulse()" style="background:#09090E;border:2px solid #303050;border-radius:16px;padding:22px 20px;cursor:pointer;-webkit-tap-highlight-color:transparent">
-      <p style="font-size:28px;margin-bottom:8px">😴</p>
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:#F0EDE6;letter-spacing:0.05em">OFF DAY</p>
-      <p style="font-size:13px;color:#C8C8E0;margin-top:4px;line-height:1.5">Rest day, school, or training elsewhere</p>
-      <p style="font-size:11px;color:#9A9AB0;margin-top:6px">Quick pulse · 3 questions · 15 seconds</p>
-    </div>`;
-  }
+  // Show gentle nudge if check-in not done — but keep home screen visible
+  const showCheckinNudge = !state.done && !state.pulseDone;
   // PULSE QUESTIONS
   if(!state.done&&!state.pulseDone&&state.ciMode==='pulse'){
     const pq=PULSE_Q[state.pulseStep];
@@ -1508,6 +1550,83 @@ Write the summary now. No intro, no label, just the sentences.`;
   }catch(e){
     state.eodLoading=false;
     console.error('EOD summary failed:',e);
+  }
+}
+
+
+let reportCategory = 'Other';
+
+function openReport(){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s-report').classList.add('active');
+  document.getElementById('report-text').value='';
+  document.getElementById('report-status').style.display='none';
+  document.getElementById('report-submit-btn').style.display='block';
+  reportCategory='Other';
+  renderReportCats();
+  setTimeout(()=>document.getElementById('report-text')?.focus(),200);
+}
+
+function closeReport(){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s-athlete').classList.add('active');
+  renderAthlete();
+}
+
+function renderReportCats(){
+  const cats=['App Bug','Injury/Pain','Data Wrong','Other'];
+  const colors={'App Bug':'#DC2626','Injury/Pain':'#DC2626','Data Wrong':'#F59E0B','Other':'#6A6A85'};
+  const cont=document.getElementById('report-cats');
+  if(!cont)return;
+  cont.innerHTML=cats.map(c=>`<button onclick="reportCategory='${c}';renderReportCats()" style="padding:9px 16px;border-radius:20px;border:2px solid ${reportCategory===c?colors[c]:'#2A2A3E'};background:${reportCategory===c?colors[c]+'20':'transparent'};color:${reportCategory===c?colors[c]:'#6A6A85'};font-size:13px;font-family:'Barlow',sans-serif;font-weight:700;cursor:pointer">${c}</button>`).join('');
+}
+
+async function submitReport(){
+  const text=document.getElementById('report-text')?.value.trim();
+  if(!text){flash('Describe the issue first','#F59E0B');return;}
+  
+  const btn=document.getElementById('report-submit-btn');
+  const status=document.getElementById('report-status');
+  btn.textContent='SENDING...';btn.disabled=true;btn.style.opacity='0.6';
+
+  const name=getSessionName();
+  const now=new Date();
+  const submittedAt=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+' · '+now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  const device=navigator.userAgent.includes('iPhone')?'iPhone':navigator.userAgent.includes('iPad')?'iPad':navigator.userAgent.includes('Android')?'Android':'Desktop';
+
+  try{
+    const res=await notionFetch('https://api.notion.com/v1/pages','POST',{
+      parent:{database_id:'900e5474d33348eaac5f93b819e303f3'},
+      properties:{
+        'Report':{title:[{text:{content:name+' — '+reportCategory+' — '+now.toLocaleDateString()}}]},
+        'Athlete':{rich_text:[{text:{content:name}}]},
+        'Description':{rich_text:[{text:{content:text}}]},
+        'Category':{select:{name:reportCategory}},
+        'Status':{select:{name:'Urgent'}},
+        'Submitted At':{rich_text:[{text:{content:submittedAt}}]},
+        'Device':{rich_text:[{text:{content:device}}]}
+      }
+    });
+
+    if(res&&res.id){
+      // Also fire a local coach notification
+      pushNotification('Athlete Report',name,reportCategory+': '+text.slice(0,80),'');
+      notifyCoach('Report from '+name.split(' ')[0], reportCategory+': '+text.slice(0,60), true);
+      
+      btn.style.display='none';
+      status.style.display='block';
+      status.innerHTML=`
+        <div style="font-size:40px;margin-bottom:12px">✅</div>
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:#22C55E;margin-bottom:6px">REPORT SENT</p>
+        <p style="font-size:13px;color:#8A8AAA;line-height:1.5;margin-bottom:20px">Coach Fonoti has been notified.<br>Someone will follow up with you directly.</p>
+        <button onclick="closeReport()" style="background:#13131E;border:1px solid #303050;border-radius:11px;padding:12px 24px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:#F0EDE6;cursor:pointer">GO BACK</button>`;
+    } else {
+      throw new Error(res?.message||'Unknown error');
+    }
+  }catch(e){
+    btn.textContent='SEND REPORT';btn.disabled=false;btn.style.opacity='1';
+    flash('Could not send report — try again','#DC2626');
+    console.error('Report error:',e);
   }
 }
 
@@ -1765,6 +1884,7 @@ async function pullProfileFromNotion(name, nameKey){
       const profile={
         sport:(p['Sport']?.rich_text||[])[0]?.plain_text||'',
         position:(p['Position']?.rich_text||[])[0]?.plain_text||'',
+        email:(p['Email']?.rich_text||[])[0]?.plain_text||'',
         gradYear:(p['Graduation Year']?.rich_text||[])[0]?.plain_text||'',
         height:(p['Height']?.rich_text||[])[0]?.plain_text||'',
         weight:String(p['Current Weight (lbs)']?.number||''),
@@ -2531,6 +2651,54 @@ function renderCoach(){
   else if(state.cTab==='alerts')el.innerHTML=renderAlerts();
 }
 
+let schedEditAthlete='';
+let schedEditDays={Mon:'Off Day',Tue:'Off Day',Wed:'Off Day',Thu:'Off Day',Fri:'Off Day',Sat:'Off Day',Sun:'Off Day'};
+
+function openScheduleEditor(athleteName, currentSchedule){
+  schedEditAthlete=athleteName;
+  const types=['Training','Game Day','Off Day','Rest'];
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  // Parse current schedule if exists
+  try{schedEditDays=currentSchedule?JSON.parse(currentSchedule):{Mon:'Off Day',Tue:'Off Day',Wed:'Training',Thu:'Off Day',Fri:'Training',Sat:'Off Day',Sun:'Off Day'};}
+  catch{schedEditDays={Mon:'Off Day',Tue:'Off Day',Wed:'Training',Thu:'Off Day',Fri:'Training',Sat:'Off Day',Sun:'Off Day'};}
+  document.getElementById('sched-modal-name').textContent=athleteName;
+  renderSchedDays(days,types);
+  document.getElementById('sched-modal').style.display='flex';
+}
+
+function renderSchedDays(days,types){
+  const container=document.getElementById('sched-days-container');
+  if(!container)return;
+  const dayColors={'Training':'#DC2626','Game Day':'#22C55E','Off Day':'#555','Rest':'#3B82F6'};
+  container.innerHTML=days.map(d=>`
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#9A9AB0;width:32px">${d}</span>
+      <div style="display:flex;gap:6px;flex:1">
+        ${['Training','Game Day','Off Day','Rest'].map(t=>`<button onclick="schedEditDays['${d}']='${t}';renderSchedDays(['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],['Training','Game Day','Off Day','Rest'])" style="flex:1;padding:7px 4px;border-radius:8px;border:1.5px solid ${schedEditDays[d]===t?dayColors[t]:'#2A2A3E'};background:${schedEditDays[d]===t?dayColors[t]+'20':'transparent'};color:${schedEditDays[d]===t?dayColors[t]:'#6A6A85'};font-size:10px;font-family:'Barlow',sans-serif;font-weight:600;cursor:pointer">${t.replace(' Day','')}</button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+async function saveAthleteSchedule(){
+  const schedStr=JSON.stringify(schedEditDays);
+  // Save to Notion Athlete Profiles
+  const res=await notionFetch('https://api.notion.com/v1/databases/80ee4bf5-ce5b-4aaf-8b35-2e5f6e2c93b5/query','POST',{
+    filter:{property:'Athlete',title:{contains:schedEditAthlete.split(' ')[0]}},page_size:1
+  });
+  if(res.results&&res.results.length>0){
+    const pageId=res.results[0].id;
+    await notionFetch('https://api.notion.com/v1/pages/'+pageId,'PATCH',{
+      properties:{'Schedule':{rich_text:[{text:{content:schedStr}}]}}
+    });
+  }
+  // Update local roster
+  const profile=state.rosterProfiles.find(p=>p.name===schedEditAthlete);
+  if(profile)profile.schedule=schedStr;
+  flash('Schedule saved for '+schedEditAthlete,'#22C55E');
+  document.getElementById('sched-modal').style.display='none';
+  renderCoach();
+}
+
 function renderRoster(){
   const profiles=state.rosterProfiles||[];
   const isLoading=state.rosterLoading||false;
@@ -2715,8 +2883,10 @@ async function loadRoster(){
         };
         return{
           name:g('Athlete','title'),
+          schedule:g('Schedule','rich_text'),
           sport:g('Sport','rich_text'),
           position:g('Position','rich_text'),
+          email:g('Email','rich_text'),
           gradYear:g('Graduation Year','rich_text'),
           weight:g('Current Weight (lbs)','number'),
           height:g('Height','rich_text'),
@@ -2857,7 +3027,10 @@ function pickExercise(name){
 function renderCoachClip(){
   const pushed=state.clipPushed||(state.lastClipPushed&&state.lastClipPushed.pushedDate===state.todayDate);
   if(pushed){
-    return `<p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;margin-bottom:14px">CLIP</p>
+    return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900">CLIP</p>
+      <button onclick="state.clipPushed=false;state.lastClipPushed=null;localStorage.removeItem('fw_last_clip');renderCoach()" style="background:#1C1C2E;border:1px solid #303050;border-radius:8px;padding:7px 14px;color:#DC2626;font-size:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700">↻ NEW CLIP</button>
+    </div>
     <div style="background:#0A0A12;border:2px solid #22C55E40;border-radius:14px;padding:18px;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <div style="width:9px;height:9px;border-radius:50%;background:#22C55E;flex-shrink:0"></div>
@@ -2873,7 +3046,9 @@ function renderCoachClip(){
     </div>`;
   }
   const draft=state.clipDraft;
-  return `<p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;margin-bottom:4px">CLIP</p>
+  return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900">CLIP</p>
+  </div>
   <p style="font-size:12px;color:#9A9AB0;margin-bottom:16px">Push a video to athletes</p>
   ${draft?`
     <div style="background:#13131E;border:2px solid #F59E0B;border-radius:13px;padding:16px;margin-bottom:14px">
@@ -2926,109 +3101,208 @@ function goLiveClip(){
   /* AI feature coming soon */
   flash('Clip is now live');renderCoach();
 }
+function deleteClipFromBank(idx){
+  if(!confirm('Remove this clip from the bank?'))return;
+  state.clipBank.splice(idx,1);
+  save('fway_clip_bank',state.clipBank);
+  flash('Clip removed');
+  renderCoach();
+}
+
 function rePushClip(i){
   const b=state.clipBank[i];const ytId=getYTId(b.url);
   state.clipDraft={type:ytId?'youtube':'link',ytId:ytId||null,url:b.url,title:b.title,pushedDate:state.todayDate};
   renderCoach();
 }
 
+function renderWeeklyView(){
+  const matrix=state.weeklyLogs||{};
+  const athletes=Object.keys(matrix).sort();
+  if(state.loadingLogs)return '<div style="text-align:center;padding:40px"><div style="width:28px;height:28px;border:3px solid #DC262630;border-top-color:#DC2626;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 10px"></div><p style="font-size:13px;color:#9A9AB0">Loading 7 days...</p></div>';
+  if(!athletes.length)return '<div style="text-align:center;padding:40px;color:#8A8AAA"><p style="font-size:14px">No data yet</p></div>';
+
+  // Build last 7 dates
+  const dates=[];
+  for(let d=6;d>=0;d--){const dt=new Date();dt.setDate(dt.getDate()-d);dates.push(dt.toISOString().split('T')[0]);}
+  const dayLabels=dates.map(d=>{const dt=new Date(d+'T12:00:00');return dt.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();});
+
+  return `<div style="background:#13131E;border-radius:13px;padding:14px;margin-bottom:12px">
+    <div style="display:flex;gap:4px;margin-bottom:8px;padding-left:100px">
+      ${dayLabels.map(l=>`<div style="flex:1;text-align:center;font-size:9px;color:#6A6A85;font-weight:700;letter-spacing:0.06em">${l}</div>`).join('')}
+    </div>
+    ${athletes.map(name=>{
+      const weekScore=dates.reduce((s,d)=>s+(matrix[name]?.[d]?.score||0),0);
+      const daysActive=dates.filter(d=>matrix[name]?.[d]).length;
+      const avgScore=daysActive?Math.round(weekScore/daysActive):0;
+      return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:8px">
+        <div style="width:96px;flex-shrink:0">
+          <p style="font-size:12px;font-weight:700;color:#F0EDE6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name.split(' ')[0]}</p>
+          <p style="font-size:9px;color:${avgScore>=80?'#22C55E':avgScore>=60?'#F59E0B':'#DC2626'}">${avgScore>0?avgScore+'avg':''}</p>
+        </div>
+        ${dates.map(d=>{
+          const day=matrix[name]?.[d];
+          const col=day?(day.score>=80?'#22C55E':day.score>=60?'#F59E0B':'#DC2626'):'#1E1E2E';
+          const label=day?(day.status==='Flagged'?'⚠':'✓'):'';
+          return `<div style="flex:1;height:28px;background:${col}${day?'30':'20'};border:1px solid ${col}${day?'60':'30'};border-radius:5px;display:flex;align-items:center;justify-content:center">
+            <span style="font-size:9px;color:${col};font-weight:700">${label}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function refreshLogs(){
+  if(state.logView==='week'){
+    state.weeklyLogs={};state.loadingLogs=true;renderCoach();loadWeeklyLogs();
+  } else {
+    state.notionLogs=[];state.loadingLogs=true;renderCoach();loadNotionLogs();
+  }
+}
+
+async function loadWeeklyLogs(){
+  state.loadingLogs=true;renderCoach();
+  try{
+    const today=new Date();
+    const d7=new Date(today);d7.setDate(d7.getDate()-6);
+    const from=d7.toISOString().split('T')[0];
+    const r=await notionFetch('https://api.notion.com/v1/databases/47eef612-6214-4a9a-9397-b10c9a93356b/query','POST',{
+      filter:{property:'Date',date:{on_or_after:from}},
+      page_size:100,sorts:[{property:'Date',direction:'ascending'}]
+    });
+    if(r.results&&Array.isArray(r.results)){
+      // Build 7-day matrix: {athleteName: {date: {score,status}}}
+      const matrix={};
+      r.results.forEach(p=>{
+        const props=p.properties;
+        const name=props['Athlete']?.rich_text?.[0]?.plain_text||'';
+        const date=props['Date']?.date?.start||'';
+        const score=props['Fuel Score']?.number||0;
+        const status=props['Check-In Status']?.select?.name||'';
+        if(!name||!date)return;
+        if(!matrix[name])matrix[name]={};
+        matrix[name][date]={score,status};
+      });
+      state.weeklyLogs=matrix;
+    }
+  }catch(e){console.error('Weekly load error:',e);}
+  state.loadingLogs=false;renderCoach();
+}
+
 function renderLogs(){
-  const R2='#DC2626';
-  const logs=state.notionLogs;
+  const logs=state.notionLogs||[];
+  const R='#DC2626';
+  const today=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   const checkedIn=logs.length;
-  const flagged=logs.filter(a=>a.checkInStatus==='Flagged'||a.checkInStatus==='Watch');
-  const redFlagged=logs.filter(a=>a.checkInStatus==='Flagged');
-  const allClear=logs.filter(a=>a.checkInStatus==='All Clear');
+  const notYet=(state.rosterProfiles||[]).filter(p=>!logs.find(l=>l.athleteName&&p.name&&l.athleteName.toLowerCase().includes(p.name.split(' ')[0].toLowerCase())));
+  const avgScore=checkedIn?Math.round(logs.reduce((s,a)=>s+(parseFloat(a.fuelScore)||0),0)/checkedIn):0;
+  const flagged=logs.filter(a=>a.checkInStatus==='Flagged').length;
+
+  const calcCompletion=(a)=>{
+    let done=0,total=5;
+    if(a.checkInStatus==='All Clear'||a.checkInStatus==='Flagged'||a.checkInStatus==='Pulse')done++;
+    if((parseFloat(a.mealsLogged)||0)>=2)done++;
+    if((parseFloat(a.waterOz)||0)>=(parseFloat(a.waterGoalOz)||60)*0.8)done++;
+    if(a.clipWatched==='Yes')done++;
+    if(a.skillWorkDone==='Yes')done++;
+    return Math.round((done/total)*100);
+  };
+
   return `
-  <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;margin-bottom:2px">LOGS</p>
-  <p style="font-size:12px;color:#9A9AB0;margin-bottom:12px">Today · <button onclick="state.notionLogs=[];state.loadingLogs=true;document.getElementById('c-content').innerHTML=renderLogs();loadNotionLogs()" style="background:#1C1C2E;border:1px solid #303050;border-radius:8px;padding:6px 14px;color:#DC2626;font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600">↻ Refresh</button></p>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900">DASHBOARD</p>
+      <p style="font-size:11px;color:#8A8AAA">${today}</p>
+    </div>
+    <button onclick="refreshLogs()" style="background:#1C1C2E;border:1px solid #303050;border-radius:8px;padding:7px 14px;color:#DC2626;font-size:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700">↻ REFRESH</button>
+  </div>
+  <div style="display:flex;background:#13131E;border-radius:10px;padding:3px;margin-bottom:14px">
+    <button onclick="state.logView='today';state.notionLogs=[];state.loadingLogs=true;renderCoach();loadNotionLogs()" style="flex:1;padding:8px;border:none;background:${state.logView==='today'?'#DC2626':'transparent'};color:${state.logView==='today'?'#fff':'#6A6A85'};border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;cursor:pointer;letter-spacing:0.04em">TODAY</button>
+    <button onclick="state.logView='week';state.weeklyLogs={};state.loadingLogs=true;renderCoach();loadWeeklyLogs()" style="flex:1;padding:8px;border:none;background:${state.logView==='week'?'#DC2626':'transparent'};color:${state.logView==='week'?'#fff':'#6A6A85'};border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;cursor:pointer;letter-spacing:0.04em">7 DAYS</button>
+  </div>
+  ${state.logView==='week'?renderWeeklyView():''}
 
   <!-- SUMMARY ROW -->
-  ${checkedIn>0?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
-    <div class="card" style="text-align:center;padding:12px 8px;border:1px solid #22C55E30">
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#22C55E">${checkedIn}</p>
-      <p style="font-size:9px;color:#9A9AB0;text-transform:uppercase;letter-spacing:0.08em">Checked In</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:14px">
+    <div style="background:#13131E;border:1px solid #22C55E30;border-radius:11px;padding:10px;text-align:center">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:#22C55E">${checkedIn}</p>
+      <p style="font-size:9px;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.07em">Checked In</p>
     </div>
-    <div class="card" style="text-align:center;padding:12px 8px;border:1px solid ${redFlagged.length>0?R2+'40':'#1E1E2E'}">
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:${redFlagged.length>0?R2:'#F0EDE6'}">${redFlagged.length}</p>
-      <p style="font-size:9px;color:#9A9AB0;text-transform:uppercase;letter-spacing:0.08em">Red Flags</p>
+    <div style="background:#13131E;border:1px solid ${notYet.length>0?'#F59E0B30':'#1E1E2E'};border-radius:11px;padding:10px;text-align:center">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:${notYet.length>0?'#F59E0B':'#555'}">${notYet.length}</p>
+      <p style="font-size:9px;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.07em">Not Yet</p>
     </div>
-    <div class="card" style="text-align:center;padding:12px 8px;border:1px solid #22C55E30">
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#22C55E">${allClear.length}</p>
-      <p style="font-size:9px;color:#9A9AB0;text-transform:uppercase;letter-spacing:0.08em">All Clear</p>
+    <div style="background:#13131E;border:1px solid ${flagged>0?'#DC262630':'#1E1E2E'};border-radius:11px;padding:10px;text-align:center">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:${flagged>0?'#DC2626':'#555'}">${flagged}</p>
+      <p style="font-size:9px;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.07em">Flagged</p>
     </div>
+    <div style="background:#13131E;border:1px solid #1E1E2E;border-radius:11px;padding:10px;text-align:center">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:${avgScore>=80?'#22C55E':avgScore>=60?'#F59E0B':'#DC2626'}">${avgScore}</p>
+      <p style="font-size:9px;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.07em">Avg Score</p>
+    </div>
+  </div>
+
+  <!-- NOT CHECKED IN YET -->
+  ${notYet.length>0?`<div style="background:#F59E0B10;border:1px solid #F59E0B30;border-radius:11px;padding:10px 14px;margin-bottom:12px">
+    <p style="font-size:11px;font-weight:700;color:#F59E0B;margin-bottom:4px">NOT CHECKED IN YET</p>
+    <p style="font-size:12px;color:#9A9AB0">${notYet.map(p=>p.name).join(', ')}</p>
   </div>`:''}
 
   <!-- LOADING -->
-  ${state.loadingLogs?`<div class="card" style="text-align:center;padding:24px">
-    <p style="font-size:13px;color:#9A9AB0">Pulling from Notion...</p>
-  </div>`:''}
+  ${state.loadingLogs?`<div style="text-align:center;padding:32px"><div style="width:28px;height:28px;border:3px solid #DC262630;border-top-color:#DC2626;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 10px"></div><p style="font-size:13px;color:#9A9AB0">Pulling from Notion...</p></div>`:''}
 
-  <!-- EMPTY -->
-  ${!state.loadingLogs&&logs.length===0?`<div class="card" style="text-align:center;padding:24px">
-    <p style="font-size:14px;color:#8A8AAA;margin-bottom:6px">No check-ins today yet.</p>
-    <p style="font-size:12px;color:#8A8AAA">Athletes need to complete their daily check-in for data to appear here.</p>
-  </div>`:''}
-
-  <!-- ATHLETE CARDS — red flags first, then yellow, then clear -->
+  <!-- ATHLETE COMPLETION CARDS -->
   ${[...logs].sort((a,b)=>{
-    const order={Flagged:0,Watch:1,'All Clear':2,'Not Submitted':3};
-    return (order[a.checkInStatus]??3)-(order[b.checkInStatus]??3);
+    const s={Flagged:0,'All Clear':1,Pulse:2,'Check-In Needed':3};
+    return (s[a.checkInStatus]??3)-(s[b.checkInStatus]??3);
   }).map(a=>{
-    const status=a.checkInStatus||'Not Submitted';
-    const isRed=status==='Flagged';
-    const isYellow=status==='Watch';
-    const isClear=status==='All Clear';
-    const borderColor=isRed?R2:isYellow?'#F59E0B':isClear?'#22C55E40':'#1E1E2E';
-    const statusColor=isRed?R2:isYellow?'#F59E0B':isClear?'#22C55E':'#888';
-    const statusIcon=isRed?'●':isYellow?'◐':isClear?'✓':'—';
-    return `<div style="background:#13131E;border:1px solid ${borderColor};border-radius:13px;padding:14px;margin-bottom:10px">
-      <!-- HEADER -->
+    const comp=calcCompletion(a);
+    const score=parseFloat(a.fuelScore)||0;
+    const isRed=a.checkInStatus==='Flagged';
+    const scoreColor=score>=80?'#22C55E':score>=60?'#F59E0B':'#DC2626';
+    const compColor=comp>=80?'#22C55E':comp>=60?'#F59E0B':'#DC2626';
+    const checks=[
+      {l:'CHECK-IN',v:a.checkInStatus==='All Clear'||a.checkInStatus==='Flagged'||a.checkInStatus==='Pulse'},
+      {l:'MEALS',v:(parseFloat(a.mealsLogged)||0)>=2,sub:`${a.mealsLogged||0} logged`},
+      {l:'WATER',v:(parseFloat(a.waterOz)||0)>=(parseFloat(a.waterGoalOz)||60)*0.8,sub:`${Math.round(parseFloat(a.waterOz)||0)}oz`},
+      {l:'CLIP',v:a.clipWatched==='Yes'},
+      {l:'SKILL',v:a.skillWorkDone==='Yes'},
+    ];
+    return `<div style="background:#13131E;border:1px solid ${isRed?'#DC262650':'#1E1E2E'};border-radius:13px;padding:14px;margin-bottom:10px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div>
-          <p style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700">${a.athleteName||'Athlete'}</p>
-          <p style="font-size:10px;color:#9A9AB0">${a.sport||''} ${a.position?'· '+a.position:''} ${a.schedule?'· '+a.schedule:''}</p>
+          <p style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900">${a.athleteName||'Athlete'}</p>
+          <p style="font-size:10px;color:#8A8AAA">${a.sport||''} ${a.schedule?'· '+a.schedule:''}</p>
         </div>
         <div style="text-align:right">
-          <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:${(parseFloat(a.fuelScore)||0)>=80?'#22C55E':(parseFloat(a.fuelScore)||0)>=60?'#F59E0B':R2};line-height:1">${a.fuelScore||'0'}</p>
-          <p style="font-size:9px;color:${statusColor};font-weight:700">${statusIcon} ${status}</p>
+          <p style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:${scoreColor};line-height:1">${Math.round(score)}</p>
+          <p style="font-size:9px;color:#8A8AAA">SCORE</p>
         </div>
       </div>
 
-      <!-- CHECK-IN GRID -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px">
-        ${[
-          ['Energy',a.energy],['Sleep',a.sleep],['Soreness',a.soreness],
-          ['Pain',a.pain],['Mental',a.mental],['Readiness',a.readiness||'—'],
-        ].map(([l,v])=>v?`<div style="background:#0A0A12;border-radius:7px;padding:6px 8px">
-          <p style="font-size:8px;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">${l}</p>
-          <p style="font-size:11px;color:#F0EDE6;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v}</p>
-        </div>`:'').filter(Boolean).join('')}
+      <!-- COMPLETION BAR -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="flex:1;height:6px;background:#1C1C2E;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${comp}%;background:${compColor};border-radius:3px;transition:width 0.4s"></div>
+        </div>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;color:${compColor};min-width:32px">${comp}%</span>
       </div>
 
-      <!-- STATS ROW -->
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:${a.redFlags&&a.redFlags!=='None'?'8':'0'}px">
-        ${a.mealsLogged?`<span style="font-size:11px;color:#9A9AB0">🍽 ${a.mealsLogged} meals</span>`:''}
-        ${a.waterOz?`<span style="font-size:11px;color:#9A9AB0">💧 ${a.waterOz}oz${a.waterGoalHit==='Yes'?' ✓':''}</span>`:''}
-        ${a.streak?`<span style="font-size:11px;color:#9A9AB0">🔥 ${a.streak}d streak</span>`:''}
-        ${a.skillWorkDone?`<span style="font-size:11px;color:#9A9AB0">💪 Skill: ${a.skillWorkDone}</span>`:''}
+      <!-- COMPLETION DOTS -->
+      <div style="display:flex;gap:6px;margin-bottom:${isRed||a.eodSummary?'10':'0'}px">
+        ${checks.map(c=>`<div style="flex:1;background:${c.v?'#13131E':'#0A0A12'};border:1px solid ${c.v?compColor+'50':'#1E1E2E'};border-radius:8px;padding:6px 4px;text-align:center">
+          <p style="font-size:14px;margin-bottom:1px">${c.v?'✓':'○'}</p>
+          <p style="font-size:8px;color:${c.v?'#9A9AB0':'#555'};letter-spacing:0.04em">${c.l}</p>
+          ${c.sub?`<p style="font-size:8px;color:#6A6A85">${c.sub}</p>`:''}
+        </div>`).join('')}
       </div>
 
-      <!-- FLAGS -->
-      ${a.redFlags&&a.redFlags!=='None'?`<div style="background:${R2}12;border:1px solid ${R2}30;border-radius:8px;padding:8px 10px;margin-bottom:6px">
-        <p style="font-size:11px;color:${R2};font-weight:700">🚨 ${a.redFlags}</p>
-      </div>`:''}
-      ${a.yellowFlags&&a.yellowFlags!=='None'?`<div style="background:#F59E0B12;border:1px solid #F59E0B30;border-radius:8px;padding:8px 10px;margin-bottom:6px">
-        <p style="font-size:11px;color:#F59E0B;font-weight:700">⚠️ ${a.yellowFlags}</p>
-      </div>`:''}
-
-      <!-- FUEL COACH SUMMARY -->
-      ${a.fuelCoachSummary?`<div style="background:#0A0A12;border-left:3px solid ${R2};border-radius:0 8px 8px 0;padding:8px 10px;margin-top:6px">
-        <p style="font-size:9px;color:${R2};font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">FUEL COACH</p>
-        <p style="font-size:12px;color:#E0E0F0;line-height:1.5">${a.fuelCoachSummary}</p>
-      </div>`:''}
+      ${isRed&&a.redFlags?`<div style="background:#DC262610;border:1px solid #DC262630;border-radius:8px;padding:8px 10px;margin-bottom:6px"><p style="font-size:11px;color:#DC2626;font-weight:700">⚠ ${a.redFlags}</p></div>`:''}
+      ${a.eodSummary?`<div style="background:#0A0A12;border-left:3px solid #DC2626;border-radius:0 8px 8px 0;padding:8px 10px"><p style="font-size:9px;color:#DC2626;font-weight:700;letter-spacing:0.1em;margin-bottom:3px">EOD SUMMARY</p><p style="font-size:11px;color:#C0C0D8;line-height:1.5">${a.eodSummary}</p></div>`:''}
     </div>`;
-  }).join('')}`;
+  }).join('')}
+
+  ${!state.loadingLogs&&logs.length===0?`<div style="text-align:center;padding:40px;color:#8A8AAA"><p style="font-size:22px;margin-bottom:8px">📋</p><p style="font-size:14px">No check-ins yet today</p></div>`:''}`;
 }
 
 
@@ -3050,6 +3324,7 @@ async function loadNotionLogs(){
         };
         return{
           athleteName:g('Athlete','rich_text'),
+          eodSummary:g('Fuel Coach EOD Summary','rich_text'),
           checkInStatus:g('Check-In Status','select'),
           fuelScore:g('Fuel Score','number'),
           energy:g('Energy','select'),
@@ -3157,9 +3432,11 @@ async function forcePush(){
   if(el){el.style.display='block';el.textContent='Pushing...';}
   try{
     await silentPushToNotion();
-    if(el)el.textContent='Push complete — check Notion';
+    if(el){el.textContent='✓ Push complete';el.style.color='#22C55E';}
+    flash('Sync complete ✓','#22C55E');
   }catch(e){
-    if(el)el.textContent='Push failed: '+e.message;
+    if(el){el.textContent='✗ Push failed: '+e.message;el.style.color='#DC2626';}
+    flash('Sync failed: '+e.message.slice(0,50),'#DC2626');
   }
 }
 async function testWorker(){
@@ -3194,63 +3471,106 @@ async function testWorker(){
 
 function renderSync(){
   const isTesting=localStorage.getItem('fw_testing_mode')==='true';
-  const isDev=localStorage.getItem('fw_dev_mode')==='true';
+  const lastSync=localStorage.getItem('fw_last_sync');
+  const lastSyncStr=lastSync?new Date(lastSync).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'Never';
+  const testTs=parseInt(localStorage.getItem('fw_testing_mode_ts')||'0');
+  const testExpiry=testTs?new Date(testTs+86400000).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):null;
+
   return `
-  <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;margin-bottom:4px">SYNC & RESET</p>
-  <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Manage data and Notion sync</p>
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;margin-bottom:2px">SYNC</p>
+  <p style="font-size:11px;color:#8A8AAA;margin-bottom:14px">Last push: ${lastSyncStr}</p>
 
-  <div class="card" style="margin-bottom:10px;border:1px solid #DC262640">
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;margin-bottom:10px">PUSH CONTROLS</p>
+  <!-- LIVE STATUS -->
+  <div style="background:${isTesting?'#F59E0B15':'#22C55E15'};border:2px solid ${isTesting?'#F59E0B':'#22C55E'};border-radius:13px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+    <span style="font-size:24px">${isTesting?'⚠️':'🟢'}</span>
+    <div style="flex:1">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:${isTesting?'#F59E0B':'#22C55E'}">${isTesting?'TESTING MODE — NOT LIVE':'LIVE — PUSHING TO NOTION'}</p>
+      <p style="font-size:11px;color:${isTesting?'#F59E0B80':'#22C55E80'};margin-top:1px">${isTesting?'Athlete data is NOT reaching Notion'+(testExpiry?' · Auto-expires at '+testExpiry:''):'All check-ins and logs syncing to your dashboard'}</p>
+    </div>
+    <button onclick="toggleTestingMode();cTab('sync')" style="background:${isTesting?'#F59E0B':'#22C55E20'};border:${isTesting?'none':'1px solid #22C55E40'};border-radius:9px;padding:7px 14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:12px;color:${isTesting?'#000':'#22C55E'};cursor:pointer">${isTesting?'GO LIVE':'PAUSE'}</button>
+  </div>
+
+  <!-- HEALTH CHECK -->
+  <div style="background:#13131E;border:1px solid #1E1E2E;border-radius:13px;padding:14px;margin-bottom:12px">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:900;color:#6A6A85;letter-spacing:0.08em;margin-bottom:10px">SYSTEM HEALTH</p>
     <div style="display:flex;gap:8px;margin-bottom:8px">
-      <button onclick="forcePush()" style="flex:1;background:#DC2626;border:none;border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;padding:11px;cursor:pointer">FORCE SYNC NOW</button>
-      <button onclick="testWorker()" style="flex:1;background:#13131E;border:1px solid #303050;border-radius:10px;color:#9A9AB0;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;padding:11px;cursor:pointer">TEST CONNECTION</button>
+      <button onclick="runHealthCheck()" style="flex:1;background:#13131E;border:1px solid #303050;border-radius:10px;color:#F0EDE6;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;padding:12px;cursor:pointer">RUN HEALTH CHECK</button>
+      <button onclick="requestPushPermission().then(g=>{flash(g?'Notifications ON ✓':'Permission denied — enable in Settings','#22C55E');})" style="flex:1;background:#3B82F620;border:1px solid #3B82F640;border-radius:10px;color:#3B82F6;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;padding:12px;cursor:pointer">🔔 ENABLE ALERTS</button>
     </div>
-    <div id="sync-result" style="display:none;background:#0A0A12;border-radius:8px;padding:10px;font-size:12px;color:#E0E0F0;line-height:1.6;word-break:break-all"></div>
+    <div id="health-result" style="display:none"></div>
   </div>
 
-  <div class="card" style="margin-bottom:10px;border:2px solid ${isDev?'#22C55E':'#1E1E2E'}">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;color:${isDev?'#22C55E':'#F0EDE6'}">🔁 DEV MODE ${isDev?'ON':'OFF'}</p>
-        <p style="font-size:11px;color:#9A9AB0;margin-top:2px">${isDev?'Auto-resets all athletes on every page load':'Normal — data persists'}</p>
-      </div>
-      <button onclick="toggleDevMode()" style="background:${isDev?'#22C55E':'#2A2A3E'};border:none;border-radius:20px;padding:6px 14px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:${isDev?'#000':'#888'};cursor:pointer">${isDev?'TURN OFF':'TURN ON'}</button>
+  <!-- NOTION CONNECTION -->
+  <div style="background:#13131E;border:1px solid #1E1E2E;border-radius:13px;padding:14px;margin-bottom:12px">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:900;color:#6A6A85;letter-spacing:0.08em;margin-bottom:10px">NOTION CONNECTION</p>
+    <div style="display:flex;gap:8px">
+      <button onclick="forcePush()" style="flex:1;background:#DC2626;border:none;border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;padding:12px;cursor:pointer">FORCE SYNC NOW</button>
+      <button onclick="testWorker()" style="flex:1;background:#13131E;border:1px solid #303050;border-radius:10px;color:#9A9AB0;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;padding:12px;cursor:pointer">TEST CONNECTION</button>
     </div>
-    ${isDev?'<p style="font-size:11px;color:#22C55E;margin-top:8px">Refresh the page = clean slate for everyone. Turn off before going live.</p>':''}
+    <div id="sync-result" style="display:none;background:#0A0A12;border-radius:8px;padding:10px;font-size:12px;color:#E0E0F0;line-height:1.6;margin-top:8px"></div>
   </div>
 
-  <div class="card" style="margin-bottom:10px;border:1px solid ${isTesting?'#F59E0B40':'#1E1E2E'}">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;color:${isTesting?'#F59E0B':'#F0EDE6'}">🧪 TESTING MODE ${isTesting?'ON':'OFF'}</p>
-        <p style="font-size:11px;color:#9A9AB0;margin-top:2px">${isTesting?'Notion pushes paused — local only':'Pushing live to Notion'}</p>
-      </div>
-      <button onclick="toggleTestingMode()" style="background:${isTesting?'#F59E0B':'#2A2A3E'};border:none;border-radius:20px;padding:6px 14px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:${isTesting?'#000':'#888'};cursor:pointer">${isTesting?'TURN OFF':'TURN ON'}</button>
-    </div>
-  </div>
-
-  <div class="card" style="margin-bottom:14px">
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;margin-bottom:12px">MANUAL RESET</p>
-    <div id="reset-athlete-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-      ${(()=>{
-        const athletes=getAllAthleteKeys();
-        if(!athletes.length)return '<p style="font-size:12px;color:#8A8AAA">No athletes in storage yet.</p>';
-        return athletes.map(u=>`<button onclick="resetAthlete('${u}')" style="background:#13131E;border:1px solid #303050;border-radius:8px;padding:8px 14px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;color:#9A9AB0;cursor:pointer">${u.replace(/_/g,' ')}</button>`).join('');
-      })()}
-    </div>
-    <button onclick="doResetAll()" style="width:100%;background:${R};color:#fff;border:none;border-radius:11px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;cursor:pointer">RESET ALL</button>
-  </div>
-
-  <div class="card" style="background:#0A0A12;border:1px solid #1E1E2E">
-    <p style="font-size:12px;color:#8A8AAA;text-align:center">Data pushes automatically — no manual sync needed</p>
-  </div>
-
-  <div class="card" style="margin-top:14px;background:#0A0A12">
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:900;color:#8A8AAA;margin-bottom:6px">STORAGE KEYS</p>
-    <div id="debug-keys" style="font-size:10px;color:#5A5A70;line-height:1.8;word-break:break-all">${getDebugKeys()}</div>
-    <button onclick="document.getElementById('debug-keys').innerHTML=getDebugKeys()" style="margin-top:6px;background:none;border:1px solid #1A1A28;border-radius:6px;padding:4px 10px;color:#8A8AAA;font-size:10px;cursor:pointer">Refresh</button>
+  <!-- QUICK FIX GUIDE -->
+  <div style="background:#13131E;border:1px solid #1E1E2E;border-radius:13px;padding:14px">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:900;color:#6A6A85;letter-spacing:0.08em;margin-bottom:12px">IF SOMETHING BREAKS</p>
+    ${[
+      ['Athlete not seeing data / wrong day','Tap the ↻ button in their app header. Data resets at 5am daily automatically.'],
+      ['No data showing in your Logs tab','Check Live Status above — if yellow, tap GO LIVE. Then have athletes re-open their app.'],
+      ['Athlete forgot PIN','They tap "Forgot PIN" on login → you get an alert → tap RESET PIN in Roster tab.'],
+      ['Sync failed / notification fired','Tap TEST CONNECTION above to verify the worker is reachable. If it fails, check your internet — outages are rare and resolve within minutes.'],
+      ['Athlete profile missing after new phone','Profile auto-restores from Notion on first login. If it fails, athlete re-fills the one-time setup (takes 2 min).'],
+      ['Check-in data wrong or test data in Notion','Notion rows update on every sync push. Bad data gets overwritten on next check-in.'],
+    ].map(([prob,fix])=>`<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #1A1A28">
+      <p style="font-size:12px;font-weight:700;color:#F0EDE6;margin-bottom:3px">${prob}</p>
+      <p style="font-size:11px;color:#8A8AAA;line-height:1.5">${fix}</p>
+    </div>`).join('')}
   </div>`;
 }
+
+async function runHealthCheck(){
+  const el=document.getElementById('health-result');
+  if(!el)return;
+  el.style.display='block';
+  el.innerHTML='<p style="font-size:12px;color:#9A9AB0;padding:4px 0">Running checks...</p>';
+
+  const results=[];
+  const check=async(name,fn)=>{
+    try{const ok=await fn();results.push({name,ok,msg:ok?'Pass':'Failed'});}
+    catch(e){results.push({name,ok:false,msg:e.message?.slice(0,50)||'Error'});}
+    render();
+  };
+  const render=()=>{
+    el.innerHTML=results.map(r=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1A1A28">
+      <span style="font-size:14px">${r.ok?'✅':'❌'}</span>
+      <div style="flex:1"><p style="font-size:12px;color:${r.ok?'#22C55E':'#DC2626'};font-weight:600">${r.name}</p></div>
+      <p style="font-size:11px;color:#8A8AAA">${r.msg}</p>
+    </div>`).join('');
+  };
+
+  await check('Cloudflare Worker',async()=>{
+    const r=await fetch('https://summer-snowflake-b830.lyloholdings.workers.dev/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({_ping:true})});
+    return r.ok||r.status<500;
+  });
+  await check('Notion — Athlete Dailys',async()=>{
+    const r=await notionFetch('https://api.notion.com/v1/databases/47eef612-6214-4a9a-9397-b10c9a93356b','GET',null);
+    return r&&r.object==='database';
+  });
+  await check('Notion — Athlete Profiles',async()=>{
+    const r=await notionFetch('https://api.notion.com/v1/databases/80ee4bf5-ce5b-4aaf-8b35-2e5f6e2c93b5','GET',null);
+    return r&&r.object==='database';
+  });
+  await check('Testing Mode OFF',async()=>localStorage.getItem('fw_testing_mode')!=='true');
+  await check('Notifications enabled',async()=>{
+    if(!('Notification' in window))return false;
+    return Notification.permission==='granted';
+  });
+  await check('Session valid',async()=>{
+    const s=JSON.parse(localStorage.getItem('fw_session')||'null');
+    return s&&s.role==='coach';
+  });
+}
+
+
 
 function getDebugKeys(){
   const keys=[];
@@ -3464,7 +3784,8 @@ function saveProfile(){
     weight:document.getElementById('prof-weight').value,
     goalWeight:document.getElementById('prof-goalweight').value,
     bodyGoal:profState.bodyGoals.join(', '),
-    trainingFreq:profState.trainingFreq||'3x per week'
+    trainingFreq:profState.trainingFreq||'3x per week',
+    email:(document.getElementById('prof-email')?.value.trim()||'')
   };
   localStorage.setItem(saveNameKey+'_fw_profile',JSON.stringify(profile));
   // Also save under name-specific key to prevent cross-athlete issues
@@ -3478,6 +3799,7 @@ function saveProfile(){
       "Last Name":{rich_text:[{text:{content:name.split(' ').slice(1).join(' ')||''}}]},
       "Sport":{rich_text:[{text:{content:profile.sport||''}}]},
       "Position":{rich_text:[{text:{content:profile.position||''}}]},
+      "Email":{rich_text:[{text:{content:profile.email||''}}]},
       "Graduation Year":{rich_text:[{text:{content:String(profile.gradYear||'')}}]},
       "Current Weight (lbs)":{number:parseFloat(profile.weight)||0},
       "Goal Weight (lbs)":{number:parseFloat(profile.goalWeight)||0},
@@ -3516,6 +3838,11 @@ const PROFILES_DB='80ee4bf5-ce5b-4aaf-8b35-2e5f6e2c93b5';
 const FWAY_NOTIF_DB='fway_notifications';
 
 async function pushNotification(type,athlete,message,extra){
+  const urgentTypes=['Red Flag','Low Score Alert'];
+  if(urgentTypes.includes(type)){
+    notifyCoach(type, athlete+': '+message, true);
+  }
+
   if(localStorage.getItem('fw_testing_mode')==='true'||localStorage.getItem('fw_dev_mode')==='true'){
     // Store locally only in dev/test mode
     const notifs=JSON.parse(localStorage.getItem('fw_coach_notifs')||'[]');
@@ -3553,10 +3880,74 @@ function updateBadges(){
 
 async function loadAlerts(){
   state.alertsLoading=true;renderCoach();
-  // Auto-clear notifications older than 14 days
   const notifs=JSON.parse(localStorage.getItem('fw_coach_notifs')||'[]');
   const cutoff=Date.now()-(14*24*60*60*1000);
   const fresh=notifs.filter(n=>new Date(n.ts).getTime()>cutoff);
+  localStorage.setItem('fw_coach_notifs',JSON.stringify(fresh));
+
+  try{
+    // Query last 3 days from Notion to detect consistency issues
+    const today=new Date();
+    const d3=new Date(today);d3.setDate(d3.getDate()-3);
+    const from=d3.toISOString().split('T')[0];
+    const res=await notionFetch('https://api.notion.com/v1/databases/47eef612-6214-4a9a-9397-b10c9a93356b/query','POST',{
+      filter:{property:'Date',date:{on_or_after:from}},
+      page_size:100,
+      sorts:[{property:'Date',direction:'descending'}]
+    });
+
+    if(res.results&&Array.isArray(res.results)){
+      // Group by athlete
+      const byAthlete={};
+      res.results.forEach(p=>{
+        const props=p.properties;
+        const name=props['Athlete']?.rich_text?.[0]?.plain_text||'';
+        const score=props['Fuel Score']?.number||0;
+        const date=props['Date']?.date?.start||'';
+        const status=props['Check-In Status']?.select?.name||'';
+        const redFlags=props['Red Flags']?.rich_text?.[0]?.plain_text||'';
+        if(!name)return;
+        if(!byAthlete[name])byAthlete[name]={scores:[],dates:[],redFlags:[]};
+        byAthlete[name].scores.push(score);
+        byAthlete[name].dates.push(date);
+        if(redFlags&&redFlags!=='None'&&redFlags!=='')byAthlete[name].redFlags.push({date,redFlags,status});
+      });
+
+      // Check: 3 days in a row below 80%
+      Object.entries(byAthlete).forEach(([name,data])=>{
+        if(data.scores.length>=3&&data.scores.slice(0,3).every(s=>s<80)){
+          const existing=fresh.find(n=>n.type==='Low Score Alert'&&n.athlete===name&&Date.now()-new Date(n.ts).getTime()<86400000*2);
+          if(!existing){
+            fresh.push({id:Date.now()+Math.random(),type:'Low Score Alert',athlete:name,
+              message:`Below 80% for ${data.scores.slice(0,3).length} days in a row`,
+              extra:`Scores: ${data.scores.slice(0,3).map(s=>Math.round(s)).join(', ')}`,
+              ts:new Date().toISOString(),status:'new'});
+          }
+        }
+      });
+
+      // Check for new athletes in last 7 days
+      const profileRes=await notionFetch('https://api.notion.com/v1/databases/80ee4bf5-ce5b-4aaf-8b35-2e5f6e2c93b5/query','POST',{
+        page_size:50,sorts:[{property:'Athlete',direction:'ascending'}]
+      });
+      if(profileRes.results){
+        const weekAgo=Date.now()-(7*24*60*60*1000);
+        profileRes.results.forEach(p=>{
+          const created=new Date(p.created_time).getTime();
+          const name=p.properties['Athlete']?.title?.[0]?.plain_text||'';
+          if(created>weekAgo&&name){
+            const existing=fresh.find(n=>n.type==='New Athlete'&&n.athlete===name);
+            if(!existing){
+              fresh.push({id:Date.now()+Math.random(),type:'New Athlete',athlete:name,
+                message:'New athlete profile created',extra:'',
+                ts:p.created_time,status:'new'});
+            }
+          }
+        });
+      }
+    }
+  }catch(e){console.error('Alert load error:',e);}
+
   localStorage.setItem('fw_coach_notifs',JSON.stringify(fresh));
   state.alerts=fresh;
   state.alertsLoading=false;
@@ -3579,55 +3970,54 @@ function renderAlerts(){
   const cutoff=Date.now()-(14*24*60*60*1000);
   const active=notifs.filter(n=>n.status==='new'&&new Date(n.ts).getTime()>cutoff);
   const resolved=notifs.filter(n=>n.status==='resolved'&&new Date(n.ts).getTime()>cutoff);
-  const typeColor={'Red Flag':'#DC2626','Yellow Flag':'#F59E0B','PIN Reset Requested':'#3B82F6','New Athlete':'#22C55E'};
-  const typeIcon={'Red Flag':'🚨','Yellow Flag':'⚠️','PIN Reset Requested':'🔑','New Athlete':'👤'};
+
+  const typeColor={'Red Flag':'#DC2626','Athlete Report':'#DC2626','Low Score Alert':'#F59E0B','New Athlete':'#22C55E','PIN Reset Requested':'#3B82F6','Yellow Flag':'#F59E0B'};
+  const typeIcon={'Red Flag':'🚨','Athlete Report':'🚨','Low Score Alert':'📉','New Athlete':'👤','PIN Reset Requested':'🔑','Yellow Flag':'⚠️'};
+
+  // Sort: red flags first, then low scores, then new athletes, then rest
+  const order={'Red Flag':0,'Athlete Report':0,'Low Score Alert':1,'New Athlete':2,'PIN Reset Requested':3,'Yellow Flag':4};
+  const sorted=[...active].sort((a,b)=>(order[a.type]??5)-(order[b.type]??5));
+
   return `
-  <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;margin-bottom:2px">ALERTS</p>
-  <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Auto-clears after 14 days · <button onclick="loadAlerts()" style="background:#1C1C2E;border:1px solid #303050;border-radius:8px;padding:6px 14px;color:#DC2626;font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif;font-weight:600">↻ Refresh</button></p>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900">ALERTS</p>
+      <p style="font-size:11px;color:#8A8AAA">${active.length} active</p>
+    </div>
+    <button onclick="loadAlerts()" style="background:#1C1C2E;border:1px solid #303050;border-radius:8px;padding:7px 14px;color:#DC2626;font-size:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700">↻ REFRESH</button>
+  </div>
 
-  ${active.length===0?`<div class="card" style="text-align:center;padding:32px">
-    <p style="font-size:24px;margin-bottom:10px">✅</p>
-    <p style="font-size:14px;color:#8A8AAA">No active alerts</p>
-  </div>`:''}
-
-  ${active.map(n=>{
+  ${state.alertsLoading?`<div style="text-align:center;padding:32px"><div style="width:28px;height:28px;border:3px solid #DC262630;border-top-color:#DC2626;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 10px"></div><p style="font-size:13px;color:#9A9AB0">Checking for alerts...</p></div>`:
+  sorted.length===0?`<div style="text-align:center;padding:40px"><p style="font-size:28px;margin-bottom:10px">✅</p><p style="font-size:14px;color:#8A8AAA">All clear — no active alerts</p></div>`:
+  sorted.map(n=>{
     const col=typeColor[n.type]||'#9A9AB0';
     const icon=typeIcon[n.type]||'🔔';
     const ts=new Date(n.ts);
-    const timeStr=ts.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · '+ts.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    return `<div style="background:#13131E;border:1px solid ${col}40;border-radius:13px;padding:14px;margin-bottom:10px">
+    const timeStr=ts.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+ts.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    return `<div style="background:#13131E;border:1px solid ${col}40;border-left:3px solid ${col};border-radius:0 13px 13px 0;padding:14px;margin-bottom:10px">
       <div style="display:flex;align-items:flex-start;gap:12px">
-        <div style="width:38px;height:38px;border-radius:10px;background:${col}20;border:1px solid ${col}40;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${icon}</div>
+        <span style="font-size:20px;flex-shrink:0;margin-top:1px">${icon}</span>
         <div style="flex:1">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-            <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:${col}">${n.type.toUpperCase()}</p>
-            <p style="font-size:10px;color:#8A8AAA">${timeStr}</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+            <p style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;color:${col};letter-spacing:0.06em">${n.type.toUpperCase()}</p>
+            <p style="font-size:10px;color:#6A6A85">${timeStr}</p>
           </div>
-          <p style="font-size:14px;font-weight:600;margin-bottom:2px">${n.athlete}</p>
-          <p style="font-size:12px;color:#9A9AB0;line-height:1.5">${n.message}</p>
-          ${n.extra?`<p style="font-size:11px;color:#8A8AAA;margin-top:4px">${n.extra}</p>`:''}
+          <p style="font-size:14px;font-weight:700;color:#F0EDE6;margin-bottom:2px">${n.athlete}</p>
+          <p style="font-size:12px;color:#9A9AB0;line-height:1.4">${n.message}</p>
+          ${n.extra?`<p style="font-size:11px;color:#6A6A85;margin-top:3px">${n.extra}</p>`:''}
         </div>
       </div>
-      <button onclick="resolveAlert(${n.id})" style="width:100%;background:none;border:1px solid #303050;border-radius:9px;padding:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:#8A8AAA;cursor:pointer;margin-top:10px">MARK RESOLVED ✓</button>
+      <button onclick="resolveAlert(${n.id})" style="width:100%;background:none;border:1px solid #2A2A3E;border-radius:8px;padding:7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;color:#6A6A85;cursor:pointer;margin-top:10px;letter-spacing:0.06em">MARK RESOLVED</button>
     </div>`;
   }).join('')}
 
   ${resolved.length>0?`
-  <p style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;color:#888;letter-spacing:0.1em;margin:16px 0 10px">RESOLVED</p>
-  ${resolved.map(n=>{
-    const col=typeColor[n.type]||'#6A6A85';
-    const icon=typeIcon[n.type]||'🔔';
-    const ts=new Date(n.ts);
-    const timeStr=ts.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    return `<div style="background:#0A0A12;border:1px solid #1E1E2E;border-radius:11px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;opacity:0.6">
-      <span style="font-size:16px">${icon}</span>
-      <div style="flex:1">
-        <p style="font-size:12px;color:#8A8AAA">${n.athlete} · ${n.type}</p>
-        <p style="font-size:11px;color:#8A8AAA">${timeStr}</p>
-      </div>
-      <span style="font-size:11px;color:#22C55E">✓</span>
-    </div>`;
-  }).join('')}`:''}`;
+  <p style="font-size:11px;font-weight:700;color:#555;letter-spacing:0.1em;text-transform:uppercase;margin:16px 0 8px">Resolved</p>
+  ${resolved.map(n=>`<div style="background:#0A0A12;border:1px solid #1E1E2E;border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;opacity:0.5">
+    <span style="font-size:14px">${typeIcon[n.type]||'🔔'}</span>
+    <div style="flex:1"><p style="font-size:12px;color:#8A8AAA">${n.athlete} · ${n.type}</p></div>
+    <span style="font-size:11px;color:#22C55E">✓</span>
+  </div>`).join('')}`:''}`;
 }
 
 
@@ -3688,17 +4078,56 @@ document.addEventListener('visibilitychange',()=>{
   }
 });
 
+// Global error catcher — nothing fails silently
+window.onerror=function(msg,src,line,col,err){
+  const isMinor=['ResizeObserver','Script error'].some(s=>String(msg).includes(s));
+  if(!isMinor){
+    console.error('GLOBAL ERR:',msg,'at',src+':'+line);
+    const sess=JSON.parse(localStorage.getItem('fw_session')||'null');
+    if(sess?.role==='coach'){flash('App error: '+String(msg).slice(0,60),'#DC2626');}
+  }
+  return false;
+};
+window.onunhandledrejection=function(e){
+  console.error('UNHANDLED PROMISE:',e.reason);
+};
+
+// Auto-expire Testing Mode after 24 hours
+(function(){
+  const testOn=localStorage.getItem('fw_testing_mode')==='true';
+  const testTime=parseInt(localStorage.getItem('fw_testing_mode_ts')||'0');
+  if(testOn&&testTime&&Date.now()-testTime>86400000){
+    localStorage.removeItem('fw_testing_mode');
+    localStorage.removeItem('fw_testing_mode_ts');
+    console.log('Testing mode auto-expired after 24h');
+  }
+})();
+
+
+// Simple browser notifications for coach alerts
+async function requestPushPermission(){
+  if(!('Notification' in window))return false;
+  if(Notification.permission==='granted')return true;
+  if(Notification.permission==='denied')return false;
+  const p=await Notification.requestPermission();
+  return p==='granted';
+}
+
+function notifyCoach(title, body, urgent=false){
+  if(Notification.permission!=='granted')return;
+  const n=new Notification('FWAY — '+title,{
+    body:body,
+    icon:'/fway-app/icon-192.png',
+    requireInteraction:urgent,
+    tag:'fway-'+title.toLowerCase().replace(/\s/g,'-')
+  });
+  setTimeout(()=>n.close(),urgent?8000:4000);
+}
+
 if(sess){state.role=sess.role||'athlete';showApp();if(sess.role==='coach')setTimeout(updateBadges,500);}
 else{document.getElementById('s-login').classList.add('active');checkWelcome();}
 </script>
 
-<script>
-// Service worker disabled to prevent caching issues
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations().then(regs=>{
-    regs.forEach(r=>r.unregister());
-  });
-}
-</script>
+
 </body>
 </html>
