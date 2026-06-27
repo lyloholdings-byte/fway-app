@@ -600,69 +600,33 @@ function showPinCreate(){
 
 function pinCreateKey(k){
   if(k==='⌫'){
-    if(pinCreateState.step==='create')
-      pinCreateState.digits=pinCreateState.digits.slice(0,-1);
-    else
-      pinCreateState.confirm=pinCreateState.confirm.slice(0,-1);
-    updatePinDots(pinCreateState.step==='create'?pinCreateState.digits:pinCreateState.confirm);
+    pinCreateState.digits=pinCreateState.digits.slice(0,-1);
+    updatePinDots(pinCreateState.digits);
     return;
   }
-  if(pinCreateState.step==='create'){
-    if(pinCreateState.digits.length>=4)return;
-    pinCreateState.digits.push(k);
-    updatePinDots(pinCreateState.digits);
-    if(pinCreateState.digits.length===4){
-      // Move to confirm step
-      setTimeout(()=>{
-        pinCreateState.step='confirm';
-        pinCreateState.confirm=[];
-        updatePinDots([]);
-        document.getElementById('pin-create-label').textContent='Confirm your PIN';
-      },300);
-    }
-  } else {
-    if(pinCreateState.confirm.length>=4)return;
-    pinCreateState.confirm.push(k);
-    updatePinDots(pinCreateState.confirm);
-    if(pinCreateState.confirm.length===4){
-      setTimeout(()=>{
-        if(pinCreateState.digits.join('')===pinCreateState.confirm.join('')){
-          // PINs match — save and continue
-          const pin=pinCreateState.digits.join('');
-          save('fw_pin',pin);
-          // Save with name key for offline login
-          const sessName=getSessionName().toLowerCase().replace(/\s+/g,'_');
-          localStorage.setItem(sessName+'_fw_pin',pin);
-          // Update PIN in Notion via worker
-          const sessForPin=JSON.parse(localStorage.getItem('fw_session')||'null');
-          const fnPin=(sessForPin?.name||'').split(' ')[0];
-          const lnPin=(sessForPin?.name||'').split(' ').slice(1).join(' ');
-          notionFetch('https://api.notion.com/v1/databases/80ee4bf5-ce5b-4aaf-8b35-2e5f6e2c93b5/query','POST',{filter:{and:[{property:'First Name',rich_text:{equals:fnPin}},{property:'Last Name',rich_text:{equals:lnPin}}]},page_size:1})
-          .then(d=>{
-            if(d.results&&d.results[0]){
-              notionFetch('https://api.notion.com/v1/pages/'+d.results[0].id,'PATCH',{properties:{"PIN":{rich_text:[{text:{content:pin}}]},"PIN Status":{select:{name:'Active'}}}});
-            }
-          }).catch(()=>{});
-          document.getElementById('pin-create-label').textContent='';
-          // Go to profile setup after PIN is created
-          const sessForPinCreate=JSON.parse(localStorage.getItem('fw_session')||'null');
-          showProfileSetup(sessForPinCreate?.name||'Athlete');
-          flash('PIN set ✓ Now complete your profile!');
-        } else {
-          // PINs don\'t match — reset confirm
-          document.getElementById('pin-create-label').textContent='PINs don\'t match — try again';
-          document.getElementById('pin-create-label').style.color='#DC2626';
-          pinCreateState.step='create';
-          pinCreateState.digits=[];
-          pinCreateState.confirm=[];
-          setTimeout(()=>{
-            updatePinDots([]);
-            document.getElementById('pin-create-label').textContent='';
-            document.getElementById('pin-create-label').style.color='#6A6A85';
-          },1200);
+  if(pinCreateState.digits.length>=4)return;
+  pinCreateState.digits.push(k);
+  updatePinDots(pinCreateState.digits);
+  if(pinCreateState.digits.length===4){
+    setTimeout(()=>{
+      const pin=pinCreateState.digits.join('');
+      save('fw_pin',pin);
+      const sessName=getSessionName().toLowerCase().replace(/\s+/g,'_');
+      localStorage.setItem(sessName+'_fw_pin',pin);
+      const sessForPin=JSON.parse(localStorage.getItem('fw_session')||'null');
+      const fnPin=(sessForPin?.name||'').split(' ')[0];
+      const lnPin=(sessForPin?.name||'').split(' ').slice(1).join(' ');
+      notionFetch('https://api.notion.com/v1/databases/80ee4bf5-ce5b-4aaf-8b35-2e5f6e2c93b5/query','POST',{filter:{and:[{property:'First Name',rich_text:{equals:fnPin}},{property:'Last Name',rich_text:{equals:lnPin}}]},page_size:1})
+      .then(d=>{
+        if(d.results&&d.results[0]){
+          notionFetch('https://api.notion.com/v1/pages/'+d.results[0].id,'PATCH',{properties:{"PIN":{rich_text:[{text:{content:pin}}]},"PIN Status":{select:{name:'Active'}}}});
         }
-      },300);
-    }
+      }).catch(()=>{});
+      document.getElementById('pin-create-label').textContent='';
+      const sessForPinCreate=JSON.parse(localStorage.getItem('fw_session')||'null');
+      showProfileSetup(sessForPinCreate?.name||'Athlete');
+      flash('PIN set ✓ Now complete your profile!');
+    },300);
   }
 }
 
@@ -1192,6 +1156,9 @@ function showApp(){
 // ATHLETE NAV
 function aTab(t){
   state.aTab=t;
+  // Always make sure s-athlete is the visible screen
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s-athlete').classList.add('active');
   document.querySelectorAll('#a-nav .bnav-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.getElementById('an-'+t);if(btn)btn.classList.add('active');
   const sc=document.getElementById('a-content');if(sc)sc.scrollTop=0;
@@ -1199,11 +1166,17 @@ function aTab(t){
 }
 function renderAthlete(){
   const el=document.getElementById('a-content');
-  if(state.aTab==='home')el.innerHTML=renderHome();
-  else if(state.aTab==='checkin')el.innerHTML=renderCheckin();
-  else if(state.aTab==='fuel')el.innerHTML=renderFuel();
-  else if(state.aTab==='clip')el.innerHTML=renderClip();
-  else if(state.aTab==='work')el.innerHTML=renderWork();
+  if(!el)return;
+  try{
+    if(state.aTab==='home')el.innerHTML=renderHome();
+    else if(state.aTab==='checkin')el.innerHTML=renderCheckin();
+    else if(state.aTab==='fuel')el.innerHTML=renderFuel();
+    else if(state.aTab==='clip')el.innerHTML=renderClip();
+    else if(state.aTab==='work')el.innerHTML=renderWork();
+  }catch(e){
+    console.error('renderAthlete error on tab',state.aTab,':',e);
+    el.innerHTML='<div style="padding:20px;text-align:center"><p style="color:#DC2626;font-size:14px">Something went wrong loading this tab.</p><p style="color:#6A6A85;font-size:12px;margin-top:8px">'+e.message+'</p><button onclick="renderAthlete()" style="margin-top:16px;background:#13131E;border:1px solid #303050;border-radius:10px;padding:10px 20px;color:#F0EDE6;cursor:pointer">Try Again</button></div>';
+  }
 }
 
 // HOME
@@ -1234,6 +1207,9 @@ function renderHome(){
   const waterGoal=getWaterGoal();
   const waterPct=Math.min(Math.round((state.waterOz/waterGoal)*100),100);
   const waterColor=state.waterOz>=waterGoal?'#22C55E':state.waterOz>=(waterGoal*0.75)?'#F59E0B':'#555';
+
+  // Show nudge banner if check-in not done
+  const showCheckinNudge=!state.done&&!state.pulseDone;
 
   return `
   ${milestone?`<div style="background:#1A1200;border:2px solid #F59E0B;border-radius:16px;padding:20px;margin-bottom:14px;text-align:center">
