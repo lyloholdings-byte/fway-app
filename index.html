@@ -2443,28 +2443,33 @@ function renderClip(){
   if(!clip)return `<p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">TODAY'S CLIP</p><p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Watch it. Lock it in.</p><div style="background:#1C1C2E;border:1px dashed #2A2A3E;border-radius:12px;padding:40px 24px;text-align:center"><p style="font-size:32px;margin-bottom:12px">▶</p><p style="font-size:14px;color:#9A9AB0">No clip for today. Check back soon.</p></div>`;
   const watched=state.clipWatched;
   const ytId=clip.ytId||clip.videoId||getYTId(clip.url||'');
+  const isQOnly=clip.type==='question'||(!clip.url&&!ytId);
   return `
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">TODAY'S CLIP</p>
-    <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Watch it. Lock it in.</p>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">${isQOnly?"THIS WEEK'S QUESTION":"TODAY'S CLIP"}</p>
+    <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">${isQOnly?'Read it. Answer it.':'Watch it. Answer it.'}</p>
     <div style="background:#13131E;border:1px solid ${watched?'#22C55E60':R+'40'};border-radius:16px;overflow:hidden;margin-bottom:14px">
-      ${ytId?`<div style="position:relative;width:100%;padding-bottom:52%;background:#000"><iframe src="https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"></iframe></div>`
-        :`<a href="${clip.url||'#'}" target="_blank" rel="noreferrer" style="display:flex;align-items:center;gap:12px;background:#0A0A12;padding:16px;text-decoration:none">
+      ${!isQOnly&&ytId?`<div style="position:relative;width:100%;padding-bottom:52%;background:#000"><iframe src="https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"></iframe></div>`
+        :(!isQOnly?`<a href="${clip.url||'#'}" target="_blank" rel="noreferrer" style="display:flex;align-items:center;gap:12px;background:#0A0A12;padding:16px;text-decoration:none">
           <div style="width:40px;height:40px;border-radius:50%;background:${R}20;border:2px solid ${R};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;color:${R}">▶</div>
           <div style="flex:1"><p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;color:${R}">CLICK HERE TO WATCH</p><p style="font-size:11px;color:#9A9AB0;margin-top:2px">Tap to open</p></div>
           <span style="color:${R};font-size:14px">→</span>
-        </a>`}
+        </a>`:'')
+      }
       <div style="padding:15px 17px 18px">
-        <p style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;margin-bottom:8px">${clip.title||"Today's Clip"}</p>
-        ${clip.takeaway?`<p style="font-size:10px;color:${R};font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Key Takeaway</p><p style="font-size:14px;color:#E0E0F0;line-height:1.5;margin-bottom:12px">${clip.takeaway}</p>`:''}
-        <div style="height:1px;background:#1E1E2E;margin-bottom:12px"></div>
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;margin-bottom:12px">${clip.title||"Today's Clip"}</p>
+        <div style="height:1px;background:#1E1E2E;margin-bottom:14px"></div>
         ${watched
-          ?`<div style="background:#22C55E14;border:1px solid #22C55E50;border-radius:11px;padding:12px 14px;display:flex;align-items:center;gap:10px"><span style="font-size:20px">✅</span><p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#22C55E">MARKED COMPLETE</p></div>`
-          :state.showReflection?`<div>
-            <p style="font-size:12px;color:#9A9AB0;margin-bottom:6px">In one sentence, your takeaway:</p>
-            <textarea id="clip-ref-input" rows="2" placeholder="What did you take from this clip..." style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:9px 12px;font-size:14px;outline:none;resize:none;margin-bottom:8px">${state.clipReflection}</textarea>
-            <button onclick="submitClipReflection()" style="width:100%;background:#22C55E;color:#fff;border:none;border-radius:11px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.1em;cursor:pointer">SUBMIT REFLECTION</button>
+          ?`<div>
+            <div style="background:#22C55E14;border:1px solid #22C55E50;border-radius:11px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="font-size:20px">✅</span><p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#22C55E">DONE — Coach Fonoti has your answer</p></div>
+            ${clip.action?'<div style="background:#13131E;border-left:3px solid #DC2626;border-radius:0 10px 10px 0;padding:10px 14px"><p style="font-size:10px;font-weight:700;color:#DC2626;letter-spacing:0.1em;margin-bottom:3px">THIS WEEK</p><p style="font-size:13px;color:#F0EDE6;line-height:1.5">'+clip.action+'</p></div>':''}
           </div>`
-          :`<button onclick="showClipReflection()" style="width:100%;background:${R};color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.1em;cursor:pointer">✓ MARK COMPLETE</button>`
+          :state.showReflection?`<div>
+            ${clip.question?'<div style="background:#13131E;border-radius:11px;padding:12px 14px;margin-bottom:12px"><p style="font-size:10px;font-weight:700;color:#DC2626;letter-spacing:0.1em;margin-bottom:6px">COACH QUESTION</p><p style="font-size:15px;color:#F0EDE6;line-height:1.5;font-weight:600">'+clip.question+'</p></div>':''}
+            <textarea id="clip-ref-input" rows="3" placeholder="Type your answer here..." style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:10px 12px;font-size:14px;outline:none;resize:none;margin-bottom:${clip.action?'10':'8'}px;line-height:1.5;box-sizing:border-box">${state.clipReflection}</textarea>
+            ${clip.action?'<div style="background:#DC262610;border:1px solid #DC262640;border-radius:10px;padding:10px 14px;margin-bottom:10px"><p style="font-size:10px;font-weight:700;color:#DC2626;letter-spacing:0.1em;margin-bottom:3px">YOUR ACTION THIS WEEK</p><p style="font-size:13px;color:#F0EDE6;line-height:1.5">'+clip.action+'</p></div>':''}
+            <button onclick="submitClipReflection()" style="width:100%;background:#22C55E;color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.1em;cursor:pointer">SEND TO COACH ›</button>
+          </div>`
+          :`<button onclick="showClipReflection()" style="width:100%;background:${R};color:#fff;border:none;border-radius:11px;padding:13px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.1em;cursor:pointer">${isQOnly?'✍️ ANSWER COACH':'✓ I WATCHED IT'}</button>`
         }
       </div>
     </div>`;
@@ -3066,7 +3071,7 @@ function renderCoachClip(){
     </div>
     <div style="display:flex;gap:8px">
       <button onclick="cTab('logs')" style="flex:1;background:#13131E;border:1px solid #303050;border-radius:10px;padding:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:#9A9AB0;cursor:pointer">VIEW LOGS</button>
-      <button onclick="state.clipPushed=false;state.lastClipPushed=null;localStorage.removeItem('fw_last_clip');state.clipForm={url:'',title:'',takeaway:'',action:''};renderCoach();" style="flex:1;background:none;border:1px solid #303050;border-radius:10px;padding:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:#9A9AB0;cursor:pointer">NEW CLIP</button>
+      <button onclick="state.clipPushed=false;state.lastClipPushed=null;localStorage.removeItem('fw_last_clip');state.clipForm={url:'',title:'',question:'',action:''};renderCoach();" style="flex:1;background:none;border:1px solid #303050;border-radius:10px;padding:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:#9A9AB0;cursor:pointer">NEW CLIP</button>
     </div>`;
   }
   const draft=state.clipDraft;
@@ -3089,10 +3094,17 @@ function renderCoachClip(){
     </div>
   `:`
     <div class="card" style="margin-bottom:14px">
-      <span class="lbl">Link (YouTube or other)</span>
-      <input id="clip-url" value="${state.clipForm.url}" oninput="state.clipForm.url=this.value" placeholder="YouTube, Instagram or any link" style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:9px 12px;font-size:14px;outline:none;margin-bottom:12px"/>
+      <span class="lbl">Link — optional</span>
+      <input id="clip-url" value="${state.clipForm.url}" oninput="state.clipForm.url=this.value" placeholder="YouTube or any link — leave blank for question only" style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:9px 12px;font-size:14px;outline:none;margin-bottom:12px"/>
       <span class="lbl">Title</span>
       <input id="clip-title" value="${state.clipForm.title}" oninput="state.clipForm.title=this.value" placeholder="e.g. Keys to the Release" style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:9px 12px;font-size:14px;outline:none;margin-bottom:12px"/>
+      <div style="height:1px;background:#1E1E2E;margin:4px 0 12px"></div>
+      <span class="lbl">Question for athletes</span>
+      <input id="clip-question" value="${state.clipForm.question||''}" oninput="state.clipForm.question=this.value" placeholder="e.g. What does discipline need to look like for you this week?" style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:9px 12px;font-size:14px;outline:none;margin-bottom:4px"/>
+      <p style="font-size:10px;color:#555;margin-bottom:12px">Athletes type their answer after watching</p>
+      <span class="lbl">Action step</span>
+      <input id="clip-action" value="${state.clipForm.action||''}" oninput="state.clipForm.action=this.value" placeholder="e.g. Pick one habit and stay on it all week." style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:9px 12px;font-size:14px;outline:none;margin-bottom:4px"/>
+      <p style="font-size:10px;color:#555;margin-bottom:12px">Shown as their commitment — stays on screen</p>
     </div>
     <button onclick="previewClip()" style="width:100%;background:${R};color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;letter-spacing:0.08em;cursor:pointer;margin-bottom:8px">PREVIEW CLIP</button>
     <p style="font-size:11px;color:#9A9AB0;text-align:center;margin-bottom:14px">Preview before it goes live</p>
@@ -3104,10 +3116,12 @@ function renderCoachClip(){
   `}`;
 }
 function previewClip(){
-  const url=state.clipForm.url.trim(),title=state.clipForm.title.trim();
-  if(!url||!title)return;
-  const ytId=getYTId(url);
-  state.clipDraft={type:ytId?'youtube':'link',ytId:ytId||null,url,title,takeaway:state.clipForm.takeaway,pushedDate:state.todayDate};
+  const url=(state.clipForm.url||'').trim();
+  const question=(state.clipForm.question||'').trim();
+  if(!question&&!url){flash('Add a question or a clip link','#F59E0B');return;}
+  const ytId=url?getYTId(url):null;
+  const draftTitle=(state.clipForm.title||'').trim()||(url?"Today's Clip":"This Week's Question");
+  state.clipDraft={type:url?(ytId?'youtube':'link'):'question',ytId:ytId||null,url:url||'',title:draftTitle,question:question,action:state.clipForm.action||'',pushedDate:state.todayDate};
   renderCoach();
 }
 function goLiveClip(){
@@ -3120,7 +3134,7 @@ function goLiveClip(){
   const ex=state.clipBank.find(b=>b.url===clip.url);
   const updated=ex?state.clipBank.map(b=>b.url===clip.url?{...b,timesPushed:(b.timesPushed||1)+1,lastPushed:state.todayDate}:b):[{url:clip.url,title:clip.title,timesPushed:1,lastPushed:state.todayDate},...state.clipBank].slice(0,20);
   state.clipBank=updated;save('fway_clip_bank',state.clipBank);
-  state.clipPushed=true;state.clipDraft=null;state.clipForm={url:'',title:'',takeaway:'',action:''};
+  state.clipPushed=true;state.clipDraft=null;state.clipForm={url:'',title:'',question:'',action:''};
   // Push to FWAY Clip Bank in Notion
   /* AI feature coming soon */
   flash('Clip is now live');renderCoach();
