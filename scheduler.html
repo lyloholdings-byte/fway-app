@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Summer Schedule</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { background: #0A0A0A; font-family: 'Inter','Helvetica Neue',Arial,sans-serif; }
+  .root { background: #0A0A0A; min-height: 100dvh; color: #F5F5F5; max-width: 480px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; }
+  input, textarea { font-size: 16px; }
+  .header { background: #111; border-bottom: 1px solid #1A1A1A; padding: max(16px, env(safe-area-inset-top)) 20px 16px; display: flex; align-items: center; }
+  .header-title { font-weight: 700; font-size: 15px; color: #F5F5F5; flex: 1; }
+  .coach-link { background: transparent; border: none; color: #161616; font-size: 10px; cursor: pointer; }
+  .body { flex: 1; padding: 20px 20px calc(48px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+  .prog-wrap { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .prog-item { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+  .prog-dot { width: 8px; height: 8px; border-radius: 50%; background: #2A2A2A; }
+  .prog-dot.active { background: #C8102E; }
+  .prog-label { font-size: 9px; color: #5A5A5A; letter-spacing: .08em; text-transform: uppercase; }
+  .prog-label.active { color: #C8102E; }
+  .prog-track { height: 2px; background: #1A1A1A; border-radius: 2px; margin-bottom: 24px; overflow: hidden; }
+  .prog-fill { height: 100%; background: #C8102E; border-radius: 2px; transition: width .3s ease; }
+  .section { display: flex; flex-direction: column; gap: 20px; }
+  .section-title { font-weight: 800; font-size: 22px; letter-spacing: -.02em; }
+  .section-sub { font-size: 13px; color: #888; line-height: 1.5; }
+  .fields { display: flex; flex-direction: column; gap: 16px; }
+  .subsection-label { font-size: 10px; font-weight: 800; letter-spacing: .12em; color: #C8102E; text-transform: uppercase; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #888; text-transform: uppercase; }
+  .field-error { font-size: 11px; color: #C8102E; font-weight: 600; margin-top: 2px; }
+  input, textarea { background: #111; border: 1px solid #222; border-radius: 8px; color: #F5F5F5; padding: 13px 14px; outline: none; width: 100%; font-family: inherit; }
+  textarea { resize: none; line-height: 1.6; font-size: 14px; }
+  .freq-grid { display: flex; flex-direction: column; gap: 8px; }
+  .freq-btn { background: #111; border: 1px solid #222; border-radius: 10px; padding: 13px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; color: #F5F5F5; text-align: left; }
+  .freq-btn.active { background: #1A0608; border: 1.5px solid #C8102E; }
+  .freq-label { font-weight: 700; font-size: 15px; }
+  .freq-sub { font-size: 11px; color: #888; }
+  .day-group { display: flex; flex-direction: column; gap: 6px; }
+  .day-heading { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: #777; text-transform: uppercase; padding: 2px 0; }
+  .sess-btn { display: flex; align-items: center; gap: 12px; background: #111; border: 1px solid #222; border-radius: 10px; padding: 12px 14px; cursor: pointer; width: 100%; text-align: left; color: #F5F5F5; }
+  .sess-btn.checked { background: #1A0608; border: 1.5px solid #C8102E; }
+  .sess-btn.locked { opacity: 0.25; cursor: not-allowed; }
+  .sess-btn.dimmed { opacity: 0.3; cursor: not-allowed; }
+  .sess-full-tag { font-size: 10px; font-weight: 800; color: #555; letter-spacing: .06em; text-transform: uppercase; }
+  .checkbox { width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid #333; background: #0A0A0A; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .checkbox.checked { background: #C8102E; border-color: #C8102E; }
+  .check-mark { color: #fff; font-size: 11px; font-weight: 900; }
+  .sess-time { font-weight: 700; font-size: 15px; flex: 1; }
+  .counter-pill { display: flex; align-items: center; justify-content: space-between; background: #111; border: 1px solid #1A1A1A; border-radius: 10px; padding: 10px 14px; }
+  .counter-label { font-size: 13px; color: #888; }
+  .counter-dots { display: flex; gap: 6px; }
+  .counter-dot { width: 9px; height: 9px; border-radius: 50%; background: #2A2A2A; }
+  .counter-dot.filled { background: #C8102E; }
+  .weekend-title { font-size: 12px; font-weight: 800; letter-spacing: .1em; color: #C8102E; text-transform: uppercase; }
+  .weekend-sub { font-size: 12px; color: #666; margin-top: 4px; }
+  .weekend-day-label { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: #777; text-transform: uppercase; padding: 4px 0 2px; }
+  .reason-wrap { background: #0D0D0D; border: 1px solid #1A1A1A; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+  .reason-label { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: #888; text-transform: uppercase; }
+  .reason-row { display: flex; gap: 8px; }
+  .reason-btn { flex: 1; background: #111; border: 1px solid #222; border-radius: 8px; padding: 10px; cursor: pointer; color: #aaa; font-size: 13px; font-weight: 700; text-align: center; }
+  .reason-btn.active { background: #1A0608; border: 1.5px solid #C8102E; color: #fff; }
+  .pending-badge { font-size: 10px; font-weight: 800; color: #F5A623; letter-spacing: .06em; text-transform: uppercase; }
+  .none-section { background: #111; border: 1.5px dashed #C8102E44; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .none-section-label { font-size: 11px; font-weight: 800; letter-spacing: .1em; color: #C8102E; text-transform: uppercase; }
+  .none-section-text { font-size: 13px; color: #888; line-height: 1.5; }
+  .none-toggle { background: #C8102E; border: none; border-radius: 8px; padding: 11px 16px; cursor: pointer; color: #fff; font-size: 13px; font-weight: 700; width: 100%; }
+  .none-toggle.active { background: #222; color: #888; }
+  .avail-wrap { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .avail-label { font-size: 11px; font-weight: 700; color: #888; letter-spacing: .06em; text-transform: uppercase; }
+  .avail-note { font-size: 11px; color: #C8102E; font-weight: 600; }
+  .nav-row { display: flex; gap: 10px; margin-top: 28px; }
+  .btn-back { background: transparent; border: 1px solid #222; border-radius: 10px; color: #888; font-size: 14px; font-weight: 600; padding: 14px 18px; cursor: pointer; flex-shrink: 0; }
+  .btn-next { flex: 1; background: #C8102E; border: none; border-radius: 10px; color: #fff; font-size: 15px; font-weight: 700; padding: 15px; cursor: pointer; }
+  .btn-next.full { width: 100%; }
+  .btn-next:disabled { opacity: 0.5; cursor: wait; }
+  .review-card { background: #111; border: 1px solid #1A1A1A; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .review-divider { height: 1px; background: #1A1A1A; margin: 2px 0; }
+  .rrow { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .rrow-label { font-size: 12px; color: #666; flex-shrink: 0; }
+  .rrow-val { font-size: 13px; font-weight: 600; color: #F5F5F5; text-align: right; }
+  .review-chip { background: #1A0608; border: 1px solid #C8102E22; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: #F5F5F5; }
+  .review-chip-pending { background: #1A140A; border: 1px solid #F5A62333; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: #F5F5F5; display: flex; flex-direction: column; gap: 3px; }
+  .follow-badge { font-size: 11px; color: #C8102E; font-weight: 700; }
+  .success-wrap { display: flex; flex-direction: column; gap: 14px; padding-top: 20px; text-align: center; }
+  .success-icon { width: 56px; height: 56px; border-radius: 50%; background: #C8102E; color: #fff; font-size: 26px; font-weight: 900; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+  .success-name { font-weight: 900; font-size: 28px; letter-spacing: -.02em; }
+  .success-tag { color: #C8102E; font-weight: 700; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+  .success-card { background: #111; border: 1px solid #1A1A1A; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+  .closing-block { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px 12px 8px; text-align: center; }
+  .closing-title { font-weight: 800; font-size: 17px; color: #F5F5F5; }
+  .closing-text { font-size: 13px; color: #777; line-height: 1.7; max-width: 320px; }
+  .closing-sign { font-size: 11px; color: #999; font-weight: 600; }
+  .contact-banner { background: #111; border: 1px solid #1A1A1A; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .contact-banner-label { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: #555; text-transform: uppercase; }
+  .contact-banner-text { font-size: 13px; color: #aaa; line-height: 1.5; }
+  .sync-note { font-size: 11px; color: #555; text-align: center; padding: 8px; }
+  .sync-note.err { color: #C8102E; }
+  .coach-tabs { display: flex; border-bottom: 1px solid #1A1A1A; margin-bottom: 20px; }
+  .coach-tab { flex: 1; padding: 12px 8px; font-size: 12px; font-weight: 700; color: #555; background: transparent; border: none; cursor: pointer; letter-spacing: .04em; text-transform: uppercase; border-bottom: 2px solid transparent; }
+  .coach-tab.active { color: #C8102E; border-bottom-color: #C8102E; }
+  .coach-stat-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .coach-stat { flex: 1; background: #111; border: 1px solid #1A1A1A; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+  .coach-stat-num { font-weight: 900; font-size: 28px; color: #F5F5F5; }
+  .coach-stat-num.amber { color: #F5A623; }
+  .coach-stat-num.red { color: #C8102E; }
+  .coach-stat-num.green { color: #4CAF50; }
+  .coach-stat-label { font-size: 10px; color: #555; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .coach-block { background: #111; border: 1px solid #1A1A1A; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+  .coach-block-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1A1A1A; gap: 10px; }
+  .coach-block-name { font-weight: 700; font-size: 14px; }
+  .coach-empty { padding: 24px 16px; font-size: 12px; color: #444; text-align: center; }
+  .approve-row { display: flex; gap: 8px; padding: 12px 16px; }
+  .approve-btn { flex: 1; padding: 11px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; letter-spacing: .04em; }
+  .approve-btn.approve { background: #4CAF5022; color: #4CAF50; border: 1px solid #4CAF5044; }
+  .approve-btn.deny { background: #C8102E22; color: #C8102E; border: 1px solid #C8102E44; }
+  .approve-btn:disabled { opacity: 0.4; cursor: wait; }
+  .status-badge { font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; }
+  .status-badge.pending { background: #F5A62322; color: #F5A623; border: 1px solid #F5A62344; }
+  .status-badge.approved { background: #4CAF5022; color: #4CAF50; border: 1px solid #4CAF5044; }
+  .status-badge.denied { background: #C8102E22; color: #C8102E; border: 1px solid #C8102E44; }
+  .coach-detail { padding: 10px 16px; display: flex; flex-direction: column; gap: 5px; }
+  .coach-detail-line { font-size: 12px; color: #aaa; }
+  .coach-refresh { background: transparent; border: 1px solid #222; border-radius: 10px; color: #888; font-size: 13px; font-weight: 600; padding: 12px; cursor: pointer; width: 100%; margin-top: 4px; }
+  .coach-pin-wrap { display: flex; flex-direction: column; gap: 14px; padding-top: 20px; }
+  .pin-error { font-size: 12px; color: #C8102E; font-weight: 600; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="root" id="app"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────
+var WORKER_URL = "https://summer-snowflake-b830.lyloholdings.workers.dev";
+var DB_ID = "02ceed5f45fb464ca4015a278e509732";
+var COACH_PIN = "0109";
+
+var WEEKDAY_SESSIONS = [
+  { id: "mon_430", day: "Monday", time: "4:30 - 5:30 PM", max: 8 },
+  { id: "mon_530", day: "Monday", time: "5:30 - 6:30 PM", max: 8 },
+  { id: "tue_530", day: "Tuesday", time: "5:30 - 6:30 PM", max: 12 },
+  { id: "wed_430", day: "Wednesday", time: "4:30 - 5:30 PM", max: 8 },
+  { id: "wed_530", day: "Wednesday", time: "5:30 - 6:30 PM", max: 8 },
+  { id: "wed_700", day: "Wednesday", time: "7:00 - 8:00 PM", max: 8 },
+  { id: "thu_530", day: "Thursday", time: "5:30 - 6:30 PM", max: 12 },
+  { id: "fri_430", day: "Friday", time: "4:30 - 5:30 PM", max: 8 },
+  { id: "fri_530", day: "Friday", time: "5:30 - 6:30 PM", max: 8 }
+];
+var WEEKEND_SESSIONS = [
+  { id: "sat_730", day: "Saturday", time: "7:30 - 9:00 AM", max: 12 },
+  { id: "sat_900", day: "Saturday", time: "9:00 - 10:30 AM", max: 12 },
+  { id: "sat_1030", day: "Saturday", time: "10:30 AM - 12:00 PM", max: 12 },
+  { id: "sun_1130", day: "Sunday", time: "11:30 AM - 12:30 PM", max: 12 },
+  { id: "sun_100", day: "Sunday", time: "1:00 - 2:00 PM", max: 12 },
+  { id: "sun_230", day: "Sunday", time: "2:30 - 3:30 PM", max: 12 }
+];
+var FREQ_OPTIONS = [
+  { id: "2x", label: "2x / week", sub: "Twice a week", max: 2 },
+  { id: "3x", label: "3x / week", sub: "Three times a week", max: 3 },
+  { id: "4x", label: "4x+ / week", sub: "Four or more times", max: 4 }
+];
+var DAY_ORDER = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+
+function labelFor(sess) { return sess.day + " " + sess.time; }
+
+// ── State ───────────────────────────────────────────────────────
+var state = {
+  view: "form", step: 0, submitted: false, submitting: false, submitError: "",
+  lastName: "", phoneLast4: "", currentFreq: "",
+  weekdaySessions: [], weekendRequests: [], noneWork: false, availability: "",
+  errors: {}, counts: {},
+  pin: "", pinError: false,
+  coachTab: "pending", subs: [], loadingSubs: false, subsError: "", actioning: ""
+};
+
+function getGreeting() {
+  var h = new Date().getHours();
+  if (h < 12) return "Manaia le taeao";
+  if (h < 18) return "Manaia le aoauli";
+  return "Manaia le po";
+}
+function freqOption() { return FREQ_OPTIONS.filter(function(f){return f.id===state.currentFreq;})[0]; }
+function maxSessions() { var f = freqOption(); return f ? f.max : 0; }
+function atMax() { return state.weekdaySessions.length >= maxSessions(); }
+function esc(s) { return String(s==null?"":s).replace(/[&<>"']/g, function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
+
+// ── Notion via Worker (correct contract) ────────────────────────
+function notionRequest(notionUrl, method, body) {
+  return fetch(WORKER_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ _notionUrl: notionUrl, _notionMethod: method, _notionBody: body || null })
+  }).then(function(res){ return res.json(); });
+}
+
+function createSubmission(payload) {
+  var props = {
+    "Athlete Name": { title: [{ text: { content: payload.title } }] },
+    "Training Frequency": { select: { name: payload.trainingFrequency } },
+    "Weekday Sessions": { rich_text: [{ text: { content: payload.weekdaySessions || "" } }] },
+    "Weekend Requests": { rich_text: [{ text: { content: payload.weekendRequests || "None" } }] },
+    "Approval Status": { select: { name: payload.approvalStatus } },
+    "Needs Follow Up": { checkbox: payload.needsFollowUp },
+    "Availability Notes": { rich_text: [{ text: { content: payload.availabilityNotes || "" } }] },
+    "Submitted At": { date: { start: payload.submittedAt } }
+  };
+  if (payload.weekendReason && payload.weekendReason !== "None") {
+    props["Weekend Reason"] = { select: { name: payload.weekendReason } };
+  }
+  return notionRequest("https://api.notion.com/v1/pages", "POST", {
+    parent: { database_id: DB_ID }, properties: props
+  });
+}
+
+function fetchSubmissions() {
+  return notionRequest(
+    "https://api.notion.com/v1/databases/" + DB_ID + "/query", "POST",
+    { page_size: 100, sorts: [{ property: "Submitted At", direction: "descending" }] }
+  ).then(function(data){
+    var results = (data && data.results) || [];
+    return results.map(function(p){
+      var pr = p.properties || {};
+      function rt(x){ return (pr[x] && pr[x].rich_text && pr[x].rich_text[0] && pr[x].rich_text[0].plain_text) || ""; }
+      function sel(x){ return (pr[x] && pr[x].select && pr[x].select.name) || ""; }
+      return {
+        pageId: p.id,
+        title: (pr["Athlete Name"] && pr["Athlete Name"].title && pr["Athlete Name"].title[0] && pr["Athlete Name"].title[0].plain_text) || "Unknown",
+        freqLabel: sel("Training Frequency"),
+        weekdayText: rt("Weekday Sessions"),
+        weekendText: rt("Weekend Requests"),
+        weekendReason: sel("Weekend Reason"),
+        approvalStatus: sel("Approval Status") || "N/A",
+        noneWork: (pr["Needs Follow Up"] && pr["Needs Follow Up"].checkbox) || false,
+        availability: rt("Availability Notes"),
+        submittedAt: (pr["Submitted At"] && pr["Submitted At"].date && pr["Submitted At"].date.start) || ""
+      };
+    });
+  });
+}
+
+function updateApproval(pageId, status) {
+  return notionRequest("https://api.notion.com/v1/pages/" + pageId, "PATCH", {
+    properties: { "Approval Status": { select: { name: status } } }
+  });
+}
+
+// Count how full each slot is from all submissions (substring match on labels)
+function loadCounts() {
+  fetchSubmissions().then(function(list){
+    var counts = {};
+    WEEKDAY_SESSIONS.concat(WEEKEND_SESSIONS).forEach(function(s){ counts[s.id] = 0; });
+    list.forEach(function(sub){
+      WEEKDAY_SESSIONS.forEach(function(s){ if (sub.weekdayText && sub.weekdayText.indexOf(labelFor(s)) >= 0) counts[s.id]++; });
+      WEEKEND_SESSIONS.forEach(function(s){ if (sub.weekendText && sub.weekendText.indexOf(labelFor(s)) >= 0) counts[s.id]++; });
+    });
+    state.counts = counts;
+    if (state.view === "form") render();
+  }).catch(function(){ /* silent — form still works without live counts */ });
+}
+
+function isFull(sess) { return (state.counts[sess.id] || 0) >= sess.max; }
+
+// ── Validation ──────────────────────────────────────────────────
+function validate() {
+  var e = {};
+  if (state.step === 0) {
+    if (!state.lastName.trim()) e.lastName = "Required";
+    if (!/^\d{4}$/.test(state.phoneLast4)) e.phoneLast4 = "Enter the last 4 digits of your phone";
+    if (!state.currentFreq) e.currentFreq = "Required";
+  }
+  if (state.step === 1) {
+    if (!state.noneWork) {
+      if (state.weekdaySessions.length === 0) e.weekdaySessions = "Pick your sessions or let us know below";
+      else if (state.weekdaySessions.length !== maxSessions()) e.weekdaySessions = "You selected " + state.weekdaySessions.length + " of " + maxSessions() + " required sessions. Add or remove to match your frequency.";
+    }
+    if (state.noneWork && !state.availability.trim()) e.availability = "Tell us when you are available";
+    if (state.weekendRequests.filter(function(r){return !r.reason;}).length) e.weekendReason = "Select Recovery or Reschedule for each weekend slot";
+  }
+  state.errors = e;
+  return Object.keys(e).length === 0;
+}
+
+function submitForm() {
+  if (!validate() || state.submitting) { render(); return; }
+  state.submitting = true; state.submitError = ""; render();
+
+  var weekdayText = WEEKDAY_SESSIONS.filter(function(s){return state.weekdaySessions.indexOf(s.id)>=0;})
+    .map(function(s){return labelFor(s);}).join(", ");
+  var weekendText = state.weekendRequests.map(function(r){
+    var sess = WEEKEND_SESSIONS.filter(function(s){return s.id===r.sessionId;})[0];
+    return labelFor(sess) + " (" + r.reason + ")";
+  }).join(", ");
+  var reasons = state.weekendRequests.map(function(r){return r.reason;});
+  var uniq = reasons.filter(function(v,i){return reasons.indexOf(v)===i;});
+  var weekendReason = uniq.length === 0 ? "None" : (uniq.length === 1 ? uniq[0] : "Multiple");
+
+  createSubmission({
+    title: state.lastName + " \u00B7 " + state.phoneLast4,
+    trainingFrequency: freqOption() ? freqOption().label : "",
+    weekdaySessions: weekdayText,
+    weekendRequests: weekendText || "None",
+    weekendReason: weekendReason,
+    needsFollowUp: state.noneWork,
+    availabilityNotes: state.availability || "",
+    approvalStatus: weekendText ? "Pending" : "N/A",
+    submittedAt: new Date().toISOString()
+  }).then(function(res){
+    state.submitting = false;
+    if (res && res.object === "error") {
+      state.submitError = "Server rejected the submission. Try again in a moment.";
+    } else {
+      state.submitted = true;
+    }
+    render();
+  }).catch(function(){
+    state.submitting = false;
+    state.submitError = "Could not send. Check your connection and try again.";
+    render();
+  });
+}
+
+function resetForm() {
+  state.step = 0; state.submitted = false; state.submitError = "";
+  state.lastName = ""; state.phoneLast4 = ""; state.currentFreq = "";
+  state.weekdaySessions = []; state.weekendRequests = [];
+  state.noneWork = false; state.availability = ""; state.errors = {};
+  render();
+}
+
+// ── Coach ───────────────────────────────────────────────────────
+function coachLogin() {
+  if (state.pin === COACH_PIN) { state.pinError = false; state.view = "coach"; loadSubs(); }
+  else { state.pinError = true; render(); }
+}
+function loadSubs() {
+  state.loadingSubs = true; state.subsError = ""; render();
+  fetchSubmissions().then(function(list){
+    state.subs = list; state.loadingSubs = false; render();
+  }).catch(function(){
+    state.loadingSubs = false; state.subsError = "Could not load from Notion. Check the Worker."; render();
+  });
+}
+function approve(pageId, status) {
+  state.actioning = pageId + status; render();
+  updateApproval(pageId, status).then(function(){
+    state.subs = state.subs.map(function(s){ return s.pageId===pageId ? Object.assign({}, s, {approvalStatus: status}) : s; });
+    state.actioning = ""; render();
+  }).catch(function(){
+    state.actioning = ""; alert("Update failed. Check connection and try again."); render();
+  });
+}
+
+// ── Render ──────────────────────────────────────────────────────
+function render() {
+  var app = document.getElementById("app");
+  if (state.view === "coach_pin") { app.innerHTML = renderPin(); bindPin(); return; }
+  if (state.view === "coach") { app.innerHTML = renderCoach(); bindCoach(); return; }
+  if (state.submitted) { app.innerHTML = renderSuccess(); bindSuccess(); return; }
+  app.innerHTML = renderForm(); bindForm();
+}
+
+function renderPin() {
+  return '<div class="header"><div class="header-title" style="flex:1">Coach Access</div>'
+    + '<button id="pinExit" style="background:transparent;border:none;color:#888;font-size:11px;cursor:pointer;font-weight:600">Back to Form</button></div><div class="body">'
+    + '<div class="coach-pin-wrap"><div class="field"><div class="field-label">PIN</div>'
+    + '<input id="pinInput" type="password" placeholder="Enter PIN" value="' + esc(state.pin) + '">'
+    + (state.pinError ? '<div class="pin-error">Wrong PIN. Try again.</div>' : '') + '</div>'
+    + '<div class="nav-row"><button class="btn-back" id="pinBack">Back to Form</button>'
+    + '<button class="btn-next" id="pinEnter">Enter</button></div></div></div>';
+}
+
+function renderCoach() {
+  var subs = state.subs;
+  var pending = subs.filter(function(s){ return s.weekendText && s.weekendText !== "None" && s.approvalStatus === "Pending"; });
+  var resolved = subs.filter(function(s){ return s.weekendText && s.weekendText !== "None" && (s.approvalStatus === "Approved" || s.approvalStatus === "Denied"); });
+  var follow = subs.filter(function(s){ return s.noneWork; });
+
+  var html = '<div class="header"><div class="header-title" style="flex:1">Coach Dashboard</div>'
+    + '<button id="coachExit" style="background:transparent;border:none;color:#555;font-size:11px;cursor:pointer;font-weight:600">Exit</button></div>'
+    + '<div class="body">';
+  html += '<div class="coach-stat-row">'
+    + '<div class="coach-stat"><div class="coach-stat-num">' + subs.length + '</div><div class="coach-stat-label">Submitted</div></div>'
+    + '<div class="coach-stat"><div class="coach-stat-num' + (pending.length?' amber':' green') + '">' + pending.length + '</div><div class="coach-stat-label">Pending</div></div>'
+    + '<div class="coach-stat"><div class="coach-stat-num' + (follow.length?' red':'') + '">' + follow.length + '</div><div class="coach-stat-label">Follow-Up</div></div>'
+    + '</div>';
+  html += '<div class="coach-tabs">';
+  [["pending","Pending"],["roster","Roster"],["followup","Follow-Up"]].forEach(function(t){
+    html += '<button class="coach-tab' + (state.coachTab===t[0]?' active':'') + '" data-tab="' + t[0] + '">' + t[1] + '</button>';
+  });
+  html += '</div>';
+
+  if (state.loadingSubs) html += '<div class="sync-note">Loading from Notion...</div>';
+  if (state.subsError) html += '<div class="sync-note err">' + state.subsError + '</div>';
+
+  if (!state.loadingSubs && state.coachTab === "pending") {
+    if (!pending.length) html += '<div class="coach-empty">No pending weekend requests.</div>';
+    pending.forEach(function(s){
+      var acA = state.actioning === s.pageId + "Approved";
+      var acD = state.actioning === s.pageId + "Denied";
+      html += '<div class="coach-block"><div class="coach-block-header">'
+        + '<div style="display:flex;flex-direction:column;gap:2px"><span class="coach-block-name">' + esc(s.title) + '</span>'
+        + '<span style="font-size:11px;color:#aaa">' + esc(s.weekendText) + '</span></div>'
+        + '<span class="status-badge pending">' + esc(s.weekendReason || "Pending") + '</span></div>'
+        + '<div class="approve-row">'
+        + '<button class="approve-btn approve" data-approve="' + s.pageId + '"' + (acA?' disabled':'') + '>' + (acA?'...':'Approve') + '</button>'
+        + '<button class="approve-btn deny" data-deny="' + s.pageId + '"' + (acD?' disabled':'') + '>' + (acD?'...':'Deny') + '</button>'
+        + '</div></div>';
+    });
+    if (resolved.length) {
+      html += '<div class="subsection-label" style="margin:8px 0">Resolved</div>';
+      resolved.forEach(function(s){
+        html += '<div class="coach-block"><div class="coach-block-header">'
+          + '<div style="display:flex;flex-direction:column;gap:2px"><span class="coach-block-name">' + esc(s.title) + '</span>'
+          + '<span style="font-size:11px;color:#aaa">' + esc(s.weekendText) + '</span></div>'
+          + '<span class="status-badge ' + s.approvalStatus.toLowerCase() + '">' + esc(s.approvalStatus) + '</span></div></div>';
+      });
+    }
+  }
+
+  if (!state.loadingSubs && state.coachTab === "roster") {
+    if (!subs.length) html += '<div class="coach-empty">No submissions yet.</div>';
+    subs.forEach(function(s){
+      var detail = "";
+      if (s.noneWork) detail = '<span class="coach-detail-line" style="color:#C8102E;font-weight:700">Needs Follow-Up: ' + esc(s.availability) + '</span>';
+      else {
+        if (s.weekdayText) detail += '<span class="coach-detail-line">' + esc(s.weekdayText) + '</span>';
+        if (s.weekendText && s.weekendText !== "None") detail += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="coach-detail-line">' + esc(s.weekendText) + '</span><span class="status-badge ' + s.approvalStatus.toLowerCase() + '">' + esc(s.approvalStatus) + '</span></div>';
+      }
+      html += '<div class="coach-block"><div class="coach-block-header">'
+        + '<div style="display:flex;flex-direction:column;gap:2px"><span class="coach-block-name">' + esc(s.title) + '</span>'
+        + '<span style="font-size:11px;color:#555">' + esc(s.freqLabel) + '</span></div>'
+        + '<span style="font-size:10px;color:#444">' + (s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : "") + '</span></div>'
+        + '<div class="coach-detail">' + detail + '</div></div>';
+    });
+  }
+
+  if (!state.loadingSubs && state.coachTab === "followup") {
+    if (!follow.length) html += '<div class="coach-empty">No follow-ups needed.</div>';
+    follow.forEach(function(s){
+      html += '<div class="coach-block"><div class="coach-block-header">'
+        + '<span class="coach-block-name">' + esc(s.title) + '</span>'
+        + '<span style="font-size:10px;color:#444">' + (s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : "") + '</span></div>'
+        + '<div class="coach-detail"><span class="coach-detail-line">' + esc(s.availability) + '</span></div></div>';
+    });
+  }
+
+  html += '<button class="coach-refresh" id="coachRefresh">Refresh from Notion</button></div>';
+  return html;
+}
+
+function renderSuccess() {
+  var f = freqOption();
+  var wd = WEEKDAY_SESSIONS.filter(function(s){return state.weekdaySessions.indexOf(s.id)>=0;});
+  var wkndCount = state.weekendRequests.length;
+  var chips;
+  if (state.noneWork) chips = '<div class="rrow"><span class="rrow-label">Availability</span><span class="rrow-val">' + esc(state.availability) + '</span></div>';
+  else {
+    chips = wd.map(function(s){return '<div class="review-chip">' + esc(labelFor(s).replace(" ", " · ")) + '</div>';}).join("");
+    chips += state.weekendRequests.map(function(r){
+      var sess = WEEKEND_SESSIONS.filter(function(s){return s.id===r.sessionId;})[0];
+      return '<div class="review-chip-pending"><span>' + esc(sess.day + " · " + sess.time) + '</span>'
+        + '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#F5A623;font-weight:700">' + esc(r.reason) + '</span>'
+        + '<span class="pending-badge">Pending Approval</span></div></div>';
+    }).join("");
+  }
+  return '<div class="header"><div class="header-title">Summer Schedule</div></div><div class="body"><div class="success-wrap">'
+    + '<div class="success-icon">&#10003;</div><div class="success-name">Teammate, you are in.</div>'
+    + '<div class="success-tag">' + wd.length + ' session' + (wd.length!==1?'s':'') + ' locked in'
+    + (wkndCount>0 ? ' + ' + wkndCount + ' weekend request' + (wkndCount>1?'s':'') + ' pending' : '') + '</div>'
+    + '<div class="success-card">'
+    + '<div class="rrow"><span class="rrow-label">Last Name</span><span class="rrow-val">' + esc(state.lastName) + '</span></div>'
+    + '<div class="rrow"><span class="rrow-label">Frequency</span><span class="rrow-val">' + esc(f?f.label:"") + '</span></div>'
+    + '<div class="review-divider"></div>' + chips + '</div>'
+    + '<div class="closing-block"><div class="closing-title">' + getGreeting() + ', Teammate.</div>'
+    + '<p class="closing-text">We got you. Schedule is locked. See you out there.</p>'
+    + '<div class="closing-sign">Coach Fonoti</div></div>'
+    + '<div class="contact-banner"><div class="contact-banner-label">Questions or concerns?</div>'
+    + '<div class="contact-banner-text">Reach out to Coach Fonoti directly. No question is too small.</div></div>'
+    + '<button class="btn-back" style="width:100%;margin-top:8px" id="startOver">Start Over</button>'
+    + '<button class="coach-link" style="color:#333;font-size:11px;margin-top:4px" id="coachEnterSuccess">coach view</button>'
+    + '</div></div>';
+}
+
+function renderForm() {
+  var pct = (state.step / 2) * 100;
+  var f = freqOption();
+  var html = '<div class="header"><div class="header-title">Summer Schedule</div>'
+    + '<button class="coach-link" id="coachEnter">coach</button></div><div class="body">';
+  html += '<div class="prog-wrap">';
+  ["Info","Sessions","Review"].forEach(function(label, i){
+    html += '<div class="prog-item"><div class="prog-dot' + (i<=state.step?' active':'') + '"></div>'
+      + '<div class="prog-label' + (i===state.step?' active':'') + '">' + label + '</div></div>';
+  });
+  html += '</div><div class="prog-track"><div class="prog-fill" style="width:' + pct + '%"></div></div>';
+
+  if (state.step === 0) {
+    html += '<div class="section"><div class="section-title">Update Your Schedule</div>'
+      + '<div class="section-sub">Athlete information.</div><div class="fields">'
+      + '<div class="subsection-label">Athlete</div>'
+      + '<div class="field"><div class="field-label">Last Name</div>'
+      + '<input id="lastName" placeholder="Last name" value="' + esc(state.lastName) + '">'
+      + (state.errors.lastName ? '<div class="field-error">' + state.errors.lastName + '</div>' : '') + '</div>'
+      + '<div class="field"><div class="field-label">Last 4 of your phone number</div>'
+      + '<input id="phoneLast4" inputmode="numeric" maxlength="4" placeholder="1234" value="' + esc(state.phoneLast4) + '">'
+      + (state.errors.phoneLast4 ? '<div class="field-error">' + state.errors.phoneLast4 + '</div>' : '') + '</div>'
+      + '<div class="field"><div class="field-label">What is your committed training frequency?</div><div class="freq-grid">';
+    FREQ_OPTIONS.forEach(function(opt){
+      html += '<button class="freq-btn' + (state.currentFreq===opt.id?' active':'') + '" data-freq="' + opt.id + '">'
+        + '<span class="freq-label">' + opt.label + '</span><span class="freq-sub">' + opt.sub + '</span></button>';
+    });
+    html += '</div>' + (state.errors.currentFreq ? '<div class="field-error">' + state.errors.currentFreq + '</div>' : '') + '</div></div></div>';
+  }
+
+  if (state.step === 1) {
+    html += '<div class="section"><div class="section-title">Pick Your Sessions</div><div class="section-sub">'
+      + (state.currentFreq==="4x" ? "You are training 4x+ a week. Pick any 4 sessions below." : "You are training " + (f?f.label:"") + ". Pick exactly " + maxSessions() + " sessions below.")
+      + '</div><div class="fields">';
+    if (!state.noneWork) {
+      html += '<div class="counter-pill"><span class="counter-label">'
+        + (state.weekdaySessions.length===maxSessions() ? "All sessions selected" : state.weekdaySessions.length + " of " + maxSessions() + " selected")
+        + '</span><div class="counter-dots">';
+      for (var i=0;i<maxSessions();i++) html += '<div class="counter-dot' + (i<state.weekdaySessions.length?' filled':'') + '"></div>';
+      html += '</div></div>';
+    }
+    DAY_ORDER.forEach(function(day){
+      var ds = WEEKDAY_SESSIONS.filter(function(s){return s.day===day;});
+      if (!ds.length) return;
+      html += '<div class="day-group"><div class="day-heading">' + day + '</div>';
+      ds.forEach(function(sess){
+        var full = isFull(sess);
+        var isChecked = state.weekdaySessions.indexOf(sess.id) >= 0;
+        var locked = !isChecked && (atMax() || full);
+        var cls = "sess-btn" + (state.noneWork?" dimmed":(isChecked?" checked":(locked?" locked":"")));
+        html += '<button class="' + cls + '" data-weekday="' + sess.id + '">'
+          + '<div class="checkbox' + (isChecked?' checked':'') + '">' + (isChecked?'<span class="check-mark">&#10003;</span>':'') + '</div>'
+          + '<span class="sess-time">' + sess.time + '</span>'
+          + (full && !isChecked ? '<span class="sess-full-tag">Full</span>' : '') + '</button>';
+      });
+      html += '</div>';
+    });
+    if (state.errors.weekdaySessions) html += '<div class="field-error">' + state.errors.weekdaySessions + '</div>';
+
+    html += '<div><div class="weekend-title">Recovery / Reschedule (Optional)</div>'
+      + '<div class="weekend-sub">Pick any weekend slots you need. Each one requires Coach approval.</div></div>';
+    ["Saturday","Sunday"].forEach(function(day){
+      html += '<div style="display:flex;flex-direction:column;gap:6px"><div class="weekend-day-label">' + day
+        + (day==="Sunday" ? " Recovery / Reschedule / Testing" : " Recovery / Reschedule") + '</div>';
+      WEEKEND_SESSIONS.filter(function(s){return s.day===day;}).forEach(function(sess){
+        var full = isFull(sess);
+        var req = state.weekendRequests.filter(function(r){return r.sessionId===sess.id;})[0];
+        var isChecked = !!req;
+        var cls = "sess-btn" + (isChecked?" checked":(full?" locked":""));
+        html += '<div><button class="' + cls + '" style="width:100%" data-weekend="' + sess.id + '">'
+          + '<div class="checkbox' + (isChecked?' checked':'') + '">' + (isChecked?'<span class="check-mark">&#10003;</span>':'') + '</div>'
+          + '<span class="sess-time">' + sess.time + '</span>'
+          + (full && !isChecked ? '<span class="sess-full-tag">Full</span>' : '') + '</button>';
+        if (isChecked) {
+          html += '<div class="reason-wrap"><div class="reason-label">What is this for?</div><div class="reason-row">'
+            + '<button class="reason-btn' + (req.reason==="Recovery"?' active':'') + '" data-reason="Recovery" data-rsess="' + sess.id + '">Recovery</button>'
+            + '<button class="reason-btn' + (req.reason==="Reschedule"?' active':'') + '" data-reason="Reschedule" data-rsess="' + sess.id + '">Reschedule</button>'
+            + '</div>' + (req.reason ? '<div class="pending-badge">Pending Coach Approval</div>' : '')
+            + (state.errors.weekendReason && !req.reason ? '<div class="field-error">Select Recovery or Reschedule</div>' : '') + '</div>';
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+
+    html += '<div class="none-section"><div class="none-section-label">None of these work?</div>'
+      + '<div class="none-section-text">No problem. Tell us when your athlete is available and Coach Fonoti will reach out to work something out.</div>'
+      + '<button class="none-toggle' + (state.noneWork?' active':'') + '" id="noneToggle">'
+      + (state.noneWork ? "Cancel. I will pick sessions above" : "My schedule does not fit. Reach out to me") + '</button>';
+    if (state.noneWork) {
+      html += '<div class="avail-wrap"><div class="avail-label">When is your athlete available?</div>'
+        + '<textarea id="availability" rows="3" placeholder="e.g. Weekdays after 6pm, Saturday mornings">' + esc(state.availability) + '</textarea>'
+        + (state.errors.availability ? '<div class="field-error">' + state.errors.availability + '</div>' : '')
+        + '<div class="avail-note">Coach Fonoti will personally follow up.</div></div>';
+    }
+    html += '</div></div></div>';
+  }
+
+  if (state.step === 2) {
+    var wd = WEEKDAY_SESSIONS.filter(function(s){return state.weekdaySessions.indexOf(s.id)>=0;});
+    html += '<div class="section"><div class="section-title">Review and Submit</div>'
+      + '<div class="section-sub">Make sure everything looks right.</div><div class="review-card">'
+      + '<div class="rrow"><span class="rrow-label">Last Name</span><span class="rrow-val">' + esc(state.lastName) + '</span></div>'
+      + '<div class="rrow"><span class="rrow-label">Frequency</span><span class="rrow-val">' + esc(f?f.label:"") + '</span></div>'
+      + '<div class="review-divider"></div>';
+    if (state.noneWork) html += '<div class="rrow"><span class="rrow-label">Availability</span><span class="rrow-val">' + esc(state.availability) + '</span></div>';
+    else {
+      html += wd.map(function(s){return '<div class="review-chip">' + esc(s.day + " · " + s.time) + '</div>';}).join("");
+      html += state.weekendRequests.map(function(r){
+        var sess = WEEKEND_SESSIONS.filter(function(s){return s.id===r.sessionId;})[0];
+        return '<div class="review-chip-pending"><span>' + esc(sess.day + " · " + sess.time) + '</span>'
+          + '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#F5A623;font-weight:700">' + esc(r.reason) + '</span>'
+          + '<span class="pending-badge">Pending Approval</span></div></div>';
+      }).join("");
+    }
+    if (state.noneWork) html += '<div class="follow-badge">Flagged for follow-up</div>';
+    html += '</div>';
+    if (state.submitError) html += '<div class="field-error" style="text-align:center">' + state.submitError + '</div>';
+    html += '</div>';
+  }
+
+  html += '<div class="nav-row">';
+  if (state.step > 0) html += '<button class="btn-back" id="backBtn">Back</button>';
+  if (state.step < 2) html += '<button class="btn-next' + (state.step===0?' full':'') + '" id="nextBtn">Next</button>';
+  else html += '<button class="btn-next" id="submitBtn"' + (state.submitting?' disabled':'') + '>' + (state.submitting?'Sending...':'Submit') + '</button>';
+  html += '</div></div>';
+  return html;
+}
+
+// ── Bindings ────────────────────────────────────────────────────
+function bindForm() {
+  var ln = document.getElementById("lastName");
+  if (ln) ln.oninput = function(){ state.lastName = this.value; };
+  var p4 = document.getElementById("phoneLast4");
+  if (p4) p4.oninput = function(){ state.phoneLast4 = this.value.replace(/\D/g,"").slice(0,4); };
+  var av = document.getElementById("availability");
+  if (av) av.oninput = function(){ state.availability = this.value; };
+
+  each("[data-freq]", function(btn){ btn.onclick = function(){ state.currentFreq = this.getAttribute("data-freq"); state.weekdaySessions = []; delete state.errors.currentFreq; render(); }; });
+  each("[data-weekday]", function(btn){ btn.onclick = function(){
+    if (state.noneWork) return;
+    var id = this.getAttribute("data-weekday");
+    var sess = WEEKDAY_SESSIONS.filter(function(s){return s.id===id;})[0];
+    var has = state.weekdaySessions.indexOf(id) >= 0;
+    if (!has && (atMax() || isFull(sess))) return;
+    if (has) state.weekdaySessions = state.weekdaySessions.filter(function(s){return s!==id;});
+    else state.weekdaySessions.push(id);
+    delete state.errors.weekdaySessions; render();
+  }; });
+  each("[data-weekend]", function(btn){ btn.onclick = function(){
+    var id = this.getAttribute("data-weekend");
+    var sess = WEEKEND_SESSIONS.filter(function(s){return s.id===id;})[0];
+    var exists = state.weekendRequests.filter(function(r){return r.sessionId===id;})[0];
+    if (!exists && isFull(sess)) return;
+    if (exists) state.weekendRequests = state.weekendRequests.filter(function(r){return r.sessionId!==id;});
+    else state.weekendRequests.push({ sessionId: id, reason: "" });
+    render();
+  }; });
+  each("[data-reason]", function(btn){ btn.onclick = function(){
+    var id = this.getAttribute("data-rsess"), reason = this.getAttribute("data-reason");
+    state.weekendRequests = state.weekendRequests.map(function(r){ return r.sessionId===id ? {sessionId:id, reason:reason} : r; });
+    delete state.errors.weekendReason; render();
+  }; });
+  var nt = document.getElementById("noneToggle");
+  if (nt) nt.onclick = function(){ state.noneWork = !state.noneWork; if (state.noneWork) state.weekdaySessions = []; delete state.errors.weekdaySessions; delete state.errors.availability; render(); };
+  var back = document.getElementById("backBtn"); if (back) back.onclick = function(){ state.step--; render(); };
+  var next = document.getElementById("nextBtn"); if (next) next.onclick = function(){ if (validate()) state.step++; render(); };
+  var submit = document.getElementById("submitBtn"); if (submit) submit.onclick = submitForm;
+  var ce = document.getElementById("coachEnter"); if (ce) ce.onclick = function(){ state.view = "coach_pin"; render(); };
+}
+function bindSuccess() {
+  var so = document.getElementById("startOver"); if (so) so.onclick = resetForm;
+  var ce = document.getElementById("coachEnterSuccess"); if (ce) ce.onclick = function(){ state.submitted = false; state.view = "coach_pin"; render(); };
+}
+function bindPin() {
+  var pi = document.getElementById("pinInput");
+  if (pi) pi.oninput = function(){ state.pin = this.value; };
+  if (pi) pi.onkeydown = function(e){ if (e.key === "Enter") coachLogin(); };
+  function backToForm(){ state.pin=""; state.pinError=false; state.view="form"; state.submitted=false; state.step=0; render(); }
+  var b = document.getElementById("pinBack"); if (b) b.onclick = backToForm;
+  var ex = document.getElementById("pinExit"); if (ex) ex.onclick = backToForm;
+  var en = document.getElementById("pinEnter"); if (en) en.onclick = coachLogin;
+}
+function bindCoach() {
+  each("[data-tab]", function(btn){ btn.onclick = function(){ state.coachTab = this.getAttribute("data-tab"); render(); }; });
+  each("[data-approve]", function(btn){ btn.onclick = function(){ approve(this.getAttribute("data-approve"), "Approved"); }; });
+  each("[data-deny]", function(btn){ btn.onclick = function(){ approve(this.getAttribute("data-deny"), "Denied"); }; });
+  var ex = document.getElementById("coachExit"); if (ex) ex.onclick = function(){ state.pin=""; state.view="form"; state.submitted=false; state.step=0; render(); };
+  var rf = document.getElementById("coachRefresh"); if (rf) rf.onclick = loadSubs;
+}
+function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+
+render();
+loadCounts();
+</script>
+</body>
+</html>
