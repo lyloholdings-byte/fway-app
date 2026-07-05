@@ -170,8 +170,8 @@ var state = {
   view: "form", step: 0, submitted: false, submitting: false, submitError: "",
   lastName: "", phoneLast4: "", currentFreq: "",
   weekdaySessions: [], weekendRequests: [], noneWork: false, availability: "",
-  errors: {}, counts: {},
-  pin: "", pinError: false,
+  errors: {}, counts: {}, confirming: false,
+  pin: "", pinError: false, coachUnlocked: false,
   coachTab: "pending", subs: [], loadingSubs: false, subsError: "", actioning: ""
 };
 
@@ -309,7 +309,7 @@ function submitForm() {
   }).then(function(res){
     state.submitting = false;
     if (res && res.object === "error") {
-      state.submitError = "Server rejected the submission. Try again in a moment.";
+      state.submitError = "Notion says: " + (res.message || res.code || "unknown error");
     } else {
       state.submitted = true;
     }
@@ -325,13 +325,13 @@ function resetForm() {
   state.step = 0; state.submitted = false; state.submitError = "";
   state.lastName = ""; state.phoneLast4 = ""; state.currentFreq = "";
   state.weekdaySessions = []; state.weekendRequests = [];
-  state.noneWork = false; state.availability = ""; state.errors = {};
+  state.noneWork = false; state.availability = ""; state.errors = {}; state.confirming = false;
   render();
 }
 
 // ── Coach ───────────────────────────────────────────────────────
 function coachLogin() {
-  if (state.pin === COACH_PIN) { state.pinError = false; state.view = "coach"; loadSubs(); }
+  if (state.pin === COACH_PIN) { state.pinError = false; state.coachUnlocked = true; state.view = "coach"; loadSubs(); }
   else { state.pinError = true; render(); }
 }
 function loadSubs() {
@@ -478,8 +478,9 @@ function renderSuccess() {
     + '<div class="closing-sign">Coach Fonoti</div></div>'
     + '<div class="contact-banner"><div class="contact-banner-label">Questions or concerns?</div>'
     + '<div class="contact-banner-text">Reach out to Coach Fonoti directly. No question is too small.</div></div>'
-    + '<button class="btn-back" style="width:100%;margin-top:8px" id="startOver">Start Over</button>'
-    + '<button class="coach-link" style="color:#333;font-size:11px;margin-top:4px" id="coachEnterSuccess">coach view</button>'
+    + (state.coachUnlocked
+        ? '<button class="btn-back" style="width:100%;margin-top:8px" id="startOver">Start Over</button><button class="coach-link" style="color:#333;font-size:11px;margin-top:4px" id="coachEnterSuccess">coach view</button>'
+        : '<button class="coach-link" style="color:#141414;font-size:10px;margin-top:8px" id="coachEnterSuccess">coach</button>')
     + '</div></div>';
 }
 
@@ -600,6 +601,7 @@ function renderForm() {
     }
     if (state.noneWork) html += '<div class="follow-badge">Flagged for follow-up</div>';
     html += '</div>';
+    if (state.confirming) html += '<div style="text-align:center;font-size:13px;color:#F5A623;font-weight:700;margin-top:4px">Double check everything above. Ready to lock it in?</div>';
     if (state.submitError) html += '<div class="field-error" style="text-align:center">' + state.submitError + '</div>';
     html += '</div>';
   }
@@ -607,7 +609,11 @@ function renderForm() {
   html += '<div class="nav-row">';
   if (state.step > 0) html += '<button class="btn-back" id="backBtn">Back</button>';
   if (state.step < 2) html += '<button class="btn-next' + (state.step===0?' full':'') + '" id="nextBtn">Next</button>';
-  else html += '<button class="btn-next" id="submitBtn"' + (state.submitting?' disabled':'') + '>' + (state.submitting?'Sending...':'Submit') + '</button>';
+  else if (state.confirming) {
+    html += '<button class="btn-back" id="cancelSubmit">Go Back</button>'
+      + '<button class="btn-next" id="confirmSubmit"' + (state.submitting?' disabled':'') + '>' + (state.submitting?'Sending...':'Yes, Submit') + '</button>';
+  }
+  else html += '<button class="btn-next" id="submitBtn">Submit</button>';
   html += '</div></div>';
   return html;
 }
@@ -650,7 +656,9 @@ function bindForm() {
   if (nt) nt.onclick = function(){ state.noneWork = !state.noneWork; if (state.noneWork) state.weekdaySessions = []; delete state.errors.weekdaySessions; delete state.errors.availability; render(); };
   var back = document.getElementById("backBtn"); if (back) back.onclick = function(){ state.step--; render(); };
   var next = document.getElementById("nextBtn"); if (next) next.onclick = function(){ if (validate()) state.step++; render(); };
-  var submit = document.getElementById("submitBtn"); if (submit) submit.onclick = submitForm;
+  var submit = document.getElementById("submitBtn"); if (submit) submit.onclick = function(){ if (validate()) { state.confirming = true; render(); } else render(); };
+  var confirmBtn = document.getElementById("confirmSubmit"); if (confirmBtn) confirmBtn.onclick = submitForm;
+  var cancelBtn = document.getElementById("cancelSubmit"); if (cancelBtn) cancelBtn.onclick = function(){ state.confirming = false; render(); };
   var ce = document.getElementById("coachEnter"); if (ce) ce.onclick = function(){ state.view = "coach_pin"; render(); };
 }
 function bindSuccess() {
