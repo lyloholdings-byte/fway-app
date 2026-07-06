@@ -207,6 +207,12 @@ function getGreeting() {
   if (h < 18) return "Manaia le aoauli";
   return "Manaia le po";
 }
+function getGreeting() {
+  var h = new Date().getHours();
+  if (h < 12) return "Manaia le taeao";
+  if (h < 18) return "Manaia le aoauli";
+  return "Manaia le po";
+}
 function freqOption() { return FREQ_OPTIONS.filter(function(f){return f.id===state.currentFreq;})[0]; }
 function maxSessions() { var f = freqOption(); return f ? f.max : 4; }
 function atMax() { return maxSessions() > 0 && state.weekdaySessions.length >= maxSessions(); }
@@ -624,9 +630,6 @@ function renderSuccess() {
     + '<div class="rrow"><span class="rrow-label">Last Name</span><span class="rrow-val">' + esc(state.lastName) + '</span></div>'
     + '<div class="rrow"><span class="rrow-label">Frequency</span><span class="rrow-val">' + esc(f?f.label:"") + '</span></div>'
     + '<div class="review-divider"></div>' + chips + '</div>'
-    + '<div class="closing-block"><div class="closing-title">' + getGreeting() + ', Teammate.</div>'
-    + '<p class="closing-text">We got you. Schedule is locked. See you out there.</p>'
-    + '<div class="closing-sign">Coach Fonoti</div></div>'
     + '<div class="contact-banner"><div class="contact-banner-label">Questions or concerns?</div>'
     + '<div class="contact-banner-text">Reach out to Coach Fonoti directly. No question is too small.</div></div>'
     + (state.coachUnlocked
@@ -669,7 +672,9 @@ function renderForm() {
   if (state.step === 1) {
     html += '<div class="section"><div class="section-title">Pick Your Sessions</div><div class="section-sub">'
       + (state.currentFreq==="4x" ? "You are training 4x+ a week. Pick any 4 sessions below." : "You are training " + (f?f.label:"") + ". Pick exactly " + maxSessions() + " sessions below.")
-      + '</div><div class="fields">';
+      + '</div>'
+      + '<div style="font-size:11px;color:#888;background:#141414;border-left:2px solid #C8102E;border-radius:4px;padding:8px 10px;line-height:1.45;margin-bottom:4px">Filling this out again replaces your whole week. Pick every session you want, not just changes.</div>'
+      + '<div class="fields">';
     if (!state.noneWork) {
       html += '<div class="counter-pill"><span class="counter-label">'
         + (state.weekdaySessions.length===maxSessions() ? "All sessions selected" : state.weekdaySessions.length + " of " + maxSessions() + " selected")
@@ -718,7 +723,7 @@ function renderForm() {
 
     html += '<div class="none-section"><div class="none-section-label">None of these work?</div>';
     if (!state.noneWork) {
-      html += '<button class="none-toggle" id="noneToggle">This schedule does not fit</button>';
+      html += '<button class="none-toggle" id="noneToggle">Click here</button>';
     } else {
       html += '<div class="avail-wrap"><div class="avail-label">When can you train? Give days, times, and dates.</div>'
         + '<textarea id="availability" rows="4" placeholder="Example: I need Wednesday at 10:00 AM on 7/9. Also free Saturday mornings before noon.">' + esc(state.availability) + '</textarea>'
