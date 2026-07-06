@@ -358,15 +358,19 @@ function submitForm() {
     weekOf: weekOfLabel()
   }).then(function(res){
     state.submitting = false;
-    if (res && res.object === "error") {
+    if (res && res.id && res.object === "page") {
+      // Notion confirmed the page was created
+      state.submitted = true;
+    } else if (res && res.object === "error") {
       state.submitError = "Notion says: " + (res.message || res.code || "unknown error");
     } else {
-      state.submitted = true;
+      // Unexpected response shape - do NOT show false success
+      state.submitError = "Submission did not save. Please try again. (No confirmation from server)";
     }
     render();
-  }).catch(function(){
+  }).catch(function(err){
     state.submitting = false;
-    state.submitError = "Could not send. Check your connection and try again.";
+    state.submitError = "Could not send: " + (err && err.message ? err.message : "connection issue") + ". Try again.";
     render();
   });
 }
@@ -671,9 +675,10 @@ function renderForm() {
 
   if (state.step === 1) {
     html += '<div class="section"><div class="section-title">Pick Your Sessions</div><div class="section-sub">'
-      + (state.currentFreq==="4x" ? "You are training 4x+ a week. Pick any 4 sessions below." : "You are training " + (f?f.label:"") + ". Pick exactly " + maxSessions() + " sessions below.")
+      + (state.currentFreq==="4x" ? "You are training 4x+ a week. Pick any 4 below." : "You are training " + (f?f.label:"") + ". Pick exactly " + maxSessions() + " below.")
+      + ' Filling this out again replaces your whole week.'
       + '</div>'
-      + '<div style="font-size:11px;color:#888;background:#141414;border-left:2px solid #C8102E;border-radius:4px;padding:8px 10px;line-height:1.45;margin-bottom:4px">Filling this out again replaces your whole week. Pick every session you want, not just changes.</div>'
+      + '<div style="font-size:11px;color:#F5A623;background:#141210;border-left:2px solid #F5A623;border-radius:4px;padding:8px 10px;line-height:1.5;margin-bottom:4px">Spread your days out so your body recovers. Example: Sunday, Tuesday, Thursday beats three days in a row. Cannot spread them out? Pick whatever works.</div>'
       + '<div class="fields">';
     if (!state.noneWork) {
       html += '<div class="counter-pill"><span class="counter-label">'
@@ -721,7 +726,7 @@ function renderForm() {
     });
     html += '</div>';
 
-    html += '<div class="none-section"><div class="none-section-label">None of these work?</div>';
+    html += '<div class="none-section"><div class="none-section-label">None of the training times above work for you this week?</div>';
     if (!state.noneWork) {
       html += '<button class="none-toggle" id="noneToggle">Click here</button>';
     } else {
