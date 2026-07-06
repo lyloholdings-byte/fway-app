@@ -2458,6 +2458,7 @@ function renderClip(){
       <div style="padding:15px 17px 18px">
         <p style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;margin-bottom:12px">${clip.title||"Today's Clip"}</p>
         <div style="height:1px;background:#1E1E2E;margin-bottom:14px"></div>
+        ${clip.explanation?`<div style="background:#13131E;border-radius:10px;padding:12px 14px;margin-bottom:12px"><p style="font-size:13px;color:#C0C0D8;line-height:1.6">${clip.explanation}</p></div>`:''}
         ${watched
           ?`<div>
             <div style="background:#22C55E14;border:1px solid #22C55E50;border-radius:11px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="font-size:20px">✅</span><p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#22C55E">DONE — Coach Fonoti has your answer</p></div>
@@ -3071,7 +3072,7 @@ function renderCoachClip(){
     </div>
     <div style="display:flex;gap:8px">
       <button onclick="cTab('logs')" style="flex:1;background:#13131E;border:1px solid #303050;border-radius:10px;padding:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:#9A9AB0;cursor:pointer">VIEW LOGS</button>
-      <button onclick="state.clipPushed=false;state.lastClipPushed=null;localStorage.removeItem('fw_last_clip');state.clipForm={url:'',title:'',question:'',action:''};renderCoach();" style="flex:1;background:none;border:1px solid #303050;border-radius:10px;padding:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:#9A9AB0;cursor:pointer">NEW CLIP</button>
+      <button onclick="state.clipPushed=false;state.lastClipPushed=null;localStorage.removeItem('fw_last_clip');state.clipForm={url:'',title:'',explanation:'',question:'',action:''};renderCoach();" style="flex:1;background:none;border:1px solid #303050;border-radius:10px;padding:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:#9A9AB0;cursor:pointer">NEW CLIP</button>
     </div>`;
   }
   const draft=state.clipDraft;
@@ -3098,6 +3099,9 @@ function renderCoachClip(){
       <input id="clip-url" value="${state.clipForm.url}" oninput="state.clipForm.url=this.value" placeholder="YouTube or any link — leave blank for question only" style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:9px 12px;font-size:14px;outline:none;margin-bottom:12px"/>
       <span class="lbl">Title</span>
       <input id="clip-title" value="${state.clipForm.title}" oninput="state.clipForm.title=this.value" placeholder="e.g. Keys to the Release" style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:9px 12px;font-size:14px;outline:none;margin-bottom:12px"/>
+      <span class="lbl">Explanation <span style="color:#555;font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">— short context for the athlete</span></span>
+      <textarea id="clip-explanation" rows="2" oninput="state.clipForm.explanation=this.value" placeholder="e.g. This is about staying locked in even when nobody's watching. Discipline builds the athlete nobody can take from you." style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:9px 12px;font-size:14px;outline:none;resize:none;line-height:1.5;margin-bottom:4px;box-sizing:border-box">${state.clipForm.explanation||''}</textarea>
+      <p style="font-size:10px;color:#555;margin-bottom:12px">Athletes see this before the question — keeps it grounded</p>
       <div style="height:1px;background:#1E1E2E;margin:4px 0 12px"></div>
       <span class="lbl">Question for athletes</span>
       <input id="clip-question" value="${state.clipForm.question||''}" oninput="state.clipForm.question=this.value" placeholder="e.g. What does discipline need to look like for you this week?" style="width:100%;background:#0A0A12;border:1px solid #303050;border-radius:9px;color:#F0EDE6;padding:9px 12px;font-size:14px;outline:none;margin-bottom:4px"/>
@@ -3121,7 +3125,7 @@ function previewClip(){
   if(!question&&!url){flash('Add a question or a clip link','#F59E0B');return;}
   const ytId=url?getYTId(url):null;
   const draftTitle=(state.clipForm.title||'').trim()||(url?"Today's Clip":"This Week's Question");
-  state.clipDraft={type:url?(ytId?'youtube':'link'):'question',ytId:ytId||null,url:url||'',title:draftTitle,question:question,action:state.clipForm.action||'',pushedDate:state.todayDate};
+  state.clipDraft={type:url?(ytId?'youtube':'link'):'question',ytId:ytId||null,url:url||'',title:draftTitle,explanation:state.clipForm.explanation||'',question:question,action:state.clipForm.action||'',pushedDate:state.todayDate};
   renderCoach();
 }
 function goLiveClip(){
@@ -3134,7 +3138,7 @@ function goLiveClip(){
   const ex=state.clipBank.find(b=>b.url===clip.url);
   const updated=ex?state.clipBank.map(b=>b.url===clip.url?{...b,timesPushed:(b.timesPushed||1)+1,lastPushed:state.todayDate}:b):[{url:clip.url,title:clip.title,timesPushed:1,lastPushed:state.todayDate},...state.clipBank].slice(0,20);
   state.clipBank=updated;save('fway_clip_bank',state.clipBank);
-  state.clipPushed=true;state.clipDraft=null;state.clipForm={url:'',title:'',question:'',action:''};
+  state.clipPushed=true;state.clipDraft=null;state.clipForm={url:'',title:'',explanation:'',question:'',action:''};
   // Push to FWAY Clip Bank in Notion
   /* AI feature coming soon */
   flash('Clip is now live');renderCoach();
