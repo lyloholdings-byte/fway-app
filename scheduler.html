@@ -378,15 +378,29 @@ function runLookup() {
     state.lookupError = "Enter your last name and last 4 of your phone."; render(); return;
   }
   state.lookingUp = true; state.lookupError = ""; state.lookupResult = null; state.lookupDone = false; render();
-  var key = (state.lookupLast.trim() + " \u00B7 " + state.lookupPhone).toLowerCase();
+  var wantName = state.lookupLast.trim().toLowerCase();
+  var wantPhone = state.lookupPhone;
   fetchSubmissions().then(function(list){
-    // this week only, newest first already, find match
     var wk = weekOfLabel();
-    var scoped = list.filter(function(s){ return s.weekOf === wk; });
-    var match = scoped.filter(function(s){ return (s.title || "").toLowerCase() === key; })[0];
+    // match on last name + last 4 appearing in the title, forgiving of spacing/dot
+    var match = list.filter(function(s){
+      var t = (s.title || "").toLowerCase();
+      var nameOk = t.indexOf(wantName) >= 0;
+      var phoneOk = t.indexOf(wantPhone) >= 0;
+      return nameOk && phoneOk && (s.weekOf === wk);
+    })[0];
+    // if none this week, fall back to their most recent overall
+    if (!match) {
+      match = list.filter(function(s){
+        var t = (s.title || "").toLowerCase();
+        return t.indexOf(wantName) >= 0 && t.indexOf(wantPhone) >= 0;
+      })[0];
+    }
     state.lookingUp = false; state.lookupDone = true; state.lookupResult = match || null; render();
-  }).catch(function(){
-    state.lookingUp = false; state.lookupError = "Could not check right now. Try again in a moment."; render();
+  }).catch(function(err){
+    state.lookingUp = false;
+    state.lookupError = "Could not check right now: " + (err && err.message ? err.message : "connection issue") + ". Try again.";
+    render();
   });
 }
 
