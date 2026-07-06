@@ -138,6 +138,9 @@ var DB_ID = "02ceed5f45fb464ca4015a278e509732";
 var COACH_PIN = "0109";
 
 var WEEKDAY_SESSIONS = [
+  { id: "sun_1130", day: "Sunday", time: "11:30 AM - 12:30 PM", max: 12 },
+  { id: "sun_100",  day: "Sunday", time: "1:00 - 2:00 PM", max: 12 },
+  { id: "sun_230",  day: "Sunday", time: "2:30 - 3:30 PM", max: 12 },
   { id: "mon_430", day: "Monday", time: "4:30 - 5:30 PM", max: 8 },
   { id: "mon_530", day: "Monday", time: "5:30 - 6:30 PM", max: 8 },
   { id: "tue_530", day: "Tuesday", time: "5:30 - 6:30 PM", max: 12 },
@@ -148,22 +151,43 @@ var WEEKDAY_SESSIONS = [
   { id: "fri_430", day: "Friday", time: "4:30 - 5:30 PM", max: 8 },
   { id: "fri_530", day: "Friday", time: "5:30 - 6:30 PM", max: 8 }
 ];
+// Saturday = optional Recovery only
 var WEEKEND_SESSIONS = [
   { id: "sat_730", day: "Saturday", time: "7:30 - 9:00 AM", max: 12 },
   { id: "sat_900", day: "Saturday", time: "9:00 - 10:30 AM", max: 12 },
-  { id: "sat_1030", day: "Saturday", time: "10:30 AM - 12:00 PM", max: 12 },
-  { id: "sun_1130", day: "Sunday", time: "11:30 AM - 12:30 PM", max: 12 },
-  { id: "sun_100", day: "Sunday", time: "1:00 - 2:00 PM", max: 12 },
-  { id: "sun_230", day: "Sunday", time: "2:30 - 3:30 PM", max: 12 }
+  { id: "sat_1030", day: "Saturday", time: "10:30 AM - 12:00 PM", max: 12 }
 ];
 var FREQ_OPTIONS = [
   { id: "2x", label: "2x / week", sub: "Twice a week", max: 2 },
   { id: "3x", label: "3x / week", sub: "Three times a week", max: 3 },
   { id: "4x", label: "4x+ / week", sub: "Four or more times", max: 4 }
 ];
-var DAY_ORDER = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+var DAY_ORDER = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"];
+var DAY_OFFSET = { Sunday:0, Monday:1, Tuesday:2, Wednesday:3, Thursday:4, Friday:5, Saturday:6 };
 
 function labelFor(sess) { return sess.day + " " + sess.time; }
+function chipLabel(sess) { return sess.day + " \u00B7 " + dateForDay(sess.day) + " \u00B7 " + sess.time; }
+
+// The upcoming Sunday that starts the week they are scheduling.
+// If today is Sunday, use today. Otherwise the coming Sunday.
+function weekSunday() {
+  var d = new Date();
+  var day = d.getDay(); // 0 = Sunday
+  var add = day === 0 ? 0 : (7 - day);
+  d.setDate(d.getDate() + add);
+  d.setHours(0,0,0,0);
+  return d;
+}
+function weekOfLabel() {
+  var s = weekSunday();
+  return "Week of " + (s.getMonth()+1) + "/" + s.getDate() + "/" + String(s.getFullYear()).slice(2);
+}
+function dateForDay(dayName) {
+  var s = weekSunday();
+  var d = new Date(s);
+  d.setDate(s.getDate() + (DAY_OFFSET[dayName] || 0));
+  return (d.getMonth()+1) + "/" + d.getDate();
+}
 
 // ── State ───────────────────────────────────────────────────────
 var state = {
@@ -172,7 +196,8 @@ var state = {
   weekdaySessions: [], weekendRequests: [], noneWork: false, availability: "",
   errors: {}, counts: {}, confirming: false,
   pin: "", pinError: false, coachUnlocked: false,
-  coachTab: "pending", subs: [], loadingSubs: false, subsError: "", actioning: ""
+  coachTab: "pending", subs: [], loadingSubs: false, subsError: "", actioning: "",
+  lookupLast: "", lookupPhone: "", lookupResult: null, lookingUp: false, lookupError: "", lookupDone: false
 };
 
 function getGreeting() {
@@ -182,8 +207,8 @@ function getGreeting() {
   return "Manaia le po";
 }
 function freqOption() { return FREQ_OPTIONS.filter(function(f){return f.id===state.currentFreq;})[0]; }
-function maxSessions() { var f = freqOption(); return f ? f.max : 0; }
-function atMax() { return state.weekdaySessions.length >= maxSessions(); }
+function maxSessions() { var f = freqOption(); return f ? f.max : 4; }
+function atMax() { return maxSessions() > 0 && state.weekdaySessions.length >= maxSessions(); }
 function esc(s) { return String(s==null?"":s).replace(/[&<>"']/g, function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
 
 // ── Notion via Worker (correct contract) ────────────────────────
@@ -203,6 +228,7 @@ function createSubmission(payload) {
     "Weekend Requests": { rich_text: [{ text: { content: payload.weekendRequests || "None" } }] },
     "Approval Status": { select: { name: payload.approvalStatus } },
     "Needs Follow Up": { checkbox: payload.needsFollowUp },
+    "Week Of": { rich_text: [{ text: { content: payload.weekOf || "" } }] },
     "Availability Notes": { rich_text: [{ text: { content: payload.availabilityNotes || "" } }] },
     "Submitted At": { date: { start: payload.submittedAt } }
   };
@@ -233,6 +259,8 @@ function fetchSubmissions() {
         weekendReason: sel("Weekend Reason"),
         approvalStatus: sel("Approval Status") || "N/A",
         noneWork: (pr["Needs Follow Up"] && pr["Needs Follow Up"].checkbox) || false,
+        handled: (pr["Handled"] && pr["Handled"].checkbox) || false,
+        weekOf: rt("Week Of"),
         availability: rt("Availability Notes"),
         submittedAt: (pr["Submitted At"] && pr["Submitted At"].date && pr["Submitted At"].date.start) || ""
       };
@@ -246,12 +274,27 @@ function updateApproval(pageId, status) {
   });
 }
 
+// Reduce to this week's submissions, newest per athlete (latest wins)
+function thisWeekLatest(list) {
+  var wk = weekOfLabel();
+  var thisWeek = list.filter(function(s){ return s.weekOf === wk; });
+  var seen = {};
+  var out = [];
+  // list is newest-first, so first occurrence per title is the latest
+  thisWeek.forEach(function(s){
+    var key = (s.title || "").toLowerCase();
+    if (!seen[key]) { seen[key] = true; out.push(s); }
+  });
+  return out;
+}
+
 // Count how full each slot is from all submissions (substring match on labels)
 function loadCounts() {
   fetchSubmissions().then(function(list){
+    var scoped = thisWeekLatest(list);
     var counts = {};
     WEEKDAY_SESSIONS.concat(WEEKEND_SESSIONS).forEach(function(s){ counts[s.id] = 0; });
-    list.forEach(function(sub){
+    scoped.forEach(function(sub){
       WEEKDAY_SESSIONS.forEach(function(s){ if (sub.weekdayText && sub.weekdayText.indexOf(labelFor(s)) >= 0) counts[s.id]++; });
       WEEKEND_SESSIONS.forEach(function(s){ if (sub.weekendText && sub.weekendText.indexOf(labelFor(s)) >= 0) counts[s.id]++; });
     });
@@ -276,7 +319,6 @@ function validate() {
       else if (state.weekdaySessions.length !== maxSessions()) e.weekdaySessions = "You selected " + state.weekdaySessions.length + " of " + maxSessions() + " required sessions. Add or remove to match your frequency.";
     }
     if (state.noneWork && !state.availability.trim()) e.availability = "Tell us when you are available";
-    if (state.weekendRequests.filter(function(r){return !r.reason;}).length) e.weekendReason = "Select Recovery or Reschedule for each weekend slot";
   }
   state.errors = e;
   return Object.keys(e).length === 0;
@@ -288,13 +330,13 @@ function submitForm() {
 
   var weekdayText = WEEKDAY_SESSIONS.filter(function(s){return state.weekdaySessions.indexOf(s.id)>=0;})
     .map(function(s){return labelFor(s);}).join(", ");
-  var weekendText = state.weekendRequests.map(function(r){
+
+  var recoveryText = state.weekendRequests.map(function(r){
     var sess = WEEKEND_SESSIONS.filter(function(s){return s.id===r.sessionId;})[0];
-    return labelFor(sess) + " (" + r.reason + ")";
-  }).join(", ");
-  var reasons = state.weekendRequests.map(function(r){return r.reason;});
-  var uniq = reasons.filter(function(v,i){return reasons.indexOf(v)===i;});
-  var weekendReason = uniq.length === 0 ? "None" : (uniq.length === 1 ? uniq[0] : "Multiple");
+    return labelFor(sess) + " (Recovery)";
+  });
+  var weekendText = recoveryText.join(", ");
+  var weekendReason = recoveryText.length ? "Recovery" : "None";
 
   createSubmission({
     title: state.lastName + " \u00B7 " + state.phoneLast4,
@@ -305,7 +347,8 @@ function submitForm() {
     needsFollowUp: state.noneWork,
     availabilityNotes: state.availability || "",
     approvalStatus: weekendText ? "Pending" : "N/A",
-    submittedAt: new Date().toISOString()
+    submittedAt: new Date().toISOString(),
+    weekOf: weekOfLabel()
   }).then(function(res){
     state.submitting = false;
     if (res && res.object === "error") {
@@ -330,6 +373,23 @@ function resetForm() {
 }
 
 // ── Coach ───────────────────────────────────────────────────────
+function runLookup() {
+  if (!state.lookupLast.trim() || !/^\d{4}$/.test(state.lookupPhone)) {
+    state.lookupError = "Enter your last name and last 4 of your phone."; render(); return;
+  }
+  state.lookingUp = true; state.lookupError = ""; state.lookupResult = null; state.lookupDone = false; render();
+  var key = (state.lookupLast.trim() + " \u00B7 " + state.lookupPhone).toLowerCase();
+  fetchSubmissions().then(function(list){
+    // this week only, newest first already, find match
+    var wk = weekOfLabel();
+    var scoped = list.filter(function(s){ return s.weekOf === wk; });
+    var match = scoped.filter(function(s){ return (s.title || "").toLowerCase() === key; })[0];
+    state.lookingUp = false; state.lookupDone = true; state.lookupResult = match || null; render();
+  }).catch(function(){
+    state.lookingUp = false; state.lookupError = "Could not check right now. Try again in a moment."; render();
+  });
+}
+
 function coachLogin() {
   if (state.pin === COACH_PIN) { state.pinError = false; state.coachUnlocked = true; state.view = "coach"; loadSubs(); }
   else { state.pinError = true; render(); }
@@ -351,14 +411,73 @@ function approve(pageId, status) {
     state.actioning = ""; alert("Update failed. Check connection and try again."); render();
   });
 }
+function markHandled(pageId, handled) {
+  state.actioning = pageId + "handled"; render();
+  notionRequest("https://api.notion.com/v1/pages/" + pageId, "PATCH", {
+    properties: { "Handled": { checkbox: handled } }
+  }).then(function(){
+    state.subs = state.subs.map(function(s){ return s.pageId===pageId ? Object.assign({}, s, {handled: handled}) : s; });
+    state.actioning = ""; render();
+  }).catch(function(){
+    state.actioning = ""; alert("Update failed. Check connection and try again."); render();
+  });
+}
 
 // ── Render ──────────────────────────────────────────────────────
 function render() {
   var app = document.getElementById("app");
+  if (state.view === "lookup") { app.innerHTML = renderLookup(); bindLookup(); return; }
   if (state.view === "coach_pin") { app.innerHTML = renderPin(); bindPin(); return; }
   if (state.view === "coach") { app.innerHTML = renderCoach(); bindCoach(); return; }
   if (state.submitted) { app.innerHTML = renderSuccess(); bindSuccess(); return; }
   app.innerHTML = renderForm(); bindForm();
+}
+
+function renderLookup() {
+  var html = '<div class="header"><div class="header-title" style="flex:1">My Schedule</div>'
+    + '<button id="lookupExit" style="background:transparent;border:none;color:#888;font-size:11px;cursor:pointer;font-weight:600">Back</button></div><div class="body">';
+  html += '<div class="section"><div class="section-title">Check Your Schedule</div>'
+    + '<div class="section-sub">Enter your info to see what you are signed up for and the status of any weekend request.</div>'
+    + '<div class="fields">'
+    + '<div class="field"><div class="field-label">Last Name</div>'
+    + '<input id="lookupLast" placeholder="Last name" value="' + esc(state.lookupLast) + '"></div>'
+    + '<div class="field"><div class="field-label">Last 4 of your phone</div>'
+    + '<input id="lookupPhone" inputmode="numeric" maxlength="4" placeholder="1234" value="' + esc(state.lookupPhone) + '"></div>'
+    + (state.lookupError ? '<div class="field-error">' + state.lookupError + '</div>' : '')
+    + '<button class="btn-next full" id="lookupBtn"' + (state.lookingUp?' disabled':'') + '>' + (state.lookingUp?'Checking...':'Check My Schedule') + '</button>';
+
+  if (state.lookupDone && !state.lookupResult) {
+    html += '<div class="coach-empty">No schedule found for that name and number. Double check, or fill out the form to sign up.</div>';
+  }
+  if (state.lookupResult) {
+    var r = state.lookupResult;
+    html += '<div class="review-card" style="margin-top:8px">'
+      + '<div class="rrow"><span class="rrow-label">Frequency</span><span class="rrow-val">' + esc(r.freqLabel) + '</span></div>'
+      + '<div class="review-divider"></div>';
+    if (r.noneWork) {
+      html += '<div class="coach-detail-line" style="color:#C8102E;font-weight:700">Coach will reach out about your availability.</div>';
+    } else {
+      if (r.weekdayText) r.weekdayText.split(", ").forEach(function(t){ html += '<div class="review-chip">' + esc(t) + '</div>'; });
+      if (r.weekendText && r.weekendText !== "None") {
+        var badge = r.approvalStatus === "Approved" ? '<span class="status-badge approved">Approved</span>'
+          : r.approvalStatus === "Denied" ? '<span class="status-badge denied">Denied</span>'
+          : '<span class="status-badge pending">Pending</span>';
+        html += '<div class="review-chip-pending"><span>' + esc(r.weekendText) + '</span><div>' + badge + '</div></div>';
+      }
+    }
+    html += '</div>';
+    if (r.weekendText && r.weekendText !== "None" && r.approvalStatus === "Denied") {
+      html += '<div class="none-section-text" style="text-align:center;margin-top:4px">Your weekend request was not approved. Reach out to Coach Fonoti to work something out.</div>';
+    }
+  }
+  html += '</div></div></div>';
+  return html;
+}
+function bindLookup() {
+  var ll = document.getElementById("lookupLast"); if (ll) ll.oninput = function(){ state.lookupLast = this.value; };
+  var lp = document.getElementById("lookupPhone"); if (lp) lp.oninput = function(){ state.lookupPhone = this.value.replace(/\D/g,"").slice(0,4); };
+  var lb = document.getElementById("lookupBtn"); if (lb) lb.onclick = runLookup;
+  var ex = document.getElementById("lookupExit"); if (ex) ex.onclick = function(){ state.view = "form"; state.lookupResult = null; state.lookupDone = false; state.lookupError = ""; render(); };
 }
 
 function renderPin() {
@@ -371,15 +490,29 @@ function renderPin() {
     + '<button class="btn-next" id="pinEnter">Enter</button></div></div></div>';
 }
 
+function renderFollowItem(s) {
+  var acting = state.actioning === s.pageId + "handled";
+  var reason = s.noneWork
+    ? 'Schedule does not fit: ' + esc(s.availability)
+    : 'Denied: ' + esc(s.weekendText);
+  return '<div class="coach-block" style="' + (s.handled ? 'opacity:.5' : '') + '"><div class="coach-block-header">'
+    + '<div style="display:flex;flex-direction:column;gap:2px"><span class="coach-block-name">' + esc(s.title) + '</span>'
+    + '<span style="font-size:11px;color:' + (s.noneWork ? '#C8102E' : '#F5A623') + ';font-weight:600">' + reason + '</span></div>'
+    + '<span style="font-size:10px;color:#444">' + (s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : "") + '</span></div>'
+    + '<div class="approve-row"><button class="approve-btn ' + (s.handled ? 'deny' : 'approve') + '" data-handled="' + s.pageId + '" data-hval="' + (s.handled ? '0' : '1') + '"' + (acting ? ' disabled' : '') + '>'
+    + (acting ? '...' : (s.handled ? 'Reopen' : 'Mark Handled')) + '</button></div></div>';
+}
+
 function renderCoach() {
-  var subs = state.subs;
+  var subs = thisWeekLatest(state.subs);
   var pending = subs.filter(function(s){ return s.weekendText && s.weekendText !== "None" && s.approvalStatus === "Pending"; });
   var resolved = subs.filter(function(s){ return s.weekendText && s.weekendText !== "None" && (s.approvalStatus === "Approved" || s.approvalStatus === "Denied"); });
-  var follow = subs.filter(function(s){ return s.noneWork; });
+  var follow = subs.filter(function(s){ return (s.noneWork || s.approvalStatus === "Denied") && !s.handled; });
 
   var html = '<div class="header"><div class="header-title" style="flex:1">Coach Dashboard</div>'
     + '<button id="coachExit" style="background:transparent;border:none;color:#555;font-size:11px;cursor:pointer;font-weight:600">Exit</button></div>'
     + '<div class="body">';
+  html += '<div style="font-size:11px;color:#666;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">' + weekOfLabel() + '</div>';
   html += '<div class="coach-stat-row">'
     + '<div class="coach-stat"><div class="coach-stat-num">' + subs.length + '</div><div class="coach-stat-label">Submitted</div></div>'
     + '<div class="coach-stat"><div class="coach-stat-num' + (pending.length?' amber':' green') + '">' + pending.length + '</div><div class="coach-stat-label">Pending</div></div>'
@@ -437,13 +570,16 @@ function renderCoach() {
   }
 
   if (!state.loadingSubs && state.coachTab === "followup") {
-    if (!follow.length) html += '<div class="coach-empty">No follow-ups needed.</div>';
-    follow.forEach(function(s){
-      html += '<div class="coach-block"><div class="coach-block-header">'
-        + '<span class="coach-block-name">' + esc(s.title) + '</span>'
-        + '<span style="font-size:10px;color:#444">' + (s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : "") + '</span></div>'
-        + '<div class="coach-detail"><span class="coach-detail-line">' + esc(s.availability) + '</span></div></div>';
-    });
+    // Follow-up = schedule-doesn't-fit flags + denied weekend requests
+    var followItems = subs.filter(function(s){ return s.noneWork || (s.approvalStatus === "Denied"); });
+    var open = followItems.filter(function(s){ return !s.handled; });
+    var done = followItems.filter(function(s){ return s.handled; });
+    if (!followItems.length) html += '<div class="coach-empty">No follow-ups needed.</div>';
+    open.forEach(function(s){ html += renderFollowItem(s); });
+    if (done.length) {
+      html += '<div class="subsection-label" style="margin:8px 0">Handled</div>';
+      done.forEach(function(s){ html += renderFollowItem(s); });
+    }
   }
 
   html += '<button class="coach-refresh" id="coachRefresh">Refresh from Notion</button></div>';
@@ -457,11 +593,11 @@ function renderSuccess() {
   var chips;
   if (state.noneWork) chips = '<div class="rrow"><span class="rrow-label">Availability</span><span class="rrow-val">' + esc(state.availability) + '</span></div>';
   else {
-    chips = wd.map(function(s){return '<div class="review-chip">' + esc(labelFor(s).replace(" ", " · ")) + '</div>';}).join("");
+    chips = wd.map(function(s){return '<div class="review-chip">' + esc(chipLabel(s)) + '</div>';}).join("");
     chips += state.weekendRequests.map(function(r){
       var sess = WEEKEND_SESSIONS.filter(function(s){return s.id===r.sessionId;})[0];
-      return '<div class="review-chip-pending"><span>' + esc(sess.day + " · " + sess.time) + '</span>'
-        + '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#F5A623;font-weight:700">' + esc(r.reason) + '</span>'
+      return '<div class="review-chip-pending"><span>' + esc(chipLabel(sess)) + '</span>'
+        + '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#F5A623;font-weight:700">Recovery</span>'
         + '<span class="pending-badge">Pending Approval</span></div></div>';
     }).join("");
   }
@@ -488,6 +624,7 @@ function renderForm() {
   var pct = (state.step / 2) * 100;
   var f = freqOption();
   var html = '<div class="header"><div class="header-title">Summer Schedule</div>'
+    + '<button id="mySchedule" style="background:transparent;border:none;color:#888;font-size:12px;font-weight:600;cursor:pointer;margin-right:12px">My Schedule</button>'
     + '<button class="coach-link" id="coachEnter">coach</button></div><div class="body">';
   html += '<div class="prog-wrap">';
   ["Info","Sessions","Review"].forEach(function(label, i){
@@ -524,11 +661,14 @@ function renderForm() {
         + '</span><div class="counter-dots">';
       for (var i=0;i<maxSessions();i++) html += '<div class="counter-dot' + (i<state.weekdaySessions.length?' filled':'') + '"></div>';
       html += '</div></div>';
+      if (state.weekdaySessions.length >= maxSessions() && maxSessions() > 0) {
+        html += '<div style="font-size:12px;color:#F5A623;font-weight:600;text-align:center;padding:2px">You picked your ' + maxSessions() + '. Tap one to swap it out.</div>';
+      }
     }
     DAY_ORDER.forEach(function(day){
       var ds = WEEKDAY_SESSIONS.filter(function(s){return s.day===day;});
       if (!ds.length) return;
-      html += '<div class="day-group"><div class="day-heading">' + day + '</div>';
+      html += '<div class="day-group"><div class="day-heading">' + day + ' &middot; ' + dateForDay(day) + '</div>';
       ds.forEach(function(sess){
         var full = isFull(sess);
         var isChecked = state.weekdaySessions.indexOf(sess.id) >= 0;
@@ -543,31 +683,23 @@ function renderForm() {
     });
     if (state.errors.weekdaySessions) html += '<div class="field-error">' + state.errors.weekdaySessions + '</div>';
 
-    html += '<div><div class="weekend-title">Recovery / Reschedule (Optional)</div>'
-      + '<div class="weekend-sub">Pick any weekend slots you need. Each one requires Coach approval.</div></div>';
-    ["Saturday","Sunday"].forEach(function(day){
-      html += '<div style="display:flex;flex-direction:column;gap:6px"><div class="weekend-day-label">' + day
-        + (day==="Sunday" ? " Recovery / Reschedule / Testing" : " Recovery / Reschedule") + '</div>';
-      WEEKEND_SESSIONS.filter(function(s){return s.day===day;}).forEach(function(sess){
-        var full = isFull(sess);
-        var req = state.weekendRequests.filter(function(r){return r.sessionId===sess.id;})[0];
-        var isChecked = !!req;
-        var cls = "sess-btn" + (isChecked?" checked":(full?" locked":""));
-        html += '<div><button class="' + cls + '" style="width:100%" data-weekend="' + sess.id + '">'
-          + '<div class="checkbox' + (isChecked?' checked':'') + '">' + (isChecked?'<span class="check-mark">&#10003;</span>':'') + '</div>'
-          + '<span class="sess-time">' + sess.time + '</span>'
-          + (full && !isChecked ? '<span class="sess-full-tag">Full</span>' : '') + '</button>';
-        if (isChecked) {
-          html += '<div class="reason-wrap"><div class="reason-label">What is this for?</div><div class="reason-row">'
-            + '<button class="reason-btn' + (req.reason==="Recovery"?' active':'') + '" data-reason="Recovery" data-rsess="' + sess.id + '">Recovery</button>'
-            + '<button class="reason-btn' + (req.reason==="Reschedule"?' active':'') + '" data-reason="Reschedule" data-rsess="' + sess.id + '">Reschedule</button>'
-            + '</div>' + (req.reason ? '<div class="pending-badge">Pending Coach Approval</div>' : '')
-            + (state.errors.weekendReason && !req.reason ? '<div class="field-error">Select Recovery or Reschedule</div>' : '') + '</div>';
-        }
-        html += '</div>';
-      });
+    // ── Recovery (Saturday only) ──
+    html += '<div><div class="weekend-title">Recovery Session (Optional)</div>'
+      + '<div class="weekend-sub">Extra Saturday session if you want it. Requires Coach approval.</div></div>';
+    html += '<div style="display:flex;flex-direction:column;gap:6px"><div class="weekend-day-label">Saturday &middot; ' + dateForDay("Saturday") + '</div>';
+    WEEKEND_SESSIONS.filter(function(s){return s.day==="Saturday";}).forEach(function(sess){
+      var full = isFull(sess);
+      var req = state.weekendRequests.filter(function(r){return r.sessionId===sess.id;})[0];
+      var isChecked = !!req;
+      var cls = "sess-btn" + (isChecked?" checked":(full?" locked":""));
+      html += '<div><button class="' + cls + '" style="width:100%" data-weekend="' + sess.id + '">'
+        + '<div class="checkbox' + (isChecked?' checked':'') + '">' + (isChecked?'<span class="check-mark">&#10003;</span>':'') + '</div>'
+        + '<span class="sess-time">' + sess.time + '</span>'
+        + (full && !isChecked ? '<span class="sess-full-tag">Full</span>' : '') + '</button>';
+      if (isChecked) html += '<div class="reason-wrap"><div class="reason-label">Recovery Session</div><div class="pending-badge">Pending Coach Approval</div></div>';
       html += '</div>';
     });
+    html += '</div>';
 
     html += '<div class="none-section"><div class="none-section-label">None of these work?</div>'
       + '<div class="none-section-text">No problem. Tell us when your athlete is available and Coach Fonoti will reach out to work something out.</div>'
@@ -591,11 +723,11 @@ function renderForm() {
       + '<div class="review-divider"></div>';
     if (state.noneWork) html += '<div class="rrow"><span class="rrow-label">Availability</span><span class="rrow-val">' + esc(state.availability) + '</span></div>';
     else {
-      html += wd.map(function(s){return '<div class="review-chip">' + esc(s.day + " · " + s.time) + '</div>';}).join("");
+      html += wd.map(function(s){return '<div class="review-chip">' + esc(chipLabel(s)) + '</div>';}).join("");
       html += state.weekendRequests.map(function(r){
         var sess = WEEKEND_SESSIONS.filter(function(s){return s.id===r.sessionId;})[0];
-        return '<div class="review-chip-pending"><span>' + esc(sess.day + " · " + sess.time) + '</span>'
-          + '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#F5A623;font-weight:700">' + esc(r.reason) + '</span>'
+        return '<div class="review-chip-pending"><span>' + esc(chipLabel(sess)) + '</span>'
+          + '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#F5A623;font-weight:700">Recovery</span>'
           + '<span class="pending-badge">Pending Approval</span></div></div>';
       }).join("");
     }
@@ -644,13 +776,8 @@ function bindForm() {
     var exists = state.weekendRequests.filter(function(r){return r.sessionId===id;})[0];
     if (!exists && isFull(sess)) return;
     if (exists) state.weekendRequests = state.weekendRequests.filter(function(r){return r.sessionId!==id;});
-    else state.weekendRequests.push({ sessionId: id, reason: "" });
+    else state.weekendRequests.push({ sessionId: id, reason: "Recovery" });
     render();
-  }; });
-  each("[data-reason]", function(btn){ btn.onclick = function(){
-    var id = this.getAttribute("data-rsess"), reason = this.getAttribute("data-reason");
-    state.weekendRequests = state.weekendRequests.map(function(r){ return r.sessionId===id ? {sessionId:id, reason:reason} : r; });
-    delete state.errors.weekendReason; render();
   }; });
   var nt = document.getElementById("noneToggle");
   if (nt) nt.onclick = function(){ state.noneWork = !state.noneWork; if (state.noneWork) state.weekdaySessions = []; delete state.errors.weekdaySessions; delete state.errors.availability; render(); };
@@ -660,6 +787,7 @@ function bindForm() {
   var confirmBtn = document.getElementById("confirmSubmit"); if (confirmBtn) confirmBtn.onclick = submitForm;
   var cancelBtn = document.getElementById("cancelSubmit"); if (cancelBtn) cancelBtn.onclick = function(){ state.confirming = false; render(); };
   var ce = document.getElementById("coachEnter"); if (ce) ce.onclick = function(){ state.view = "coach_pin"; render(); };
+  var ms = document.getElementById("mySchedule"); if (ms) ms.onclick = function(){ state.view = "lookup"; state.lookupResult = null; state.lookupDone = false; state.lookupError = ""; render(); };
 }
 function bindSuccess() {
   var so = document.getElementById("startOver"); if (so) so.onclick = resetForm;
@@ -678,6 +806,7 @@ function bindCoach() {
   each("[data-tab]", function(btn){ btn.onclick = function(){ state.coachTab = this.getAttribute("data-tab"); render(); }; });
   each("[data-approve]", function(btn){ btn.onclick = function(){ approve(this.getAttribute("data-approve"), "Approved"); }; });
   each("[data-deny]", function(btn){ btn.onclick = function(){ approve(this.getAttribute("data-deny"), "Denied"); }; });
+  each("[data-handled]", function(btn){ btn.onclick = function(){ markHandled(this.getAttribute("data-handled"), this.getAttribute("data-hval") === "1"); }; });
   var ex = document.getElementById("coachExit"); if (ex) ex.onclick = function(){ state.pin=""; state.view="form"; state.submitted=false; state.step=0; render(); };
   var rf = document.getElementById("coachRefresh"); if (rf) rf.onclick = loadSubs;
 }
