@@ -12,7 +12,7 @@
   input, textarea { font-size: 16px; }
   .header { background: #111; border-bottom: 1px solid #1A1A1A; padding: max(16px, env(safe-area-inset-top)) 20px 16px; display: flex; align-items: center; }
   .header-title { font-weight: 700; font-size: 15px; color: #F5F5F5; flex: 1; }
-  .coach-link { background: transparent; border: none; color: #161616; font-size: 10px; cursor: pointer; }
+  .coach-link { background: transparent; border: none; color: #4A4A4A; font-size: 11px; cursor: pointer; font-weight: 600; }
   .body { flex: 1; padding: 20px 20px calc(48px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
   .prog-wrap { display: flex; justify-content: space-between; margin-bottom: 8px; }
   .prog-item { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
@@ -62,10 +62,11 @@
   .reason-btn { flex: 1; background: #111; border: 1px solid #222; border-radius: 8px; padding: 10px; cursor: pointer; color: #aaa; font-size: 13px; font-weight: 700; text-align: center; }
   .reason-btn.active { background: #1A0608; border: 1.5px solid #C8102E; color: #fff; }
   .pending-badge { font-size: 10px; font-weight: 800; color: #F5A623; letter-spacing: .06em; text-transform: uppercase; }
-  .none-section { background: #111; border: 1.5px dashed #C8102E44; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-  .none-section-label { font-size: 11px; font-weight: 800; letter-spacing: .1em; color: #C8102E; text-transform: uppercase; }
-  .none-section-text { font-size: 13px; color: #888; line-height: 1.5; }
-  .none-toggle { background: #C8102E; border: none; border-radius: 8px; padding: 11px 16px; cursor: pointer; color: #fff; font-size: 13px; font-weight: 700; width: 100%; }
+  .none-section { background: #111; border: 1px dashed #C8102E44; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 7px; }
+  .none-section-label { font-size: 10px; font-weight: 800; letter-spacing: .08em; color: #C8102E; text-transform: uppercase; }
+  .none-section-text { font-size: 11px; color: #888; line-height: 1.4; }
+  .none-toggle { background: transparent; border: 1px solid #C8102E66; border-radius: 8px; padding: 11px 14px; cursor: pointer; color: #E5788A; font-size: 13px; font-weight: 700; width: 100%; }
+  .none-toggle.alt { border-color: #333; color: #888; font-weight: 600; margin-top: 8px; }
   .none-toggle.active { background: #222; color: #888; }
   .avail-wrap { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
   .avail-label { font-size: 11px; font-weight: 700; color: #888; letter-spacing: .06em; text-transform: uppercase; }
@@ -715,15 +716,15 @@ function renderForm() {
     });
     html += '</div>';
 
-    html += '<div class="none-section"><div class="none-section-label">None of these work?</div>'
-      + '<div class="none-section-text">No problem. Tell us when your athlete is available and Coach Fonoti will reach out to work something out.</div>'
-      + '<button class="none-toggle' + (state.noneWork?' active':'') + '" id="noneToggle">'
-      + (state.noneWork ? "Cancel. I will pick sessions above" : "My schedule does not fit. Reach out to me") + '</button>';
-    if (state.noneWork) {
-      html += '<div class="avail-wrap"><div class="avail-label">When is your athlete available?</div>'
-        + '<textarea id="availability" rows="3" placeholder="e.g. Weekdays after 6pm, Saturday mornings">' + esc(state.availability) + '</textarea>'
+    html += '<div class="none-section"><div class="none-section-label">None of these work?</div>';
+    if (!state.noneWork) {
+      html += '<button class="none-toggle" id="noneToggle">This schedule does not fit</button>';
+    } else {
+      html += '<div class="avail-wrap"><div class="avail-label">When can you train? Give days, times, and dates.</div>'
+        + '<textarea id="availability" rows="4" placeholder="Example: I need Wednesday at 10:00 AM on 7/9. Also free Saturday mornings before noon.">' + esc(state.availability) + '</textarea>'
         + (state.errors.availability ? '<div class="field-error">' + state.errors.availability + '</div>' : '')
-        + '<div class="avail-note">Coach Fonoti will personally follow up.</div></div>';
+        + '<div class="avail-note">The more detail you give, the faster Coach Fonoti can lock you in.</div>'
+        + '<button id="noneToggle" style="background:transparent;border:none;color:#666;font-size:12px;cursor:pointer;padding:4px 0;text-decoration:underline;text-underline-offset:3px">Actually, I will pick sessions above</button></div>';
     }
     html += '</div></div></div>';
   }
