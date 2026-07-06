@@ -627,9 +627,10 @@ function renderSuccess() {
     }).join("");
   }
   return '<div class="header"><div class="header-title">Summer Schedule</div></div><div class="body"><div class="success-wrap">'
-    + '<div class="success-icon">&#10003;</div><div class="success-name">Teammate, you are in.</div>'
-    + '<div class="success-tag">' + wd.length + ' session' + (wd.length!==1?'s':'') + ' locked in'
-    + (wkndCount>0 ? ' + ' + wkndCount + ' weekend request' + (wkndCount>1?'s':'') + ' pending' : '') + '</div>'
+    + '<div class="success-icon" style="background:#4CAF50;width:72px;height:72px;font-size:34px">&#10003;</div>'
+    + '<div class="success-name" style="font-size:30px">You\'re locked in for the week.</div>'
+    + '<div class="success-tag">' + wd.length + ' session' + (wd.length!==1?'s':'') + ' saved'
+    + (wkndCount>0 ? ' + ' + wkndCount + ' recovery request' + (wkndCount>1?'s':'') + ' pending' : '') + '</div>'
     + '<div class="success-card">'
     + '<div class="rrow"><span class="rrow-label">Last Name</span><span class="rrow-val">' + esc(state.lastName) + '</span></div>'
     + '<div class="rrow"><span class="rrow-label">Frequency</span><span class="rrow-val">' + esc(f?f.label:"") + '</span></div>'
@@ -758,7 +759,6 @@ function renderForm() {
     }
     if (state.noneWork) html += '<div class="follow-badge">Flagged for follow-up</div>';
     html += '</div>';
-    if (state.confirming) html += '<div style="text-align:center;font-size:13px;color:#F5A623;font-weight:700;margin-top:4px">Double check everything above. Ready to lock it in?</div>';
     if (state.submitError) html += '<div class="field-error" style="text-align:center">' + state.submitError + '</div>';
     html += '</div>';
   }
@@ -766,11 +766,7 @@ function renderForm() {
   html += '<div class="nav-row">';
   if (state.step > 0) html += '<button class="btn-back" id="backBtn">Back</button>';
   if (state.step < 2) html += '<button class="btn-next' + (state.step===0?' full':'') + '" id="nextBtn">Next</button>';
-  else if (state.confirming) {
-    html += '<button class="btn-back" id="cancelSubmit">Go Back</button>'
-      + '<button class="btn-next" id="confirmSubmit"' + (state.submitting?' disabled':'') + '>' + (state.submitting?'Sending...':'Yes, Submit') + '</button>';
-  }
-  else html += '<button class="btn-next" id="submitBtn">Submit</button>';
+  else html += '<button class="btn-next" id="submitBtn"' + (state.submitting?' disabled':'') + '>' + (state.submitting?'Saving...':'Submit') + '</button>';
   html += '</div></div>';
   return html;
 }
@@ -808,9 +804,7 @@ function bindForm() {
   if (nt) nt.onclick = function(){ state.noneWork = !state.noneWork; if (state.noneWork) state.weekdaySessions = []; delete state.errors.weekdaySessions; delete state.errors.availability; render(); };
   var back = document.getElementById("backBtn"); if (back) back.onclick = function(){ state.step--; render(); };
   var next = document.getElementById("nextBtn"); if (next) next.onclick = function(){ if (validate()) state.step++; render(); };
-  var submit = document.getElementById("submitBtn"); if (submit) submit.onclick = function(){ if (validate()) { state.confirming = true; render(); } else render(); };
-  var confirmBtn = document.getElementById("confirmSubmit"); if (confirmBtn) confirmBtn.onclick = submitForm;
-  var cancelBtn = document.getElementById("cancelSubmit"); if (cancelBtn) cancelBtn.onclick = function(){ state.confirming = false; render(); };
+  var submit = document.getElementById("submitBtn"); if (submit) submit.onclick = function(){ if (validate()) submitForm(); else render(); };
   var ce = document.getElementById("coachEnter"); if (ce) ce.onclick = function(){ state.view = "coach_pin"; render(); };
   var ms = document.getElementById("mySchedule"); if (ms) ms.onclick = function(){ state.view = "lookup"; state.lookupResult = null; state.lookupDone = false; state.lookupError = ""; render(); };
 }
