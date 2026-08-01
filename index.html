@@ -74,6 +74,7 @@ select option{background:#13131E}
       </div>
       <button onclick="submitNewName()" style="width:100%;background:#DC2626;border:none;border-radius:14px;padding:16px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:#fff;cursor:pointer;letter-spacing:0.06em">CONTINUE ›</button>
     </div>
+    <button onclick="showCoachPin()" style="width:100%;background:none;border:none;color:#5A5A6A;font-size:13px;cursor:pointer;margin-top:22px;text-align:center;letter-spacing:0.04em">Coach Sign In</button>
   </div>
 
   <!-- DATE PICKER SCREEN (hidden by default) -->
@@ -176,21 +177,23 @@ select option{background:#13131E}
 <!-- MEAL SHEET -->
 <div id="meal-overlay" class="overlay" style="display:none">
   <div class="sheet">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div>
-        <p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900" id="meal-context-label">LOG MEAL</p>
-        <p style="font-size:11px;color:#8A8AAA;margin-top:1px">Coach can see your log</p>
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:900" id="meal-context-label">WHAT DID YOU EAT?</p>
+        <p style="font-size:13px;color:#8A8AAA;margin-top:2px">Coach can see this.</p>
       </div>
-      <button onclick="closeMeal()" style="background:#2A2A3A;border-radius:50%;width:32px;height:32px;color:#CCC;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
+      <button onclick="closeMeal()" style="background:#2A2A3A;border-radius:50%;width:38px;height:38px;color:#CCC;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
     </div>
 
-    <div id="meal-type-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px"></div>
+    <p style="font-size:13px;color:#9A9AB0;font-weight:700;letter-spacing:0.06em;margin-bottom:8px">1. PICK ONE</p>
+    <div id="meal-type-chips" style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:18px"></div>
 
-    <textarea id="meal-text" rows="4" placeholder="What did you eat? Just type it out — rice, chicken, 2 eggs, shake, whatever..." style="width:100%;background:#1A1A28;border:1.5px solid #2A2A3E;border-radius:12px;color:#F0EDE6;padding:14px;font-size:16px;font-family:'Barlow',sans-serif;outline:none;resize:none;margin-bottom:12px;line-height:1.5;box-sizing:border-box"></textarea>
+    <p style="font-size:13px;color:#9A9AB0;font-weight:700;letter-spacing:0.06em;margin-bottom:8px">2. TYPE YOUR FOOD</p>
+    <textarea id="meal-text" rows="4" placeholder="Example: rice, chicken, 2 eggs, shake..." style="width:100%;background:#1A1A28;border:2px solid #2A2A3E;border-radius:14px;color:#F0EDE6;padding:16px;font-size:19px;font-family:'Barlow',sans-serif;outline:none;resize:none;margin-bottom:14px;line-height:1.6;box-sizing:border-box"></textarea>
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <span style="font-size:12px;color:#8A8AAA">⏱ Logged at <strong id="meal-time-display" style="color:#F0EDE6"></strong></span>
-      <button onclick="toggleMealTimePicker()" style="background:none;border:1px solid #303050;border-radius:7px;padding:4px 10px;color:#8A8AAA;font-size:11px;cursor:pointer">change</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <span style="font-size:14px;color:#8A8AAA">Time: <strong id="meal-time-display" style="color:#F0EDE6;font-size:15px"></strong></span>
+      <button onclick="toggleMealTimePicker()" style="background:none;border:1.5px solid #303050;border-radius:9px;padding:6px 14px;color:#8A8AAA;font-size:13px;cursor:pointer">Change</button>
     </div>
     <div id="meal-time-picker" style="display:none;margin-bottom:14px">
       <div style="display:flex;gap:6px">
@@ -202,7 +205,7 @@ select option{background:#13131E}
       </div>
     </div>
 
-    <button class="btn-red" onclick="saveMeal()" style="width:100%;font-size:17px;padding:15px;letter-spacing:0.08em">LOG IT →</button>
+    <button class="btn-red" onclick="saveMeal()" style="width:100%;font-size:20px;padding:18px;letter-spacing:0.06em;border-radius:14px">SAVE MY MEAL →</button>
   </div>
 </div>
 
@@ -632,13 +635,13 @@ function updatePinDots(digits){
 const R='#DC2626';
 const MEAL_SLOTS=[
   {label:'Breakfast',value:'Breakfast'},
-  {label:'Morning Snack',value:'Morning Snack'},
+  {label:'Snack',value:'Morning Snack'},
   {label:'Lunch',value:'Lunch'},
-  {label:'Afternoon Snack',value:'Afternoon Snack'},
-  {label:'Pre-Workout',value:'Pre-Workout'},
-  {label:'Post-Workout',value:'Post-Workout'},
+  {label:'Snack',value:'Afternoon Snack'},
+  {label:'Before Workout',value:'Pre-Workout'},
+  {label:'After Workout',value:'Post-Workout'},
   {label:'Dinner',value:'Dinner'},
-  {label:'Late Night',value:'Late Night'},
+  {label:'Late Snack',value:'Late Night'},
 ];
 const ATHLETES=[
   {id:1,name:'Sione T.',sport:'Football',phase:'Acceleration',fuelScore:87,painLevel:2,streak:5,trainingStatus:'Train',lastActive:'Today'},
@@ -804,6 +807,7 @@ function flash(msg,color){
 }
 function tierColor(s){return s>=85?'#FFFFFF':s>=70?'#22C55E':s>=50?'#B8B8CC':R;}
 function tierLabel(s){return s>=85?'ELITE':s>=70?'ON TRACK':s>=50?'BUILDING':'RESET MODE';}
+const GREEN_AFFIRMATIONS=["YOU'RE READY. NOW MEET THE STANDARD.","YOUR BODY'S READY. YOUR EFFORT BETTER MATCH.","GREEN LIGHT. FULL INTENT. NO WASTED REPS.","YOU HAVE ENERGY. NOW SHOW DISCIPLINE.","YOU'RE READY TO WORK. MAKE THE SESSION COUNT.","BODY READY. MIND LOCKED. STANDARD HIGH.","TODAY YOU HAVE IT. DON'T WASTE IT.","READINESS IS THERE. NOW BRING THE EFFORT.","YOU'RE IN POSITION. NOW DO YOUR JOB.","GREEN DAY. ATTACK THE WORK WITH PURPOSE.","YOU'RE READY. COMPETE WITH INTENT.","ENERGY CHECKED. STANDARD DOESN'T CHANGE.","YOU HAVE THE CAPACITY. NOW EARN THE RESULT.","READY IS THE START. EXECUTION IS THE STANDARD.","YOU'VE GOT THE ENERGY. NOW BE DISCIPLINED WITH IT.","MINDSET. EFFORT. EXECUTE.","USE TODAY. STACK THE WORK.","GOOD READINESS. NO COASTING.","BODY SAYS GO. NOW WORK WITH PURPOSE.","YOU'RE READY. HANDLE YOUR BUSINESS."];
 function tcType(t){return({SPEED:R,STRENGTH:'#E57373',RECOVERY:'#1B8A82',AGILITY:'#8B5CF6',CONDITIONING:'#F59E0B','DAILY MOVEMENT':'#22C55E'})[t]||'#888';}
 function getYTId(url){try{const u=new URL(url);if(u.hostname.includes('youtu.be'))return u.pathname.slice(1);return u.searchParams.get('v')||'';}catch{return '';}}
 
@@ -1336,9 +1340,9 @@ function renderHome(){
   </div>`:''}
 
   ${state.eodLoading?`<div style="background:#13131E;border:1px solid #2A2A3E;border-radius:12px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px"><div style="width:16px;height:16px;border:2px solid #F59E0B40;border-top-color:#F59E0B;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0"></div><p style="font-size:13px;color:#9A9AB0">Sending day summary to Coach Fonoti...</p></div>`:state.eodSummary?`<div style="background:#22C55E10;border:1px solid #22C55E30;border-radius:12px;padding:12px 16px;margin-bottom:10px"><p style="font-size:11px;font-weight:700;color:#22C55E;letter-spacing:0.06em;margin-bottom:4px">DAY SUMMARY SENT TO COACH ✓</p><p style="font-size:12px;color:#9A9AB0;line-height:1.5">${state.eodSummary}</p></div>`:''}
-  <div onclick="state.mealSlot='Meal';openMeal()" style="background:#DC262615;border:1.5px solid #DC262650;border-radius:13px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">
+  <div onclick="state.mealSlot='Meal';openMeal()" style="background:#DC262615;border:1.5px solid #DC262650;border-radius:13px;padding:13px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">
     <span style="font-size:22px">🍽️</span>
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;color:#F0EDE6;letter-spacing:0.04em">LOG A MEAL</p>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:#F0EDE6;letter-spacing:0.03em">LOG A MEAL</p>
     <span style="color:#DC2626;font-size:20px;font-weight:900;margin-left:auto">›</span>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
@@ -1433,7 +1437,8 @@ function renderCheckin(){
     const isPulled=report?.pulled||false;
     return `<div style="text-align:center;padding:28px 16px 16px">
       <div style="width:90px;height:90px;border-radius:50%;background:${sColor}20;border:4px solid ${sColor};display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:42px">${sIcon}</div>
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:40px;font-weight:900;color:${sColor};margin-bottom:4px;line-height:1">${status.toUpperCase()}</p>
+      ${status==='Full Go'?`<p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:${sColor};margin-bottom:4px;line-height:1.25">${GREEN_AFFIRMATIONS[Math.floor(Math.random()*GREEN_AFFIRMATIONS.length)]}</p>`:''}
+      ${(status!=='Modified'&&status!=='Full Go')?`<p style="font-family:'Barlow Condensed',sans-serif;font-size:40px;font-weight:900;color:${sColor};margin-bottom:4px;line-height:1">${status.toUpperCase()}</p>`:''}
       ${loading?`<div style="background:#13131E;border:1px solid #252538;border-radius:12px;padding:14px;margin:16px 0">
         <p style="font-size:13px;color:#9A9AB0">Analyzing your check-in...</p>
       </div>`:''}
@@ -1452,9 +1457,15 @@ function renderCheckin(){
       ${isPulled?
         `<div style="background:#DC262615;border:2px solid #DC2626;border-radius:13px;padding:14px;margin:14px 0">
           <p style="font-size:13px;color:#DC2626;font-weight:700;margin-bottom:4px">🛑 REST DAY — DO NOT TRAIN</p>
-          <p style="font-size:12px;color:#9A9AB0">Find Coach Fonoti before doing anything today.</p>
+          <p style="font-size:12px;color:#9A9AB0">Find the Athletic Trainer before doing anything today.</p>
         </div>`
-        :`<button onclick="aTab('fuel')" style="width:100%;background:${status==='Full Go'?'#22C55E':status==='Modified'?'#F59E0B':'#3B82F6'};color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px">GO LOG YOUR MEALS →</button>`
+        :status==='Modified'?
+        `<div style="background:#F59E0B15;border:2px solid #F59E0B;border-radius:13px;padding:14px;margin:14px 0">
+          <p style="font-size:13px;color:#F59E0B;font-weight:700;margin-bottom:4px">⚠️ TALK TO COACH</p>
+          <p style="font-size:12px;color:#9A9AB0">Check in with Coach before your session today.</p>
+        </div>
+        <button onclick="aTab('fuel')" style="width:100%;background:#F59E0B;color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px">GO LOG YOUR MEALS →</button>`
+        :`<button onclick="aTab('fuel')" style="width:100%;background:${status==='Full Go'?'#22C55E':'#3B82F6'};color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px">GO LOG YOUR MEALS →</button>`
       }
       <div style="margin-top:16px"><button onclick="resetCheckin()" style="background:none;border:none;color:#2A2A3E;font-size:18px;cursor:pointer;padding:8px">⟳</button></div>
     </div>`;
@@ -2099,81 +2110,56 @@ function renderFuel(){
   const meals=state.meals;
   const totals=meals.reduce((acc,m)=>({cal:acc.cal+(m.cal||0),pro:acc.pro+(m.pro||0),carb:acc.carb+(m.carb||0)}),{cal:0,pro:0,carb:0});
   const fb=state.mealFeedback;
-  const proto=getTodayProtocol();
   return `
-  <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:2px">FUEL</p>
-  <p style="font-size:12px;color:#9A9AB0;margin-bottom:10px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</p>
-  <!-- TODAY'S PROTOCOL -->
-  <div style="background:#13131E;border:1px solid ${proto.color}40;border-radius:14px;margin-bottom:14px;overflow:hidden">
-    <div style="background:${proto.color}18;padding:12px 14px;border-bottom:1px solid ${proto.color}30;display:flex;align-items:center;gap:10px">
-      <span style="font-size:20px">${proto.icon}</span>
-      <div style="flex:1">
-        <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;color:${proto.color};letter-spacing:0.08em">${proto.title}</p>
-        <p style="font-size:12px;color:#9A9AB0;margin-top:2px;line-height:1.4">${proto.sub}</p>
-      </div>
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;margin-bottom:2px">FUEL</p>
+  <p style="font-size:14px;color:#9A9AB0;margin-bottom:14px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</p>
 
-      <button onclick="toggleProtocol()" id="proto-toggle" style="background:none;border:none;color:#9A9AB0;font-size:18px;cursor:pointer;flex-shrink:0;padding:4px">▾</button>
-    </div>
-    <div style="padding:7px 14px 9px;border-top:1px solid rgba(128,128,128,0.15)"></div><div id="proto-steps" style="display:none">
-      ${proto.steps.map((s,i)=>`
-        <div style="padding:12px 16px;${i<proto.steps.length-1?'border-bottom:1px solid #1A1A28;':''}display:flex;align-items:center;gap:12px">
-          <div style="width:22px;height:22px;border-radius:50%;background:${proto.color}20;border:1px solid ${proto.color}60;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <span style="font-size:10px;font-family:'Barlow Condensed',sans-serif;font-weight:900;color:${proto.color};line-height:1">${i+1}</span>
-          </div>
-          <div style="flex:1;min-width:0">
-            <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;color:#F0EDE6;line-height:1.3;margin-bottom:2px">${s.t}</p>
-            <p style="font-size:12px;color:#9A9AB0;line-height:1.4">${s.d}</p>
-          </div>
-        </div>`).join('')}
-      ${proto.steps.length===0?`<p style="font-size:13px;color:#8A8AAA;text-align:center;padding:16px">Complete your daily check-in first.</p>`:''}
-    </div>
-  </div>
-
-  ${totals.cal>0?`<div class="card" style="display:flex;justify-content:space-around;margin-bottom:12px">
-    ${[['Cal',Math.round(totals.cal),'#F59E0B'],['Pro',Math.round(totals.pro)+'g','#22C55E'],['Carb',Math.round(totals.carb)+'g','#3B82F6']].map(([l,v,c])=>`<div style="text-align:center"><p style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:${c}">${v}</p><p style="font-size:9px;color:#9A9AB0;text-transform:uppercase;letter-spacing:0.1em">${l}</p></div>`).join('')}
+  ${totals.cal>0?`<div class="card" style="display:flex;justify-content:space-around;margin-bottom:14px">
+    ${[['Cal',Math.round(totals.cal),'#F59E0B'],['Pro',Math.round(totals.pro)+'g','#22C55E'],['Carb',Math.round(totals.carb)+'g','#3B82F6']].map(([l,v,c])=>`<div style="text-align:center"><p style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:${c}">${v}</p><p style="font-size:11px;color:#9A9AB0;text-transform:uppercase;letter-spacing:0.08em">${l}</p></div>`).join('')}
   </div>`:''}
 
   <!-- WATER -->
-  </div>
-  <div class="card" style="margin-bottom:12px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <span class="lbl" style="margin:0">💧 Water Intake</span>
-      <div style="text-align:right">
-      </div>
+  <div class="card" style="margin-bottom:14px;padding:18px">
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;margin-bottom:14px">💧 WATER</p>
+    <div style="text-align:center;margin-bottom:14px">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:900;color:${oz>=waterGoal?'#22C55E':'#F0EDE6'};line-height:1">${Math.round(oz)}<span style="font-size:16px;color:#9A9AB0;font-weight:400"> oz</span></p>
+      <p style="font-size:13px;color:#9A9AB0;margin-top:4px">Goal: ${waterGoal}oz</p>
     </div>
-    <div style="text-align:center;margin-bottom:10px">
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:${oz>=waterGoal?'#22C55E':'#F0EDE6'};line-height:1">${Math.round(oz)}<span style="font-size:14px;color:#9A9AB0;font-weight:400"> oz</span></p>
-      <p style="font-size:11px;color:#9A9AB0;margin-top:2px">${Math.round((oz/16.9)*10)/10} bottles · ${waterGoal}oz goal</p>
-    </div>
-    <div style="height:6px;background:#1C1C2E;border-radius:4px;overflow:hidden;margin-bottom:12px">
+    <div style="height:8px;background:#1C1C2E;border-radius:4px;overflow:hidden;margin-bottom:16px">
       <div style="height:100%;width:${pct}%;background:${oz>=waterGoal?'#22C55E':'#3B82F6'};border-radius:4px;transition:width 0.3s"></div>
     </div>
-    <div style="display:flex;gap:6px">
-      ${[['+ 8oz',8,'Cup'],['+ 16oz',16,'Bottle'],['+ 20oz',20,'Large'],['+ 32oz',32,'Hydro']].map(([l,a,s])=>`<button onclick="addWater(${a})" style="flex:1;background:#0A0A12;border:1px solid #303050;border-radius:10px;padding:8px 4px;cursor:pointer;text-align:center"><p style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:#F0EDE6">${l}</p><p style="font-size:9px;color:#9A9AB0;margin-top:1px">${s}</p></button>`).join('')}
+    <p style="font-size:14px;color:#9A9AB0;margin-bottom:10px">Tap a cup when you drink:</p>
+    <div style="display:flex;gap:8px">
+      ${[['8oz',8,'Cup'],['16oz',16,'Bottle'],['20oz',20,'Large'],['32oz',32,'Hydro']].map(([l,a,s])=>`<button onclick="addWater(${a})" style="flex:1;background:#0A0A12;border:2px solid #303050;border-radius:12px;padding:12px 4px;cursor:pointer;text-align:center"><p style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;color:#F0EDE6">+${l}</p><p style="font-size:11px;color:#9A9AB0;margin-top:2px">${s}</p></button>`).join('')}
     </div>
-    ${oz>0?`<div style="text-align:right;margin-top:8px"><button onclick="resetWater()" style="background:none;border:none;color:#9A9AB8;font-size:12px;cursor:pointer">Reset</button></div>`:''}
-    <p style="font-size:11px;color:${oz>=waterGoal?'#22C55E':'#888'};font-weight:${oz>=waterGoal?700:400};margin-top:8px">${oz>=waterGoal?'Goal reached! Keep drinking 💧':'Tap to add each drink as you go'}</p>
+    ${oz>0?`<div style="text-align:center;margin-top:12px"><button onclick="resetWater()" style="background:none;border:none;color:#9A9AB8;font-size:13px;cursor:pointer">Start over</button></div>`:''}
+    ${oz>=waterGoal?`<p style="font-size:14px;color:#22C55E;font-weight:700;text-align:center;margin-top:12px">You did it! Keep drinking 💧</p>`:''}
   </div>
 
   <!-- MEALS -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900">MEALS (${meals.length})</p>
-    <button onclick="openMeal()" style="background:${R};color:#fff;border-radius:8px;padding:9px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer">+ LOG MEAL</button>
-  </div>
-  ${meals.length===0?'<p style="color:#9A9AB0;font-size:14px;text-align:center;padding:32px 0">No meals logged yet.</p>':''}
-  ${meals.map((m,i)=>`
-    <div class="card" style="margin-bottom:9px;padding:11px 13px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <span style="font-size:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:${R}">${m.slot||m.time}</span>
-        <div style="display:flex;gap:7px;align-items:center">
-          <span style="font-size:10px;color:#8A8AAA">${m.loggedAt||''}</span>
-          <button onclick="deleteMeal(${i})" style="background:none;border:none;color:#9A9AB8;font-size:11px;cursor:pointer">Delete</button>
-        </div>
+  <div class="card" style="margin-bottom:14px;padding:18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900">🍽️ MEALS</p>
+      <div style="background:${meals.length>0?'#22C55E20':'#252538'};border-radius:20px;padding:5px 14px">
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:900;color:${meals.length>0?'#22C55E':'#8A8AAA'}">${meals.length}</p>
       </div>
-      <p style="font-size:14px;color:#F0EDE6;margin-bottom:6px">${m.text}</p>
-      ${fb[m.id]&&fb[m.id]!=='loading'?`<div style="background:#13131E;border-left:3px solid ${R};border-radius:0 8px 8px 0;padding:10px 12px;margin-top:6px"><p style="font-size:10px;color:${R};font-weight:700;letter-spacing:0.1em;margin-bottom:4px;text-transform:uppercase">FUEL COACH</p><p style="font-size:13px;color:#E0E0F0;line-height:1.6">${renderMD(fb[m.id])}</p></div>`:''}
     </div>
-  `).join('')}
+    <p style="font-size:13px;color:#9A9AB0;margin-bottom:12px">Meals AND snacks — log every time you eat.</p>
+    ${meals.length===0?`<button onclick="openMeal()" style="width:100%;background:${R}15;border:2px dashed ${R}60;border-radius:14px;padding:22px 12px;color:${R};font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;cursor:pointer;text-align:center">+ LOG YOUR FIRST MEAL</button>`:`<button onclick="openMeal()" style="width:100%;background:${R};color:#fff;border-radius:12px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;cursor:pointer;margin-bottom:${meals.length>0?'14px':'0'}">+ LOG ANOTHER</button>`}
+    ${meals.map((m,i)=>`
+      <div style="background:#0A0A12;border-radius:12px;margin-bottom:10px;padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:14px;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:${R}">${m.slot||m.time}</span>
+          <div style="display:flex;gap:10px;align-items:center">
+            <span style="font-size:12px;color:#8A8AAA">${m.loggedAt||''}</span>
+            <button onclick="deleteMeal(${i})" style="background:none;border:none;color:#9A9AB8;font-size:13px;cursor:pointer">Delete</button>
+          </div>
+        </div>
+        <p style="font-size:15px;color:#F0EDE6;line-height:1.4">${m.text}</p>
+        ${fb[m.id]&&fb[m.id]!=='loading'?`<div style="background:#13131E;border-left:3px solid ${R};border-radius:0 8px 8px 0;padding:10px 12px;margin-top:8px"><p style="font-size:11px;color:${R};font-weight:700;letter-spacing:0.08em;margin-bottom:4px;text-transform:uppercase">Coach Note</p><p style="font-size:14px;color:#E0E0F0;line-height:1.6">${renderMD(fb[m.id])}</p></div>`:''}
+      </div>
+    `).join('')}
+  </div>
 
   <!-- COMPLETE DAY -->
   ${meals.length>0?`<div style="margin-top:8px">
@@ -2487,8 +2473,7 @@ function openMeal(){
 function renderMealChips(){
   const chips=document.getElementById('meal-type-chips');
   if(!chips)return;
-  const types=['Breakfast','Morning Snack','Lunch','Afternoon Snack','Pre-Workout','Post-Workout','Dinner','Late Night'];
-  chips.innerHTML=types.map(t=>`<button onclick="state.mealSlot='${t}';renderMealChips()" style="padding:6px 13px;border-radius:20px;border:2px solid ${state.mealSlot===t?'#DC2626':'#2A2A3E'};background:${state.mealSlot===t?'#DC262620':'#111118'};color:${state.mealSlot===t?'#fff':'#9A9AB0'};font-size:13px;font-family:'Barlow',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap">${t}</button>`).join('');
+  chips.innerHTML=MEAL_SLOTS.map(s=>`<button onclick="state.mealSlot='${s.value}';renderMealChips()" style="padding:11px 18px;border-radius:22px;border:2px solid ${state.mealSlot===s.value?'#DC2626':'#2A2A3E'};background:${state.mealSlot===s.value?'#DC262620':'#111118'};color:${state.mealSlot===s.value?'#fff':'#9A9AB0'};font-size:15px;font-family:'Barlow',sans-serif;font-weight:700;cursor:pointer;white-space:nowrap">${s.label}</button>`).join('');
 }
 function updateMealTimeDisplay(){
   const h=document.getElementById('meal-hour')?.value||'12';
