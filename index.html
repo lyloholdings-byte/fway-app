@@ -1467,7 +1467,10 @@ function renderCheckin(){
         <button onclick="aTab('fuel')" style="width:100%;background:#F59E0B;color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px">GO LOG YOUR MEALS →</button>`
         :`<button onclick="aTab('fuel')" style="width:100%;background:${status==='Full Go'?'#22C55E':'#3B82F6'};color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px">GO LOG YOUR MEALS →</button>`
       }
-      <div style="margin-top:16px"><button onclick="resetCheckin()" style="background:none;border:none;color:#2A2A3E;font-size:18px;cursor:pointer;padding:8px">⟳</button></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button onclick="backCheckin()" style="flex:1;background:#13131E;border:1.5px solid #303050;border-radius:12px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;color:#9A9AB0;cursor:pointer">⬅ GO BACK</button>
+        <button onclick="resetCheckin()" style="flex:1;background:#13131E;border:1.5px solid #303050;border-radius:12px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;color:#9A9AB0;cursor:pointer">🔁 START OVER</button>
+      </div>
     </div>`;
   }
   // WELLNESS QUESTION — shows after all Q_STEPS answered
@@ -1476,6 +1479,7 @@ function renderCheckin(){
     const CONCERNS=['Sick','Headache','Stomach','Fatigue','Injury concern','Fever','Mental/emotional','Muscle tightness','Dizzy','Other'];
     if(state.wellnessStep==='ask'){
       return `
+      <button onclick="state.wellnessStep=null;state.ciStep=Q_STEPS.length-1;renderAthlete()" style="display:flex;align-items:center;gap:4px;color:#F0EDE6;font-size:14px;font-weight:700;font-family:'Barlow Condensed',sans-serif;padding:8px 12px;background:#13131E;border:1.5px solid #303050;border-radius:10px;cursor:pointer;margin-bottom:16px">← BACK</button>
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:#DC2626;letter-spacing:0.08em;margin-bottom:4px">LAST QUESTION</p>
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:8px">Anything going on with you today?</p>
       <p style="font-size:13px;color:#9A9AB0;margin-bottom:24px">Illness, injury concern, anything off — we want to know.</p>
@@ -1513,9 +1517,9 @@ function renderCheckin(){
     <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">DAILY ✅</p>
     <p style="font-size:12px;color:#9A9AB0;margin-bottom:20px">Quick daily read. Tap to answer.</p>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <button onclick="ciBack()" style="color:${step>0?'#888':'transparent'};font-size:22px;padding:4px 8px;background:none;border:none;cursor:pointer">←</button>
+      <button onclick="ciBack()" ${step===0?'disabled':''} style="display:flex;align-items:center;gap:4px;color:${step>0?'#F0EDE6':'#3A3A4A'};font-size:14px;font-weight:700;font-family:'Barlow Condensed',sans-serif;padding:8px 12px;background:${step>0?'#13131E':'transparent'};border:${step>0?'1.5px solid #303050':'none'};border-radius:10px;cursor:${step>0?'pointer':'default'}">← BACK</button>
       <div style="display:flex;gap:6px">${dots}</div>
-      <div style="width:38px"></div>
+      <div style="width:60px"></div>
     </div>
     <p style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;text-align:center;margin-bottom:${q.sub?'8':'22'}px;line-height:1.1">${q.q}</p>
     ${q.sub?`<p style="font-size:12px;color:#9A9AB0;text-align:center;margin-bottom:16px">${q.sub}</p>`:''}
@@ -1536,7 +1540,8 @@ function ciPick(key,val,step,isLast,isMulti){
 }
 function ciNextMulti(){state.ciStep++;renderAthlete();}
 function ciBack(){if(state.ciStep>0){state.ciStep--;renderAthlete();}}
-function resetCheckin(){state.done=false;state.ciStep=0;state.ciAns={};state.ciFlags=[];localStorage.removeItem(state.todayKey);renderAthlete();}
+function resetCheckin(){state.done=false;state.ciStep=0;state.ciAns={};state.ciFlags=[];state.wellnessStep=null;localStorage.removeItem(state.todayKey);renderAthlete();}
+function backCheckin(){state.done=false;state.wellnessStep='ask';renderAthlete();}
 // ── FUEL SCORE SYSTEM ────────────────────────────────────────────────────────
 // Points: Check-in(20) + No flags(+10) + 3+meals(20) + 1-2meals(10)
 //         Water goal(15) + Water 75%(8) + Complete log(15)
