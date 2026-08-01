@@ -59,16 +59,12 @@ select option{background:#13131E}
 <!-- LOGIN -->
 <div id="s-login" class="screen active" style="background:#09090E;align-items:center;justify-content:center">
   <div id="login-inner" style="width:100%;max-width:400px;padding:40px 28px;box-sizing:border-box">
-
-    <!-- RETURNING USER -->
     <div id="name-returning" style="display:none;text-align:center">
       <p style="font-size:13px;color:#9A9AB0;margin-bottom:8px;letter-spacing:0.06em;text-transform:uppercase">Welcome back</p>
       <p id="returning-name" style="font-family:'Barlow Condensed',sans-serif;font-size:40px;font-weight:900;color:#F0EDE6;margin-bottom:32px"></p>
       <button onclick="confirmName()" style="width:100%;background:#DC2626;border:none;border-radius:14px;padding:18px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;color:#fff;cursor:pointer;letter-spacing:0.06em;margin-bottom:14px">THAT'S ME ›</button>
       <button onclick="clearSavedName()" style="width:100%;background:none;border:none;color:#6A6A65;font-size:13px;cursor:pointer">Not you? Change name</button>
     </div>
-
-    <!-- NEW USER -->
     <div id="name-new" style="display:none">
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#F0EDE6;margin-bottom:4px">What's your name?</p>
       <p style="font-size:13px;color:#9A9AB0;margin-bottom:24px">We'll remember it next time.</p>
@@ -78,7 +74,31 @@ select option{background:#13131E}
       </div>
       <button onclick="submitNewName()" style="width:100%;background:#DC2626;border:none;border-radius:14px;padding:16px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:#fff;cursor:pointer;letter-spacing:0.06em">CONTINUE ›</button>
     </div>
+  </div>
 
+  <!-- DATE PICKER SCREEN (hidden by default) -->
+  <div id="date-screen" style="display:none;width:100%;max-width:400px;padding:40px 28px;box-sizing:border-box">
+    <p id="date-greeting" style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;color:#F0EDE6;margin-bottom:4px"></p>
+    <p style="font-size:13px;color:#9A9AB0;margin-bottom:28px">What date are you logging for?</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button onclick="pickDate('today')" style="width:100%;background:#DC262615;border:2px solid #DC262640;border-radius:14px;padding:18px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:#DC2626;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center">
+        <div><p id="today-btn-label" style="margin:0">TODAY</p><p id="today-btn-date" style="font-size:12px;color:#DC262680;margin:2px 0 0;font-weight:400;font-family:'Barlow',sans-serif"></p></div>
+        <span>›</span>
+      </button>
+      <button onclick="pickDate('yesterday')" style="width:100%;background:#13131E;border:1.5px solid #1E1E2E;border-radius:14px;padding:18px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:#F0EDE6;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center">
+        <div><p style="margin:0">YESTERDAY</p><p id="yesterday-btn-date" style="font-size:12px;color:#9A9AB0;margin:2px 0 0;font-weight:400;font-family:'Barlow',sans-serif"></p></div>
+        <span style="color:#9A9AB0">›</span>
+      </button>
+      <!-- DIFFERENT DATE — date input overlays the button so iOS tap works -->
+      <div style="position:relative;border-radius:14px;overflow:hidden">
+        <div style="width:100%;background:#13131E;border:1.5px solid #1E1E2E;border-radius:14px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;pointer-events:none">
+          <div><p style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:#F0EDE6">DIFFERENT DATE</p><p style="font-size:12px;color:#9A9AB0;margin:2px 0 0">Pick from calendar</p></div>
+          <span style="color:#9A9AB0;font-size:20px">›</span>
+        </div>
+        <input type="date" id="cdp" onchange="pickDateCustom(this.value)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;z-index:2"/>
+      </div>
+      <button onclick="showLoginNames()" style="width:100%;background:none;border:none;color:#6A6A65;font-size:13px;cursor:pointer;margin-top:4px">← Back</button>
+    </div>
   </div>
 </div>
 <div id="s-report" class="screen" style="background:#09090E">
@@ -972,35 +992,25 @@ function updateLoginDots(){
 
 let _selectedName='';
 
+function getLoginInnerHTML(){
+  return document.getElementById('login-inner')?'exists':'missing';
+}
 
-function getLoginHTML(){
-  return '<div id="login-inner" style="width:100%;max-width:400px;padding:40px 28px;box-sizing:border-box">'
-    +'<div id="name-returning" style="display:none;text-align:center">'
-    +'<p style="font-size:13px;color:#9A9AB0;margin-bottom:8px;letter-spacing:0.06em;text-transform:uppercase">Welcome back</p>'
-    +'<p id="returning-name" style="font-family:\'Barlow Condensed\',sans-serif;font-size:40px;font-weight:900;color:#F0EDE6;margin-bottom:32px"></p>'
-    +'<button onclick="confirmName()" style="width:100%;background:#DC2626;border:none;border-radius:14px;padding:18px;font-family:\'Barlow Condensed\',sans-serif;font-weight:900;font-size:22px;color:#fff;cursor:pointer;letter-spacing:0.06em;margin-bottom:14px">THAT\'S ME \u203a</button>'
-    +'<button onclick="clearSavedName()" style="width:100%;background:none;border:none;color:#6A6A65;font-size:13px;cursor:pointer">Not you? Change name</button>'
-    +'</div>'
-    +'<div id="name-new" style="display:none">'
-    +'<p style="font-family:\'Barlow Condensed\',sans-serif;font-size:28px;font-weight:900;color:#F0EDE6;margin-bottom:4px">What\'s your name?</p>'
-    +'<p style="font-size:13px;color:#9A9AB0;margin-bottom:24px">We\'ll remember it next time.</p>'
-    +'<div style="display:flex;gap:8px;margin-bottom:12px">'
-    +'<input id="name-first" class="inp" placeholder="First" autocapitalize="words" autocorrect="off" style="flex:1;background:#13131E;font-size:18px;padding:14px 16px"/>'
-    +'<input id="name-last" class="inp" placeholder="Last" autocapitalize="words" autocorrect="off" style="flex:1;background:#13131E;font-size:18px;padding:14px 16px"/>'
-    +'</div>'
-    +'<button onclick="submitNewName()" style="width:100%;background:#DC2626;border:none;border-radius:14px;padding:16px;font-family:\'Barlow Condensed\',sans-serif;font-weight:900;font-size:20px;color:#fff;cursor:pointer;letter-spacing:0.06em">CONTINUE \u203a</button>'
-    +'</div>'
-    +'</div>';
+function showLoginNames(){
+  const li=document.getElementById('login-inner');
+  const ds=document.getElementById('date-screen');
+  if(li)li.style.display='block';
+  if(ds)ds.style.display='none';
+  setTimeout(initLoginScreen,50);
 }
 
 function initLoginScreen(){
   try{
+    const li=document.getElementById('login-inner');
+    const ds=document.getElementById('date-screen');
+    if(li)li.style.display='block';
+    if(ds)ds.style.display='none';
     const saved=localStorage.getItem('fw_saved_name');
-    // Restore login HTML if selectName() replaced it
-    if(!document.getElementById('name-returning')){
-      const loginEl=document.getElementById('s-login');
-      if(loginEl)loginEl.innerHTML=getLoginHTML();
-    }
     const retEl=document.getElementById('name-returning');
     const newEl=document.getElementById('name-new');
     if(!retEl||!newEl)return;
@@ -1032,23 +1042,27 @@ function clearSavedName(){
   const retEl=document.getElementById('name-returning');
   const newEl=document.getElementById('name-new');
   if(retEl)retEl.style.display='none';
-  if(newEl)newEl.style.display='block';
-  setTimeout(()=>document.getElementById('name-first')?.focus(),200);
+  if(newEl){newEl.style.display='block';setTimeout(()=>document.getElementById('name-first')?.focus(),200);}
 }
 
 function confirmName(){
   if(!_selectedName){flash('Enter your name first','#F59E0B');return;}
-  selectName(_selectedName);
-}
-
-function selectName(name){
-  _selectedName=name;
-  const today=new Date();
-  const yesterday=new Date(today);yesterday.setDate(today.getDate()-1);
-  const fmt=d=>d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  const login=document.getElementById('s-login');
-  if(!login)return;
-  login.innerHTML='<div style="width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:40px 28px;box-sizing:border-box"><div style="width:100%;max-width:400px"><p style="font-family:\'Barlow Condensed\',sans-serif;font-size:32px;font-weight:900;color:#F0EDE6;margin-bottom:4px">'+name.split(' ')[0]+'!</p><p style="font-size:13px;color:#9A9AB0;margin-bottom:28px">What date are you logging for?</p><div style="display:flex;flex-direction:column;gap:10px"><button onclick="pickDate(\'today\')" style="width:100%;background:#DC262615;border:2px solid #DC262640;border-radius:14px;padding:18px 20px;font-family:\'Barlow Condensed\',sans-serif;font-weight:900;font-size:20px;color:#DC2626;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center"><div><p style="margin:0">TODAY</p><p style="font-size:12px;color:#DC262680;margin:2px 0 0;font-family:\'Barlow\',sans-serif;font-weight:400">'+fmt(today)+'</p></div><span>›</span></button><button onclick="pickDate(\'yesterday\')" style="width:100%;background:#13131E;border:1.5px solid #1E1E2E;border-radius:14px;padding:18px 20px;font-family:\'Barlow Condensed\',sans-serif;font-weight:900;font-size:20px;color:#F0EDE6;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center"><div><p style="margin:0">YESTERDAY</p><p style="font-size:12px;color:#9A9AB0;margin:2px 0 0;font-family:\'Barlow\',sans-serif;font-weight:400">'+fmt(yesterday)+'</p></div><span style="color:#9A9AB0">›</span></button><button onclick="document.getElementById(\'cdp\').style.display=\'block\';document.getElementById(\'cdp\').click()" style="width:100%;background:#13131E;border:1.5px solid #1E1E2E;border-radius:14px;padding:18px 20px;font-family:\'Barlow Condensed\',sans-serif;font-weight:900;font-size:20px;color:#F0EDE6;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center"><div><p style="margin:0">DIFFERENT DATE</p><p style="font-size:12px;color:#9A9AB0;margin:2px 0 0;font-family:\'Barlow\',sans-serif;font-weight:400">Pick from calendar</p></div><span style="color:#9A9AB0">›</span></button><input type="date" id="cdp" onchange="pickDateCustom(this.value)" style="display:none;width:100%;background:#13131E;border:1.5px solid #303050;border-radius:14px;padding:16px;color:#F0EDE6;font-size:16px;outline:none;box-sizing:border-box"/><button onclick="initLoginScreen();document.getElementById(\'s-login\').classList.add(\'active\')" style="width:100%;background:none;border:none;color:#6A6A65;font-size:13px;cursor:pointer;margin-top:4px">← Back</button></div></div></div>';
+  // Show date screen
+  const li=document.getElementById('login-inner');
+  const ds=document.getElementById('date-screen');
+  if(li)li.style.display='none';
+  if(ds){
+    ds.style.display='block';
+    const today=new Date();
+    const yesterday=new Date(today);yesterday.setDate(today.getDate()-1);
+    const fmt=d=>d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    const greet=document.getElementById('date-greeting');
+    const tbl=document.getElementById('today-btn-date');
+    const ybl=document.getElementById('yesterday-btn-date');
+    if(greet)greet.textContent=_selectedName.split(' ')[0]+'!';
+    if(tbl)tbl.textContent=fmt(today);
+    if(ybl)ybl.textContent=fmt(yesterday);
+  }
 }
 
 function pickDate(which){
@@ -1219,7 +1233,6 @@ function showApp(){
     // Request notification permission when coach logs in
     setTimeout(()=>requestPushPermission(),1500);
   } else {
-    // Go straight to athlete screen — no profile setup required
     const athleteEl=document.getElementById('s-athlete');
     if(athleteEl)athleteEl.classList.add('active');
     const nameEl=document.getElementById('a-username');
@@ -2409,7 +2422,7 @@ async function completeDailyLog(){
 
   // Push meals to Meal Entries DB
   // Final complete push to Daily Athlete Summary — fires immediately (no debounce)
-  await silentPushToNotion();
+  silentPushToNotion().catch(()=>{});
   flash('Log sent to Coach ✓');
 }
 
@@ -3575,7 +3588,7 @@ async function forcePush(){
   const el=document.getElementById('sync-result');
   if(el){el.style.display='block';el.textContent='Pushing...';}
   try{
-    await silentPushToNotion();
+    silentPushToNotion().catch(()=>{});
     if(el){el.textContent='✓ Push complete';el.style.color='#22C55E';}
     flash('Sync complete ✓','#22C55E');
   }catch(e){
