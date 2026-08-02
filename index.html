@@ -276,6 +276,10 @@ select option{background:#13131E}
     <input id="prof-other-sport" type="text" placeholder="Type your sport(s)..." oninput="addOtherSport(this.value)" style="display:none;width:100%;background:#13131E;border:1px solid #DC2626;border-radius:10px;color:#F0EDE6;padding:11px 14px;font-size:15px;outline:none"/>
   </div>
   <div style="margin-bottom:18px">
+    <span class="lbl">Your Group <span style="color:#8A8AAA;font-weight:400;text-transform:none;letter-spacing:0">— pick one, this is saved for good</span></span>
+    <div id="prof-group" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+  </div>
+  <div style="margin-bottom:18px">
     <span class="lbl">Positions <span style="color:#8A8AAA;font-weight:400;text-transform:none;letter-spacing:0">— e.g. WR/CB</span></span>
     <input id="prof-position" class="inp" placeholder="e.g. WR, PG, OH..." oninput="checkProfReady()" style="background:#13131E"/>
   </div>
@@ -633,6 +637,7 @@ function updatePinDots(digits){
   }
 }
 const R='#DC2626';
+function localDateStr(d){d=d||new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;}
 const MEAL_SLOTS=[
   {label:'Breakfast',value:'Breakfast'},
   {label:'Snack',value:'Morning Snack'},
@@ -1620,7 +1625,7 @@ Write the summary now. No intro, no label, just the sentences.`;
     state.eodSummary=summary;
     state.eodLoading=false;
     // Push to Notion Fuel Coach EOD Summary field
-    const today=new Date().toISOString().split('T')[0];
+    const today=localDateStr();
     const entryName=name+' '+today;
     const existing=await notionFetch('https://api.notion.com/v1/databases/47eef612-6214-4a9a-9397-b10c9a93356b/query','POST',{
       filter:{and:[{property:'Athlete',rich_text:{equals:name}},{property:'Date',date:{equals:today}}]},page_size:1
@@ -1883,7 +1888,7 @@ function schedulePush(){
 async function silentPushToNotion(){
   if(localStorage.getItem('fw_testing_mode')==='true'){flash('Push skipped','#F59E0B');return;}
   const name=getSessionName();if(!name)return;
-  const today=new Date().toISOString().split('T')[0];
+  const today=localDateStr();
   const a=state.ciAns&&Object.keys(state.ciAns).length?state.ciAns:{};
   const pa=state.pulseAnswers||{};
   const score=calcDailyScore();
@@ -2437,7 +2442,7 @@ async function pushMealToNutritionLog(meal){
   if(localStorage.getItem('fw_testing_mode')==='true')return;
   if(!meal||!meal.text)return;
   const name=getSessionName();
-  const today=new Date().toISOString().split('T')[0];
+  const today=localDateStr();
   const sched=Array.isArray(state.ciAns?.schedule)?state.ciAns.schedule.join(', '):'';
   const entryTitle=name+' — '+meal.slot+' — '+(meal.loggedAt||'');
   try{
@@ -2702,7 +2707,7 @@ async function submitSkillWork(did){
   schedulePush(); // silent push after skill work
   pushN({athlete:getSessionName(),type:'skill_work',did:did?'Yes':'No',details,date:state.todayDate,time:nowStr()}).catch(()=>{});
   // Also update Daily Athlete Summary with skill work data
-  const entryName=getSessionName()+' - '+new Date().toISOString().split('T')[0];
+  const entryName=getSessionName()+' - '+localDateStr();
   /* AI feature coming soon */
 }
 
@@ -3283,7 +3288,7 @@ function renderWeeklyView(){
 
   // Build last 7 dates
   const dates=[];
-  for(let d=6;d>=0;d--){const dt=new Date();dt.setDate(dt.getDate()-d);dates.push(dt.toISOString().split('T')[0]);}
+  for(let d=6;d>=0;d--){const dt=new Date();dt.setDate(dt.getDate()-d);dates.push(localDateStr(dt));}
   const dayLabels=dates.map(d=>{const dt=new Date(d+'T12:00:00');return dt.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();});
 
   return `<div style="background:#13131E;border-radius:13px;padding:14px;margin-bottom:12px">
@@ -3325,7 +3330,7 @@ async function loadWeeklyLogs(){
   try{
     const today=new Date();
     const d7=new Date(today);d7.setDate(d7.getDate()-6);
-    const from=d7.toISOString().split('T')[0];
+    const from=localDateStr(d7);
     const r=await notionFetch('https://api.notion.com/v1/databases/47eef612-6214-4a9a-9397-b10c9a93356b/query','POST',{
       filter:{property:'Date',date:{on_or_after:from}},
       page_size:100,sorts:[{property:'Date',direction:'ascending'}]
@@ -3469,7 +3474,7 @@ function renderLogs(){
 async function loadNotionLogs(){
   state.loadingLogs=true;state.notionLogs=[];renderCoach();
   try{
-    const today=new Date().toISOString().split('T')[0];
+    const today=localDateStr();
     const r=await notionFetch('https://api.notion.com/v1/databases/47eef612-6214-4a9a-9397-b10c9a93356b/query','POST',{filter:{property:'Date',date:{equals:today}},page_size:50,sorts:[{property:'Date',direction:'descending'}]});
     if(r.results&&Array.isArray(r.results)){
       state.notionLogs=r.results.map(p=>{
@@ -3791,16 +3796,19 @@ function doFullWipe(){localStorage.clear();window.location.reload();}
 // PROFILE SETUP
 const SPORTS=['Football','Basketball','Volleyball','Soccer','Track','Baseball','Softball','Lacrosse','Other'];
 const BODY_GOALS=['Gain Muscle','Lose Weight','Maintain','Get Faster','Stay Lean'];
+const GROUPS=['FWAY Athletes','Kalapu','EC Football'];
 const GRAD_YEARS=['2026','2027','2028','2029','2030'];
-let profState={sports:[],gradYear:'',bodyGoals:[],height:'',trainingFreq:''};
+let profState={sports:[],gradYear:'',bodyGoals:[],height:'',trainingFreq:'',group:''};
 
 function showProfileSetup(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('s-profile').classList.add('active');
   document.getElementById('profile-name-heading').textContent=name.toUpperCase();
-  profState={sports:[],gradYear:'',bodyGoals:[],height:'',trainingFreq:''};
+  profState={sports:[],gradYear:'',bodyGoals:[],height:'',trainingFreq:'',group:''};
   // sports
   document.getElementById('prof-sports').innerHTML=SPORTS.map(s=>`<button onclick="setProfSport('${s}')" id="ps-${s.replace(/\s/g,'_')}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer">${s}</button>`).join('');
+  // group
+  document.getElementById('prof-group').innerHTML=GROUPS.map(g=>`<button onclick="setProfGroup('${g}')" id="pgr-${g.replace(/\s/g,'_')}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:20px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer">${g}</button>`).join('');
   // years
   document.getElementById('prof-years').innerHTML=GRAD_YEARS.map(y=>`<button onclick="setProfYear('${y}')" id="py-${y}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:10px;padding:10px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer">'${y.slice(2)}</button>`).join('');
   // goals
@@ -3844,6 +3852,16 @@ function setProfSport(s){
 function addOtherSport(v){
   profState.sports=profState.sports.filter(s=>!s.startsWith('Other:'));
   if(v.trim())profState.sports.push('Other: '+v.trim());
+  checkProfReady();
+}
+function setProfGroup(g){
+  profState.group=g;
+  document.querySelectorAll('#prof-group button').forEach(b=>{
+    const sel=b.textContent.trim()===g;
+    b.style.background=sel?R:'#111118';
+    b.style.color=sel?'#fff':'#888';
+    b.style.borderColor=sel?R:'#2A2A3E';
+  });
   checkProfReady();
 }
 function setProfYear(y){
@@ -3898,7 +3916,7 @@ function getFormattedHeight(){return profState.height||'';}
 function checkProfReady(){
   const pos=document.getElementById('prof-position')?.value.trim()||'';
   const weight=document.getElementById('prof-weight')?.value||'';
-  const fields=[profState.sports.length>0,!!pos,!!profState.gradYear,!!profState.height,!!weight,profState.bodyGoals.length>0,!!profState.trainingFreq];
+  const fields=[profState.sports.length>0,!!profState.group,!!pos,!!profState.gradYear,!!profState.height,!!weight,profState.bodyGoals.length>0,!!profState.trainingFreq];
   const filled=fields.filter(Boolean).length;
   const pct=Math.round((filled/fields.length)*100);
   const bar=document.getElementById('prof-progress-bar');
@@ -3908,7 +3926,7 @@ function checkProfReady(){
   if(pctLabel)pctLabel.textContent=pct+'%';
   if(stepLabel)stepLabel.textContent=pct===100?'ALMOST THERE — TAP CONTINUE':pct>=60?'KEEP GOING':pct>=30?'NICE START':'GETTING STARTED';
   if(bar)bar.style.background=pct===100?'#22C55E':'#DC2626';
-  const ready=profState.sports.length>0&&profState.gradYear&&pos&&profState.bodyGoals.length>0;
+  const ready=profState.sports.length>0&&!!profState.group&&profState.gradYear&&pos&&profState.bodyGoals.length>0;
   document.getElementById('prof-save-btn').disabled=!ready;
 }
 function onWeightInput(input,dispId){
@@ -3945,6 +3963,7 @@ function saveProfile(){
     goalWeight:document.getElementById('prof-goalweight').value,
     bodyGoal:profState.bodyGoals.join(', '),
     trainingFreq:profState.trainingFreq||'3x per week',
+    group:profState.group||'',
     email:(document.getElementById('prof-email')?.value.trim()||'')
   };
   localStorage.setItem(saveNameKey+'_fw_profile',JSON.stringify(profile));
@@ -3965,6 +3984,7 @@ function saveProfile(){
       "Body Goal":{select:{name:(profile.bodyGoal||'Gain Muscle').split(',')[0].trim()||'Gain Muscle'}},
       "Height":{rich_text:[{text:{content:profile.height||''}}]},
       "Training Frequency":{select:{name:profile.trainingFreq||'3x per week'}},
+      "Group":{select:{name:profile.group||'FWAY Athletes'}},
       "PIN":{rich_text:[{text:{content:currentPin}}]},
       "PIN Status":{select:{name:'Active'}},
       "Status":{select:{name:'Active'}}
@@ -4062,7 +4082,7 @@ async function loadAlerts(){
     // Query last 3 days from Notion to detect consistency issues
     const today=new Date();
     const d3=new Date(today);d3.setDate(d3.getDate()-3);
-    const from=d3.toISOString().split('T')[0];
+    const from=localDateStr(d3);
     const res=await notionFetch('https://api.notion.com/v1/databases/47eef612-6214-4a9a-9397-b10c9a93356b/query','POST',{
       filter:{property:'Date',date:{on_or_after:from}},
       page_size:100,
