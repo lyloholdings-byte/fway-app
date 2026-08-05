@@ -732,6 +732,7 @@ let state={
   todayKey:'fw_fc_'+(new Date().getHours()<5?new Date(Date.now()-86400000):new Date()).toLocaleDateString(),
   todayDate:(new Date().getHours()<5?new Date(Date.now()-86400000):new Date()).toLocaleDateString(),
   done:false,ciStep:0,ciAns:{},ciFlags:[],ciRedFlags:[],ciYellowFlags:[],
+  wellnessStep:null,ciWellness:{answered:false,concerns:[],details:''},
   meals:[],mealFeedback:{},
   eodSummary:null,eodLoading:false,
   waterOz:0,hydStreak:0,
