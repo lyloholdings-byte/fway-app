@@ -176,54 +176,47 @@ select option{background:#13131E}
 
 <!-- MEAL SHEET -->
 <div id="overwhelm-overlay" class="overlay" style="display:none">
-  <div class="sheet" style="max-height:85vh;overflow-y:auto;padding-bottom:4px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+  <div class="sheet" style="max-height:80vh;overflow-y:auto;padding-bottom:4px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:#F0EDE6">IN-GAME RESET</p>
       <button onclick="closeOverwhelmPopup()" style="background:#2A2A3A;border-radius:50%;width:34px;height:34px;color:#CCC;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
     </div>
 
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:6px">WHEN TO USE THIS</p>
-    <div style="background:#13131E;border:1.5px solid #2A2A3E;border-radius:12px;padding:12px 14px;margin-bottom:12px">
-      <p style="font-size:13px;color:#E0E0F0;line-height:1.85">😬 Right after a bad play or mistake<br>⏱️ Big moment — last minute, close score<br>📣 Crowd loud, coach on you<br>📉 Down big and it feels hopeless<br>😮‍💨 Tired and your mind starts spiraling</p>
-    </div>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:8px">WHEN</p>
+    <p style="font-size:13px;color:#E0E0F0;line-height:1.9;margin-bottom:16px">😬 Bad play · ⏱️ Big moment · 📣 Loud crowd · 📉 Down big</p>
 
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:6px">WHAT'S HAPPENING INSIDE</p>
-    <div style="background:#13131E;border:1.5px solid #2A2A3E;border-radius:12px;padding:12px 14px;margin-bottom:12px">
-      <p style="font-size:13px;color:#E0E0F0;line-height:1.85">❤️ Heart pounding fast<br>😮‍💨 Breathing gets short and quick<br>🌫️ Brain feels foggy, hard to think<br>😬 Chest or stomach feels tight<br>👀 Everything feels rushed and loud</p>
-    </div>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:8px">WHAT IT FEELS LIKE</p>
+    <p style="font-size:13px;color:#E0E0F0;line-height:1.9;margin-bottom:16px">❤️ Heart racing · 😮‍💨 Short breath · 🌫️ Foggy head · 😬 Tight chest</p>
 
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:6px">WHY YOUR BODY DOES THIS</p>
-    <div style="background:#13131E;border:1.5px solid #2A2A3E;border-radius:12px;padding:12px 14px;margin-bottom:14px">
-      <p style="font-size:13px;color:#E0E0F0;line-height:1.6">Your body dumps adrenaline in big moments. It's not weakness — it's just your body doing its job a little too hard. Everyone gets it, even pros.</p>
-    </div>
-
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:6px">RESET IT MID-GAME</p>
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
-      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:9px 12px">
-        <p style="font-size:14px;font-weight:800;color:#F0EDE6">🫁 One big breath</p>
-        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">In through the nose, long breath out. Reset the moment.</p>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:8px">RESET NOW</p>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
+      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
+        <p style="font-size:14px;font-weight:800;color:#F0EDE6">🎯 Pattern Break</p>
+        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Snap your fingers. Say "reset."</p>
       </div>
-      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:9px 12px">
-        <p style="font-size:14px;font-weight:800;color:#F0EDE6">👐 Shake your hands</p>
-        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Quick shake between plays. Gets rid of the tension fast.</p>
+      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
+        <p style="font-size:14px;font-weight:800;color:#F0EDE6">👊 Chest Thump</p>
+        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Thump your chest. Wake up.</p>
       </div>
-      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:9px 12px">
-        <p style="font-size:14px;font-weight:800;color:#F0EDE6">👣 Feel your feet</p>
-        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Feel your shoes on the ground. Pulls your mind back to now.</p>
+      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
+        <p style="font-size:14px;font-weight:800;color:#F0EDE6">👏 Hand Clap</p>
+        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">One clap. Refocus right now.</p>
       </div>
-      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:9px 12px">
-        <p style="font-size:14px;font-weight:800;color:#F0EDE6">🗣️ Say one word</p>
-        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Pick a reset word ("next," "here," "go"). Say it to yourself.</p>
+      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
+        <p style="font-size:14px;font-weight:800;color:#F0EDE6">🌤️ Sky Look</p>
+        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Look up. Take one breath.</p>
       </div>
-      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:9px 12px">
-        <p style="font-size:14px;font-weight:800;color:#F0EDE6">➡️ Next play only</p>
-        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Let the last play go. You can only affect the next one.</p>
+      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
+        <p style="font-size:14px;font-weight:800;color:#F0EDE6">💪 Quick Pushup</p>
+        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Drop for a couple pushups.</p>
+      </div>
+      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
+        <p style="font-size:14px;font-weight:800;color:#F0EDE6">🌱 Grass Grab</p>
+        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Grab dirt or grass. Feel it.</p>
       </div>
     </div>
 
-    <p style="font-size:11px;color:#8A8AAA;text-align:center;margin-bottom:12px;line-height:1.4">Practice these outside of games too, so they're second nature when it counts.</p>
-
-    <button onclick="closeOverwhelmPopup()" style="width:100%;background:#0D9488;color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.06em;cursor:pointer">GOT IT →</button>
+    <button onclick="closeOverwhelmPopup()" style="width:100%;background:#0D9488;color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.06em;cursor:pointer">GOT IT — DO MY DAILY →</button>
   </div>
 </div>
 
@@ -2657,7 +2650,7 @@ function checkOverwhelmPopup(){
     if(el)el.style.display='flex';
   },600);
 }
-function closeOverwhelmPopup(){document.getElementById('overwhelm-overlay').style.display='none';}
+function closeOverwhelmPopup(){document.getElementById('overwhelm-overlay').style.display='none';aTab('checkin');}
 let _customTime='';
 
 function setMealSlot(v){state.mealSlot=v;renderMealChips();}
