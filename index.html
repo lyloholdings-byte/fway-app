@@ -175,48 +175,50 @@ select option{background:#13131E}
 </div>
 
 <!-- MEAL SHEET -->
-<div id="overwhelm-overlay" class="overlay" style="display:none">
-  <div class="sheet" style="max-height:80vh;overflow-y:auto;padding-bottom:4px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <p style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:#F0EDE6">IN-GAME RESET</p>
-      <button onclick="closeOverwhelmPopup()" style="background:#2A2A3A;border-radius:50%;width:34px;height:34px;color:#CCC;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+<div id="overwhelm-overlay" class="overlay" style="display:none;align-items:center">
+  <div class="sheet" style="max-height:82vh;height:82vh;display:flex;flex-direction:column;padding:20px 20px 16px;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-shrink:0">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#F0EDE6">IN-GAME RESET</p>
+      <button onclick="closeOverwhelmPopup()" style="background:#2A2A3A;border-radius:50%;width:32px;height:32px;color:#CCC;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
     </div>
 
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:8px">WHEN</p>
-    <p style="font-size:13px;color:#E0E0F0;line-height:1.9;margin-bottom:16px">😬 Bad play · ⏱️ Big moment · 📣 Loud crowd · 📉 Down big</p>
+    <div style="flex:1;overflow-y:auto;min-height:0">
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:8px">WHEN</p>
+      <p style="font-size:13px;color:#E0E0F0;line-height:1.9;margin-bottom:16px">😬 Bad play · ⏱️ Big moment · 📣 Loud crowd · 📉 Down big</p>
 
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:8px">WHAT IT FEELS LIKE</p>
-    <p style="font-size:13px;color:#E0E0F0;line-height:1.9;margin-bottom:16px">❤️ Heart racing · 😮‍💨 Short breath · 🌫️ Foggy head · 😬 Tight chest</p>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:8px">WHAT IT FEELS LIKE</p>
+      <p style="font-size:13px;color:#E0E0F0;line-height:1.9;margin-bottom:16px">❤️ Heart racing · 😮‍💨 Short breath · 🌫️ Foggy head · 😬 Tight chest</p>
 
-    <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:8px">RESET NOW</p>
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
-      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
-        <p style="font-size:14px;font-weight:800;color:#F0EDE6">🎯 Pattern Break</p>
-        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Snap your fingers. Say "reset."</p>
-      </div>
-      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
-        <p style="font-size:14px;font-weight:800;color:#F0EDE6">👊 Chest Thump</p>
-        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Thump your chest. Wake up.</p>
-      </div>
-      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
-        <p style="font-size:14px;font-weight:800;color:#F0EDE6">👏 Hand Clap</p>
-        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">One clap. Refocus right now.</p>
-      </div>
-      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
-        <p style="font-size:14px;font-weight:800;color:#F0EDE6">🌤️ Sky Look</p>
-        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Look up. Take one breath.</p>
-      </div>
-      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
-        <p style="font-size:14px;font-weight:800;color:#F0EDE6">💪 Quick Pushup</p>
-        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Drop for a couple pushups.</p>
-      </div>
-      <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
-        <p style="font-size:14px;font-weight:800;color:#F0EDE6">🌱 Grass Grab</p>
-        <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Grab dirt or grass. Feel it.</p>
+      <p style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:#F59E0B;letter-spacing:0.06em;margin-bottom:8px">RESET NOW</p>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
+          <p style="font-size:14px;font-weight:800;color:#F0EDE6">🎯 Pattern Break</p>
+          <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Snap your fingers. Say "reset."</p>
+        </div>
+        <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
+          <p style="font-size:14px;font-weight:800;color:#F0EDE6">👊 Chest Thump</p>
+          <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Thump your chest. Wake up.</p>
+        </div>
+        <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
+          <p style="font-size:14px;font-weight:800;color:#F0EDE6">👏 Hand Clap</p>
+          <p style="font-size:12px;color:#9A9AB0;margin-top:1px">One clap. Refocus right now.</p>
+        </div>
+        <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
+          <p style="font-size:14px;font-weight:800;color:#F0EDE6">🌤️ Sky Look</p>
+          <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Look up. Take one breath.</p>
+        </div>
+        <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
+          <p style="font-size:14px;font-weight:800;color:#F0EDE6">💪 Quick Pushup</p>
+          <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Drop for a couple pushups.</p>
+        </div>
+        <div style="background:#0D948815;border:1.5px solid #0D948850;border-radius:10px;padding:11px 14px">
+          <p style="font-size:14px;font-weight:800;color:#F0EDE6">🌱 Grass Grab</p>
+          <p style="font-size:12px;color:#9A9AB0;margin-top:1px">Grab dirt or grass. Feel it.</p>
+        </div>
       </div>
     </div>
 
-    <button onclick="closeOverwhelmPopup()" style="width:100%;background:#0D9488;color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.06em;cursor:pointer">GOT IT — DO MY DAILY →</button>
+    <button onclick="closeOverwhelmPopup()" style="width:100%;background:#0D9488;color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.06em;cursor:pointer;flex-shrink:0;margin-top:14px">GOT IT — DO MY DAILY →</button>
   </div>
 </div>
 
