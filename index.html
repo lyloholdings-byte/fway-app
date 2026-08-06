@@ -489,6 +489,10 @@ select option{background:#13131E}
 
 // ── VISIBLE ERROR CATCHER ─────────────────────────────────────────────────────
 // If anything crashes, show it on screen instead of freezing silently.
+window.addEventListener('online', function(){
+  if(typeof flushPendingPushes==='function')flushPendingPushes();
+});
+
 window.addEventListener('error', function(e){
   showFatalError(e.message+' (line '+e.lineno+')');
 });
@@ -711,12 +715,10 @@ const EXERCISES=[
 const Q_STEPS=[
   {key:'energy',q:"How's your energy?",opts:['🔥 Locked In','⚡ Good','😐 Low','🛑 Tank Empty']},
   {key:'body',q:'Body feeling ready?',opts:['💪 Fresh','🏃 Good','😤 Sore','🤕 Hurting']},
-  {key:'soreness',q:'Soreness level?',opts:['0 - No soreness','1 - Slight','2 - Moderate','3 - Very sore','4 - Hard to move','5 - Cannot train']},
+  {key:'soreness',q:'Sore or in pain today?',opts:['✅ No, I feel good','🟡 Just sore (normal)','🔴 Something hurts'],needsLocation:true,noneVal:'✅ No, I feel good'},
   {key:'sleep',q:'How much sleep?',opts:['😫 Less than 5 hrs','😐 5–6 hrs','✅ 7–8 hrs','💤 9+ hrs']},
-  {key:'pain',q:'Any pain today?',opts:['✅ No pain','🟡 Mild','🟠 Moderate','🔴 High - needs review']},
   {key:'mental',q:'Mindset check — how are you feeling?',opts:['🎯 Focused','😊 Good','😤 Stressed','😴 Mentally tired','😶 Just off today']},
   {key:'ate',q:'Did you eat today?',opts:['✅ Full meal','🟡 A little','🔴 Nothing yet']},
-  {key:'readiness',q:'Overall readiness to perform?',sub:'1 = not ready  ·  5 = fully ready',opts:['1 - Not ready','2 - Below par','3 - I can work','4 - Ready','5 - Peak ready'],scale:true},
   {key:'motivation',q:'Want to train today?',opts:["1 - Don't want to be here","2 - I'll get through it","3 - I'm here","4 - Let's work","5 - Can't wait"],scale:true}
 ];
 const PULSE_Q=[
@@ -732,7 +734,7 @@ let state={
   todayKey:'fw_fc_'+(new Date().getHours()<5?new Date(Date.now()-86400000):new Date()).toLocaleDateString(),
   todayDate:(new Date().getHours()<5?new Date(Date.now()-86400000):new Date()).toLocaleDateString(),
   done:false,ciStep:0,ciAns:{},ciFlags:[],ciRedFlags:[],ciYellowFlags:[],
-  wellnessStep:null,ciWellness:{answered:false,concerns:[],details:''},
+  wellnessStep:null,ciWellness:{answered:false,concerns:[],details:''},locFollowup:null,
   meals:[],mealFeedback:{},
   eodSummary:null,eodLoading:false,
   waterOz:0,hydStreak:0,
@@ -771,7 +773,7 @@ function initState(){
     state.ciRedFlags=[];state.ciYellowFlags=[];
     state.logDone=false;state.eodSummary=null;
     state.clipWatched=false;state.clipReflection='';state.fuelView='plan';state.planViewed=false;state.eodLoading=false;state.logView='today';state.weeklyLogs={};
-  state.wellnessStep=null;state.ciWellness={answered:false,concerns:[],details:''};state.eodSummary=null;
+  state.wellnessStep=null;state.ciWellness={answered:false,concerns:[],details:''};state.eodSummary=null;state.locFollowup=null;
     console.log('🌅 New day detected after 5am — state cleared');
   }
   // Update todayDate and todayKey to use 8am-anchored date
@@ -811,6 +813,7 @@ function initState(){
   const slotH=h<5?5:h>22?22:h;
   const slotLabel=(slotH<=12?slotH+':00 '+(slotH<12?'AM':'PM'):(slotH-12)+':00 PM');
   state.mealSlot=MEAL_SLOTS.find(s=>s.value===slotLabel)?.value||MEAL_SLOTS[2].value;
+  setTimeout(()=>flushPendingPushes(),2000);
 }
 
 function nowStr(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
@@ -859,7 +862,7 @@ async function pushN(payload){
 function isSleepFlagged(a){const s=a.sleep||'';return s.includes('Less than 5')||s.includes('5–6');}
 function isFuelFlagged(a){return (a.ate||'').includes('Nothing');}
 function isMentalFlagged(a){const m=a.mental||'';return m.includes('Stressed')||m.includes('tired')||m.includes('off today');}
-function isPainFlagged(a){const p=a.pain||'';return p.includes('Moderate')||p.includes('High');}
+function isPainFlagged(a){const p=a.soreness||'';return p.includes('Something hurts');}
 
 function updateFlagStreak(flagType,hasFlagToday){
   const key='fw_flagstr_'+flagType;
@@ -913,7 +916,7 @@ Current Flag Counts:
 ---
 
 CHECK-IN DATA
-Overall feel: ${a.readiness||'Not provided'}
+Motivation to train: ${a.motivation||'Not provided'}
 Sleep hours: ${a.sleep||'Not provided'}
 Sleep quality: ${a.sleep||'Not provided'}
 Energy level: ${a.energy||'Not provided'}
@@ -1542,6 +1545,8 @@ function renderCheckin(){
   const step=state.ciStep,q=Q_STEPS[step],total=Q_STEPS.length;
   const dots=Q_STEPS.map((_,i)=>`<div style="width:7px;height:7px;border-radius:50%;background:${step===i?R:step>i?'#22C55E':'#2A2A3E'};transition:background 0.2s"></div>`).join('');
   const isSched=q.key==='schedule';
+  const painLoc=state.locFollowup===q.key;
+  const locKey=q.key+'Locations';
   const opts=q.opts.map(o=>{
     const sel=isSched&&Array.isArray(state.ciAns.schedule)&&state.ciAns.schedule.includes(o);
     return `<button class="opt-btn ${sel?'sel':''}" onclick="ciPick('${q.key}','${o.replace(/'/g,"\\'")}',${step},${step===total-1},${!!q.multi})">${o}${sel?'<span style="font-size:18px;font-weight:900">✓</span>':''}</button>`;
@@ -1550,17 +1555,26 @@ function renderCheckin(){
     <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">DAILY ✅</p>
     <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Quick daily read. Tap to answer.</p>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <button onclick="ciBack()" ${step===0?'disabled':''} style="display:flex;align-items:center;gap:4px;color:${step>0?'#F0EDE6':'#3A3A4A'};font-size:14px;font-weight:700;font-family:'Barlow Condensed',sans-serif;padding:8px 12px;background:${step>0?'#13131E':'transparent'};border:${step>0?'1.5px solid #303050':'none'};border-radius:10px;cursor:${step>0?'pointer':'default'}">← BACK</button>
+      <button onclick="${painLoc?"state.locFollowup=null;renderAthlete()":"ciBack()"}" ${step===0&&!painLoc?'disabled':''} style="display:flex;align-items:center;gap:4px;color:${step>0||painLoc?'#F0EDE6':'#3A3A4A'};font-size:14px;font-weight:700;font-family:'Barlow Condensed',sans-serif;padding:8px 12px;background:${step>0||painLoc?'#13131E':'transparent'};border:${step>0||painLoc?'1.5px solid #303050':'none'};border-radius:10px;cursor:${step>0||painLoc?'pointer':'default'}">← BACK</button>
       <p style="font-size:13px;font-weight:800;color:#9A9AB0;font-family:'Barlow Condensed',sans-serif;letter-spacing:0.04em">QUESTION ${step+1} OF ${total+1}</p>
       <div style="width:60px"></div>
     </div>
     <div style="height:5px;background:#1C1C2E;border-radius:3px;overflow:hidden;margin-bottom:20px">
       <div style="height:100%;width:${Math.round(((step+1)/(total+1))*100)}%;background:${R};border-radius:3px;transition:width 0.3s"></div>
     </div>
+    ${painLoc?`
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;text-align:center;margin-bottom:8px;line-height:1.1">Where ${(state.ciAns[q.key]||'').includes('hurts')?'does it hurt':'are you sore'}?</p>
+    <p style="font-size:12px;color:#9A9AB0;text-align:center;margin-bottom:16px">Tap all the spots that are bothering you.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:18px">
+      ${BODY_AREAS.map(a=>{const sel=(state.ciAns[locKey]||[]).includes(a);return `<button onclick="toggleLocArea('${a}')" style="padding:10px 16px;border-radius:20px;border:2px solid ${sel?'#DC2626':'#2A2A3E'};background:${sel?'#DC262620':'#111118'};color:${sel?'#fff':'#9A9AB0'};font-size:14px;font-family:'Barlow',sans-serif;font-weight:700;cursor:pointer">${a}</button>`;}).join('')}
+    </div>
+    <button onclick="continueLocFollowup()" ${(state.ciAns[locKey]||[]).length===0?'disabled':''} style="width:100%;background:${(state.ciAns[locKey]||[]).length===0?'#2A2A3E':R};color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;letter-spacing:0.1em;cursor:${(state.ciAns[locKey]||[]).length===0?'default':'pointer'}">CONTINUE →</button>
+    `:`
     <p style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;text-align:center;margin-bottom:${q.sub?'8':'22'}px;line-height:1.1">${q.q}</p>
     ${q.sub?`<p style="font-size:12px;color:#9A9AB0;text-align:center;margin-bottom:16px">${q.sub}</p>`:''}
     ${opts}
     ${isSched?`<button onclick="ciNextMulti()" style="width:100%;background:${R};color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;letter-spacing:0.1em;cursor:pointer;margin-top:10px">NEXT →</button>`:''}
+    `}
     <p style="font-size:10px;color:#9A9AB0;text-align:center;margin-top:12px">${step+1} of ${total}</p>`;
 }
 
@@ -1571,12 +1585,35 @@ function ciPick(key,val,step,isLast,isMulti){
     renderAthlete();return;
   }
   state.ciAns[key]=val;
+  const q=Q_STEPS[step];
+  if(q.needsLocation){
+    const locKey=key+'Locations';
+    if(val===q.noneVal){
+      state.ciAns[locKey]=[];
+      state.locFollowup=null;
+    } else {
+      state.locFollowup=key;
+      renderAthlete();return;
+    }
+  }
   if(isLast){state.wellnessStep='ask';renderAthlete();return;}
   else{state.ciStep=step+1;renderAthlete();}
 }
+function toggleLocArea(area){
+  const locKey=state.locFollowup+'Locations';
+  const cur=Array.isArray(state.ciAns[locKey])?state.ciAns[locKey]:[];
+  state.ciAns[locKey]=cur.includes(area)?cur.filter(x=>x!==area):[...cur,area];
+  renderAthlete();
+}
+function continueLocFollowup(){
+  state.locFollowup=null;
+  const step=state.ciStep,total=Q_STEPS.length;
+  if(step===total-1){state.wellnessStep='ask';renderAthlete();return;}
+  state.ciStep=step+1;renderAthlete();
+}
 function ciNextMulti(){state.ciStep++;renderAthlete();}
 function ciBack(){if(state.ciStep>0){state.ciStep--;renderAthlete();}}
-function resetCheckin(){state.done=false;state.ciStep=0;state.ciAns={};state.ciFlags=[];state.wellnessStep=null;localStorage.removeItem(state.todayKey);renderAthlete();}
+function resetCheckin(){state.done=false;state.ciStep=0;state.ciAns={};state.ciFlags=[];state.wellnessStep=null;state.locFollowup=null;localStorage.removeItem(state.todayKey);renderAthlete();}
 function backCheckin(){state.done=false;state.wellnessStep='ask';renderAthlete();}
 // ── FUEL SCORE SYSTEM ────────────────────────────────────────────────────────
 // Points: Check-in(20) + No flags(+10) + 3+meals(20) + 1-2meals(10)
@@ -1611,12 +1648,8 @@ function dismissMilestone(days){
 function getReadinessReason(a){
   if(a.energy&&a.energy.includes('Tank Empty'))return 'Energy critically low — session adjusted to match';
   if(a.body&&a.body.includes('Hurting'))return 'Pain reported — session modified to protect you';
-  if(a.pain&&(a.pain.includes('Severe')||a.pain.includes('High')||a.pain.includes('4 - Severe')))return 'High pain reported — load reduced today';
-  if(a.soreness&&a.soreness.includes('5 - Cannot'))return 'Max soreness — today is recovery and movement';
-  if(a.readiness&&a.readiness.includes('1 - Not ready'))return 'Low readiness flagged — session dialed back';
-  if(a.pain&&a.pain.includes('Moderate'))return 'Moderate pain noted — coach will monitor movement today';
-  if(a.soreness&&a.soreness.includes('4 - Hard'))return 'High soreness — intensity may adjust mid-session';
-  if(a.readiness&&a.readiness.includes('2 - Below'))return 'Below-par readiness — give what you have, coach knows';
+  if(a.soreness&&a.soreness.includes('Something hurts'))return 'Something hurts — coach will review before training';
+  if(a.soreness&&a.soreness.includes('Just sore'))return 'Normal soreness noted — coach will keep an eye on it';
   if(a.motivation&&a.motivation.includes("1 - Don"))return 'Low motivation today — show up, the work handles the rest';
   return 'Check-in received — all good';
 }
@@ -1634,7 +1667,7 @@ async function generateEODSummary(){
 
 Athlete: ${name}
 Day type: ${proto?.title||'Unknown'}
-Check-in — Energy: ${a.energy||'?'}, Sleep: ${a.sleep||'?'}, Body: ${a.body||'?'}, Pain: ${a.pain||'?'}, Soreness: ${a.soreness||'?'}, Ate before training: ${a.ate||'?'}
+Check-in — Energy: ${a.energy||'?'}, Sleep: ${a.sleep||'?'}, Body: ${a.body||'?'}, Sore/Pain: ${a.soreness||'?'}, Ate before training: ${a.ate||'?'}
 Water: ${Math.round(state.waterOz||0)}oz of ${getWaterGoal()}oz goal
 Meals logged:
 ${mealLog}
@@ -1837,21 +1870,13 @@ function finishCheckin(){
     redFlags.push('Energy critically low — Tank Empty');
   if(a.body&&a.body.includes('Hurting'))
     redFlags.push('Body hurting — possible injury');
-  if(a.pain&&a.pain.includes('High'))
-    redFlags.push('High pain — do not train without coach review');
-  if(a.soreness&&a.soreness.includes('5 - Cannot'))
-    redFlags.push('Soreness 5/5 — cannot train');
-  if(a.readiness&&a.readiness.includes('1 - Not ready'))
-    redFlags.push('Readiness 1/5 — athlete not ready to perform');
+  if(a.soreness&&a.soreness.includes('Something hurts'))
+    redFlags.push('Something hurts — do not train without coach review');
 
   // ── YELLOW FLAGS — logged to Notion only, not shown to athlete ─────────
   // Only physical/performance flags — lifestyle factors logged silently
-  if(a.pain&&a.pain.includes('Moderate'))
-    yellowFlags.push('Moderate pain — needs movement modification');
-  if(a.soreness&&a.soreness.includes('4 - Hard'))
-    yellowFlags.push('Soreness 4/5 — hard to move, monitor closely');
-  if(a.readiness&&a.readiness.includes('2 - Below'))
-    yellowFlags.push('Readiness 2/5 — below par today');
+  if(a.soreness&&a.soreness.includes('Just sore'))
+    yellowFlags.push('Normal soreness reported — monitor');
   if(a.motivation&&a.motivation.includes("1 - Don't"))
     yellowFlags.push("Motivation 1/5 — doesn't want to be here");
   // Note: sleep, mental state, and nutrition are logged silently — assessed in person
@@ -1930,9 +1955,11 @@ async function silentPushToNotion(){
     "Schedule Today":{rich_text:[{text:{content:sched}}]},
     "Energy":{select:{name:a.energy||pa.energy||'Good'}},
     "Body Feeling":{select:{name:a.body||pa.body||'Good'}},
-    "Soreness Level":{select:{name:a.soreness||'0 - No soreness'}},
+    "Soreness Level":{select:{name:a.soreness||'✅ No, I feel good'}},
+    "Soreness Location":{rich_text:[{text:{content:(a.sorenessLocations||[]).join(', ')||''}}]},
     "Sleep":{select:{name:a.sleep||pa.sleep||'7-8 hrs'}},
-    "Pain Level":{select:{name:a.pain||'No pain'}},
+    "Pain Level":{select:{name:a.soreness||'✅ No, I feel good'}},
+    "Pain Location":{rich_text:[{text:{content:(a.sorenessLocations||[]).join(', ')||''}}]},
     "Mental State":{select:{name:a.mental||pa.mental||'Good'}},
     "Ate Before Training":{select:{name:a.ate||'A little'}},
     "Motivation":{select:{name:a.motivation||'3 - Im here'}},
@@ -1955,21 +1982,55 @@ async function silentPushToNotion(){
     "Clip Reflection":{rich_text:[{text:{content:state.clipReflection||''}}]}
   };
   const DB='47eef612-6214-4a9a-9397-b10c9a93356b';
+  await pushWithRetry(DB,name,today,properties);
+}
+
+async function pushWithRetry(DB,name,today,properties,attempt){
+  attempt=attempt||1;
   try{
     const s=await notionFetch('https://api.notion.com/v1/databases/'+DB+'/query','POST',{
       filter:{and:[{property:'Athlete',rich_text:{equals:name}},{property:'Date',date:{equals:today}}]},page_size:1
     });
-    if(s.object==='error'){flash('Notion: '+s.message.slice(0,60),'#DC2626');return;}
+    if(s.object==='error')throw new Error(s.message);
     if(s.results&&s.results.length){
       const u=await notionFetch('https://api.notion.com/v1/pages/'+s.results[0].id,'PATCH',{properties});
-      if(u.object==='error'){flash('N: '+u.message.slice(0,70),'#DC2626');console.error('Notion PATCH:',u.message);}
-      else{flash('Synced','#22C55E');}
+      if(u.object==='error')throw new Error(u.message);
     } else {
       const c=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:DB},properties});
-      if(c.object==='error'){flash('N: '+c.message.slice(0,70),'#DC2626');console.error('Notion POST:',c.message);}
-      else{flash('Synced','#22C55E');}
+      if(c.object==='error')throw new Error(c.message);
     }
-  }catch(e){const msg=(e&&e.message)||String(e)||'unknown';flash('ERR: '+msg.slice(0,70),'#DC2626');console.error('Push error:',e);}
+    flash('Synced','#22C55E');
+    clearPendingPush(name,today);
+  }catch(e){
+    const msg=(e&&e.message)||String(e)||'unknown';
+    console.error('Push attempt '+attempt+' failed:',e);
+    if(attempt<3){
+      const delay=attempt*2000; // 2s, then 4s
+      setTimeout(()=>pushWithRetry(DB,name,today,properties,attempt+1),delay);
+    } else {
+      flash('Will retry sync — connection issue','#F59E0B');
+      savePendingPush(DB,name,today,properties);
+    }
+  }
+}
+
+function savePendingPush(DB,name,today,properties){
+  const queue=loadJ('fw_pending_pushes',[]);
+  const filtered=queue.filter(p=>!(p.name===name&&p.today===today));
+  filtered.push({DB,name,today,properties,savedAt:Date.now()});
+  save('fw_pending_pushes',JSON.stringify(filtered));
+}
+function clearPendingPush(name,today){
+  const queue=loadJ('fw_pending_pushes',[]);
+  const filtered=queue.filter(p=>!(p.name===name&&p.today===today));
+  save('fw_pending_pushes',JSON.stringify(filtered));
+}
+async function flushPendingPushes(){
+  const queue=loadJ('fw_pending_pushes',[]);
+  if(!queue.length)return;
+  for(const p of queue){
+    await pushWithRetry(p.DB,p.name,p.today,p.properties,1);
+  }
 }
 
 
@@ -3820,6 +3881,7 @@ function doFullWipe(){localStorage.clear();window.location.reload();}
 const SPORTS=['Football','Basketball','Volleyball','Soccer','Track','Baseball','Softball','Lacrosse','Other'];
 const BODY_GOALS=['Gain Muscle','Lose Weight','Maintain','Get Faster','Stay Lean'];
 const GROUPS=['FWAY Athletes','Kalapu','EC Football'];
+const BODY_AREAS=['Neck','Shoulder','Upper Back','Lower Back','Hip','Groin','Hamstring','Quad','Knee','Shin/Calf','Ankle','Foot','Elbow','Wrist','Other'];
 const GRAD_YEARS=['2026','2027','2028','2029','2030'];
 let profState={sports:[],gradYear:'',bodyGoals:[],height:'',trainingFreq:'',group:''};
 
@@ -4331,6 +4393,7 @@ async function requestPushPermission(){
 }
 
 function notifyCoach(title, body, urgent=false){
+  if(!('Notification' in window))return;
   if(Notification.permission!=='granted')return;
   const n=new Notification('FWAY — '+title,{
     body:body,
