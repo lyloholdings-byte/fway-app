@@ -461,7 +461,7 @@ select option{background:#13131E}
     <div style="display:flex;gap:10px;flex-wrap:wrap" id="prof-freq">
       <button onclick="setProfFreq('2x per week')" id="pf-2x" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:10px;padding:12px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer">2x / week</button>
       <button onclick="setProfFreq('3x per week')" id="pf-3x" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:10px;padding:12px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer">3x / week</button>
-      <button onclick="setProfFreq('4x per week')" id="pf-4x" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:10px;padding:12px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer">4x / week</button>
+      <button onclick="setProfFreq('4x per week')" id="pf-4x" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:10px;padding:12px 20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer">4x+ / week</button>
     </div>
   </div>
   <button onclick="saveProfile()" id="prof-save-btn" class="btn-red" disabled>CONTINUE →</button>
@@ -2395,14 +2395,7 @@ async function pullProfileFromNotion(name, nameKey){
 }
 
 function getWaterGoal(){
-  try{
-    const p=getMyProfile();
-    const w=parseFloat(p?.weight||0);
-    if(!w)return 100;
-    // GAIN System: ~half body weight in oz, rounded to nearest 5
-    const base=Math.round((w*0.5)/5)*5;
-    return Math.max(50,Math.min(base,130));
-  }catch{return 100;}
+  return 128;
 }
 
 function getTodayProtocol(){
@@ -4440,7 +4433,7 @@ function showProfileSetup(name){
   // sports
   document.getElementById('prof-sports').innerHTML=SPORTS.map(s=>`<button onclick="setProfSport('${s}')" id="ps-${s.replace(/\s/g,'_')}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer">${s}</button>`).join('');
   // group — everyone picks from scratch, no pre-selection
-  document.getElementById('prof-group').innerHTML=GROUPS.map(g=>`<button onclick="setProfGroup('${g.replace(/'/g,"\\'")}')" id="pgr-${g.replace(/[\s']/g,'_')}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:20px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer">${g}</button>`).join('');
+  document.getElementById('prof-group').innerHTML=GROUPS.map((g,gi)=>`<button onclick="setProfGroupIdx(${gi})" id="pgr-${gi}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:20px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer">${g.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}</button>`).join('');
   state.rosterImpliedGroups=null;
   // years
   document.getElementById('prof-years').innerHTML=GRAD_YEARS.map(y=>`<button onclick="setProfYear('${y}')" id="py-${y.replace(/[^A-Za-z0-9]/g,'')}" style="background:#13131E;color:#9A9AB0;border:1px solid #303050;border-radius:10px;padding:10px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer">${y==='N/A'?'N/A':"'"+y.slice(2)}</button>`).join('');
@@ -4489,11 +4482,15 @@ function addOtherSport(v){
   if(v.trim())profState.sports.push('Other: '+v.trim());
   checkProfReady();
 }
+function setProfGroupIdx(i){ setProfGroup(GROUPS[i]); }
 function setProfGroup(g){
   // Single select — one group only
   profState.group=[g];
-  document.querySelectorAll('#prof-group button').forEach(b=>{
-    const sel=b.textContent.trim()===g;
+  const gi=GROUPS.indexOf(g);
+  GROUPS.forEach((_,i)=>{
+    const b=document.getElementById('pgr-'+i);
+    if(!b)return;
+    const sel=(i===gi);
     b.style.background=sel?R:'#111118';
     b.style.color=sel?'#fff':'#888';
     b.style.borderColor=sel?R:'#2A2A3E';
