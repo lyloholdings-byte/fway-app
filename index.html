@@ -107,7 +107,7 @@ select option{background:#13131E}
       <button id="roster-manual-toggle" onclick="chooseCreateNew()" style="display:none;width:100%;background:none;border:1.5px solid #303050;border-radius:12px;padding:12px;color:#9A9AB0;font-size:13px;cursor:pointer;margin-bottom:8px">I'm new — set me up</button>
 
       <div id="manual-name-entry" style="display:none">
-        <p style="font-size:13px;color:#9A9AB0;margin-bottom:16px">Spell it exactly how Coach has it.</p>
+        <p style="font-size:13px;color:#9A9AB0;margin-bottom:16px">(First and last name — if two names, just the last one)</p>
         <div style="display:flex;gap:8px;margin-bottom:12px">
           <div style="flex:1;position:relative">
             <input id="name-first" class="inp" placeholder="First" autocapitalize="words" autocorrect="off" oninput="toggleClearBtn('name-first','clear-first')" style="width:100%;background:#13131E;font-size:18px;padding:14px 34px 14px 16px;box-sizing:border-box"/>
@@ -417,7 +417,7 @@ select option{background:#13131E}
     <div id="prof-group" style="display:flex;flex-wrap:wrap;gap:8px"></div>
   </div>
   <div id="sec-sport" style="margin-bottom:18px">
-    <span class="lbl">Sport</span>
+    <span class="lbl">Sport <span style="color:#8A8AAA;font-weight:400;text-transform:none;letter-spacing:0">— select all that applies</span></span>
     <div id="prof-sports" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
     <input id="prof-other-sport" type="text" placeholder="Type your sport(s)..." oninput="addOtherSport(this.value)" style="display:none;width:100%;background:#13131E;border:1px solid #C8102E;border-radius:10px;color:#F0EDE6;padding:11px 14px;font-size:15px;outline:none"/>
   </div>
@@ -487,7 +487,7 @@ select option{background:#13131E}
 
 <!-- PIN ENTRY SCREEN — returning athletes -->
 <div id="s-pin-entry" class="screen fade-scroll" style="overflow-y:auto;background:#09090E">
-  <div style="display:flex;flex-direction:column;align-items:center;padding:36px 28px 60px">
+  <div style="display:flex;flex-direction:column;align-items:center;padding:max(36px,calc(env(safe-area-inset-top) + 16px)) 28px 60px">
     <div style="text-align:center;margin-bottom:24px;width:100%">
       <button onclick="backToLogin()" style="background:none;border:1px solid #2A2A3E;border-radius:8px;color:#888;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;padding:5px 12px;margin-bottom:20px;display:block">← Back</button>
       <p id="pin-entry-label" style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;margin-bottom:8px">ENTER YOUR PIN</p>
@@ -521,7 +521,7 @@ select option{background:#13131E}
 
 <!-- PIN CREATION SCREEN -->
 <div id="s-pin-create" class="screen fade-scroll" style="overflow-y:auto;background:#09090E">
-  <div style="display:flex;flex-direction:column;align-items:center;padding:36px 28px 60px">
+  <div style="display:flex;flex-direction:column;align-items:center;padding:max(36px,calc(env(safe-area-inset-top) + 16px)) 28px 60px">
     
     <!-- Header -->
     <div style="text-align:center;margin-bottom:32px;width:100%">
@@ -913,17 +913,17 @@ let state={
 };
 
 function initState(){
-  // Daily reset at 8:00 AM — data stays until 8am the next morning
+  // Daily reset time is per-athlete (default 5am, adjustable for night-shift schedules)
   const now=new Date();
   const hours=now.getHours();
-  // Use yesterday's date key if it's before 8am (data belongs to yesterday)
+  // Use yesterday's date key if it's before 5am (data belongs to yesterday)
   const dateForKey=hours<5?new Date(now.getTime()-86400000):now;
   const rawDate=dateForKey.toLocaleDateString();
   const uname=getSessionName().toLowerCase().replace(/\s+/g,'_');
   const today=uname+'_'+rawDate; // namespaced per athlete — prevents data bleed on shared devices
   const lastLoad=localStorage.getItem('fw_last_load_date');
 
-  // Detect reset window: it's a new day AND it's past 8am
+  // Detect reset window: it's a new day AND it's past this athlete's reset hour
   const isNewDay=lastLoad&&lastLoad!==today&&hours>=5;
   if(isNewDay){
     // New day after 8am — clear daily state
@@ -2603,7 +2603,7 @@ function renderFuel(){
   </div>`:''}
 
   <!-- COMPLETE DAY -->
-  ${meals.length>0?`<div style="margin-top:8px">
+  <div style="margin-top:8px">
     ${state.eodLoading?`<div class="card" style="text-align:center;padding:20px">
 
     </div>`:''}
@@ -2615,23 +2615,16 @@ function renderFuel(){
       `<div class="card" style="display:flex;align-items:center;gap:10px;background:#22C55E14;border:1px solid #22C55E40">
         <span style="font-size:20px">✅</span>
         <div><p style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#22C55E">LOG SUBMITTED</p><p style="font-size:12px;color:#9A9AB0;margin-top:2px">Sent to Coach · ${nowStr()}</p></div>
-      </div>`:(()=>{
-        if(state.eodLoading)return'';
-        const dayCheckDone=state.done||state.pulseDone;
-        const daySkillDone=loadJ('fw_work_logs_'+state.todayDate,[]).length>0;
-        const dayReady=dayCheckDone&&daySkillDone&&meals.length>0;
-        if(dayReady){
-          return `
-          <div class="card" style="padding:18px">
-            <p style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;color:#F0EDE6;margin-bottom:4px">Complete before end of day</p>
-            <p style="font-size:13px;color:#9A9AB0;margin-bottom:14px">Send today's log to Coach.</p>
-            <button onclick="completeDailyLog()" style="width:100%;background:#22C55E;color:#fff;border:none;border-radius:13px;padding:15px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;letter-spacing:0.06em;cursor:pointer">SEND MY DAY TO COACH →</button>
-          </div>`;
-        }
-        return '';
-      })()
+      </div>
+      <button onclick="completeDailyLog()" style="width:100%;background:none;border:1.5px solid #303050;border-radius:13px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;color:#9A9AB0;cursor:pointer;margin-top:10px">Logged more since then? Send again</button>`
+      :state.eodLoading?''
+      :`<div class="card" style="padding:18px">
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;color:#F0EDE6;margin-bottom:4px">Done for today?</p>
+        <p style="font-size:13px;color:#9A9AB0;margin-bottom:14px">Everything you log already reaches Coach automatically. Tap this whenever your day is actually over — no matter what time that is.</p>
+        <button onclick="completeDailyLog()" style="width:100%;background:#22C55E;color:#fff;border:none;border-radius:13px;padding:15px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;letter-spacing:0.06em;cursor:pointer">SEND MY DAY TO COACH →</button>
+      </div>`
     }
-  </div>`:''}`;
+  </div>`;
 }
 
 // MARKDOWN RENDERER — converts **bold** and newlines to HTML
@@ -2840,7 +2833,6 @@ async function getEndOfDaySummary(){
 }
 
 async function completeDailyLog(){
-  if(state.logDone)return;
   state.logDone=true;
   save('fw_logdone_'+state.todayDate,'true');
   updateScore();
