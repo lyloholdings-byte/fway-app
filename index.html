@@ -4337,7 +4337,7 @@ function doFullWipe(){localStorage.clear();window.location.reload();}
 // PROFILE SETUP
 const SPORTS=['Football','Basketball','Volleyball','Soccer','Track','Baseball','Softball','Lacrosse','None','Other'];
 const BODY_GOALS=['Gain Muscle','Lose Weight','Maintain','Get Faster','Stay Lean'];
-const GROUPS=['FWAY Teammate','School Teammate','Weight Loss "Kalapu" Teammate','Mixed','Not Sure'];
+const GROUPS=['FWAY Teammate','School Teammate','Kalapu Teammate','Mixed','Not Sure'];
 const ROSTER_GROUPS={
   'Aedyn Havili':['EC Football'],
   'Alijah Townsend':['EC Football'],
@@ -4638,7 +4638,7 @@ function setProfGroup(g){
 // Which fields each group needs. Height/Weight/BodyGoal/Freq are always shown.
 const GROUP_FIELDS={
   'School Teammate':['sport','position','gradyear','email','personalgoal'],
-  'Weight Loss "Kalapu" Teammate':['goalweight','email','personalgoal'],
+  'Kalapu Teammate':['goalweight','email','personalgoal'],
   'FWAY Teammate':['sport','position','gradyear','goalweight','email','personalgoal'],
   'Mixed':['sport','position','gradyear','goalweight','email','personalgoal'],
   'Not Sure':['sport','position','gradyear','goalweight','email','personalgoal']
