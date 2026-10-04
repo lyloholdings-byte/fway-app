@@ -347,7 +347,7 @@ select option{background:#13131E}
       </div>
     </div>
 
-    <button onclick="saveMeal()" style="width:100%;font-size:20px;padding:18px;letter-spacing:0.06em;border-radius:14px;background:#0D9488;color:#fff;border:none;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:900">SAVE MY MEAL →</button>
+    <button id="meal-save-btn" onclick="saveMeal()" style="width:100%;font-size:20px;padding:18px;letter-spacing:0.06em;border-radius:14px;background:#0D9488;color:#fff;border:none;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:900">SAVE MY MEAL →</button>
   </div>
 </div>
 
@@ -1617,6 +1617,7 @@ function showApp(){
 
 // ATHLETE NAV
 function aTab(t){
+  mealDeleteId=null; // leaving the page cancels an open "Delete this meal?"
   state.aTab=t;
   // Always make sure s-athlete is the visible screen
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -2606,10 +2607,19 @@ function renderFuel(){
           <span style="font-size:14px;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:${R}">${m.slot||m.time}</span>
           <div style="display:flex;gap:10px;align-items:center">
             <span style="font-size:12px;color:#8A8AAA">${m.loggedAt||''}</span>
+            <button onclick="openMealEdit(${i})" style="background:none;border:none;color:#14B8A6;font-size:13px;font-weight:700;cursor:pointer;margin-right:6px">Edit</button>
             <button onclick="deleteMeal(${i})" style="background:none;border:none;color:#9A9AB8;font-size:13px;cursor:pointer">Delete</button>
           </div>
         </div>
         <p style="font-size:15px;color:#F0EDE6;line-height:1.4">${m.text}</p>
+        ${mealDeleteId===m.id?`<div style="background:#C8102E12;border:1px solid #C8102E50;border-radius:10px;padding:12px;margin-top:10px">
+          <p style="font-size:14px;font-weight:700;color:#F0EDE6">Delete this meal?</p>
+          <p style="font-size:12px;color:#9A9AB0;margin:2px 0 10px">It will also be removed from what Coach sees.</p>
+          <div style="display:flex;gap:8px">
+            <button onclick="confirmDeleteMeal(${m.id})" style="flex:1;background:#C8102E;color:#fff;border:none;border-radius:10px;padding:11px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;letter-spacing:0.06em;cursor:pointer">YES, DELETE</button>
+            <button onclick="cancelDeleteMeal()" style="flex:1;background:#13131E;border:1.5px solid #303050;color:#F0EDE6;border-radius:10px;padding:11px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;letter-spacing:0.06em;cursor:pointer">KEEP IT</button>
+          </div>
+        </div>`:''}
         ${fb[m.id]&&fb[m.id]!=='loading'?`<div style="background:#13131E;border-left:3px solid ${R};border-radius:0 8px 8px 0;padding:10px 12px;margin-top:8px"><p style="font-size:11px;color:${R};font-weight:700;letter-spacing:0.08em;margin-bottom:4px;text-transform:uppercase">Coach Note</p><p style="font-size:14px;color:#E0E0F0;line-height:1.6">${renderMD(fb[m.id])}</p></div>`:''}
       </div>
     `).join('')}
@@ -2781,7 +2791,22 @@ function resetWater(){
   schedulePush(); // reset used to stay on the phone only — now it reaches Notion too
   renderAthlete();
 }
-function deleteMeal(i){state.meals.splice(i,1);save('fw_meals_'+state.todayDate,state.meals);renderAthlete();}
+function deleteMeal(i){ // first tap only asks — nothing is removed yet
+  const m=state.meals[i];if(!m)return;
+  mealDeleteId=m.id;renderAthlete();
+}
+function cancelDeleteMeal(){mealDeleteId=null;renderAthlete();}
+function confirmDeleteMeal(id){
+  mealDeleteId=null;
+  const i=state.meals.findIndex(m=>m.id===id);
+  if(i<0){renderAthlete();return;}
+  const gone=state.meals.splice(i,1)[0];
+  save('fw_meals_'+state.todayDate,state.meals);
+  updateScore();
+  setTimeout(()=>silentPushToNotion(),300); // the daily summary stops listing it
+  deleteMealInNotion(gone);                  // and so does the Nutrition Log
+  flash('Meal deleted');renderAthlete();
+}
 
 function getLYLOContext(){
   try{
@@ -2903,41 +2928,63 @@ async function completeDailyLog(){
 
 // ── ATHLETE NUTRITION LOG — individual meal entries ─────────────────────────
 const NUTRITION_DB='b3486b60-3cd8-4231-aab7-3d9944a45cfe';
-async function pushMealToNutritionLog(meal){
-  if(localStorage.getItem('fw_testing_mode')==='true')return;
-  if(!meal||!meal.text)return;
+// One place builds the Nutrition Log row, so "log" and "edit" can never drift apart
+function mealNotionProps(meal){
   const name=getSessionName();
-  const today=localDateStr();
   const sched=Array.isArray(state.ciAns?.schedule)?state.ciAns.schedule.join(', '):'';
-  const entryTitle=name+' — '+meal.slot+' — '+(meal.loggedAt||'');
-  const properties={
-    "Meal":{title:[{text:{content:entryTitle}}]},
+  return {
+    "Meal":{title:[{text:{content:name+' — '+meal.slot+' — '+(meal.loggedAt||'')}}]},
     "Athlete":{rich_text:[{text:{content:name}}]},
-    "What They Ate":{rich_text:[{text:{content:meal.text||''}}]},
+    "What They Ate":{rich_text:rtChunks(meal.text||'')},
     "Meal Type":{select:{name:meal.slot||'Other'}},
     "Schedule":{rich_text:[{text:{content:sched}}]},
     "Time Logged":{rich_text:[{text:{content:meal.loggedAt||''}}]},
-    "Date":{date:{start:today}}
+    "Date":{date:{start:meal.nDate||localDateStr()}}
   };
-  await pushMealWithRetry(properties,1);
+}
+function mealTitleOf(p){return p.Meal?.title?.[0]?.text?.content||'';}
+// per meal: is its first push still on its way (active), and the newest content it should carry (latest)
+const mealSync={};
+async function pushMealToNutritionLog(meal){
+  if(localStorage.getItem('fw_testing_mode')==='true')return;
+  if(!meal||!meal.text)return;
+  const properties=mealNotionProps(meal);
+  mealSync[meal.id]={active:true,latest:properties};
+  await pushMealWithRetry(properties,1,meal.id);
 }
 
 function mealKey(p){
   try{return (p.Meal?.title?.[0]?.text?.content||'')+'|'+(p.Date?.date?.start||'');}catch{return String(Date.now());}
 }
-async function pushMealWithRetry(properties,attempt){
+async function pushMealWithRetry(properties,attempt,mealId){
   attempt=attempt||1;
+  const h=mealId?mealSync[mealId]:null;
+  if(h&&h.deleted){h.active=false;return;} // deleted before it was ever sent — nothing to send
+  const sending=(h&&h.latest)||properties; // an edit may have swapped in new text while we were retrying
   try{
-    const res=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:NUTRITION_DB},properties});
+    const res=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:NUTRITION_DB},properties:sending});
     if(res.object==='error')throw new Error(res.message);
     console.log('✅ Nutrition log synced');
-    clearPendingMeal(properties);
+    clearPendingMeal(sending);
+    if(sending!==properties)clearPendingMeal(properties);
+    if(h){
+      h.active=false;
+      h.rowTitle=mealTitleOf(sending); // what the row is called in Notion right now
+      if(h.deleted){ // deleted while this request was in the air: remove the row that just landed
+        pushMealDelete({mid:mealId,oldTitle:h.rowTitle,athlete:getSessionName(),date:sending.Date.date.start,pageId:res.id},1);
+        return;
+      }
+      // edited while this request was in the air: the row that just landed has the old text, so update it
+      if(h.latest!==sending)pushMealEdit({mid:mealId,oldTitle:h.rowTitle,athlete:getSessionName(),date:sending.Date.date.start,props:h.latest,gen:(h.gen=(h.gen||0)+1)},1);
+    }
   }catch(e){
     console.error('Nutrition log attempt '+attempt+' failed:',e.message);
+    if(h&&h.deleted){h.active=false;return;} // deleted meanwhile — do not queue it
     if(attempt<3){
-      setTimeout(()=>pushMealWithRetry(properties,attempt+1),attempt*2000);
+      setTimeout(()=>pushMealWithRetry(properties,attempt+1,mealId),attempt*2000);
     } else {
-      savePendingMeal(properties);
+      savePendingMeal((h&&h.latest)||properties);
+      if(h)h.active=false;
       flash('Meal saved — will sync','#F59E0B');
     }
   }
@@ -2953,15 +3000,141 @@ function clearPendingMeal(properties){
   const q=loadJ('fw_pending_meals',[]).filter(p=>p.key!==key);
   save('fw_pending_meals',JSON.stringify(q));
 }
+// a meal still waiting in the offline queue: swap the text it will send
+function replacePendingMeal(oldProps,newProps){
+  const q=loadJ('fw_pending_meals',[]);
+  const key=mealKey(oldProps);
+  const item=q.find(p=>p.key===key);
+  if(!item)return false;
+  item.properties=newProps;item.key=mealKey(newProps);
+  save('fw_pending_meals',JSON.stringify(q));
+  return true;
+}
+
+// ── EDITING A LOGGED MEAL: update the SAME row in the Nutrition Log (never add a second one) ──
+// Rules: one pending edit per meal, and the newest edit always wins (older retries stand down).
+async function pushMealEdit(job,attempt){
+  attempt=attempt||1;
+  const h=job.mid?mealSync[job.mid]:null;
+  if(h&&(h.deleted||job.gen!==h.gen))return; // a newer edit took over, or the meal was deleted
+  try{
+    const q=await notionFetch('https://api.notion.com/v1/databases/'+NUTRITION_DB+'/query','POST',{
+      filter:{and:[
+        {property:'Meal',title:{equals:job.oldTitle}},
+        {property:'Athlete',rich_text:{equals:job.athlete}},
+        {property:'Date',date:{equals:job.date}}
+      ]},page_size:1});
+    if(q.object==='error')throw new Error(q.message);
+    if(h&&(h.deleted||job.gen!==h.gen))return; // superseded while we were waiting on the network
+    const page=q.results&&q.results[0];
+    const res=page
+      ? await notionFetch('https://api.notion.com/v1/pages/'+page.id,'PATCH',{properties:job.props})
+      : await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:NUTRITION_DB},properties:job.props}); // never reached Notion — create it with the corrected text
+    if(res.object==='error')throw new Error(res.message);
+    clearPendingMealEdit(job);
+    if(h&&job.gen===h.gen)h.rowTitle=mealTitleOf(job.props);
+  }catch(e){
+    console.error('Meal edit attempt '+attempt+' failed:',e.message);
+    if(h&&(h.deleted||job.gen!==h.gen))return;
+    if(attempt<3){
+      setTimeout(()=>pushMealEdit(job,attempt+1),attempt*2000);
+    } else {
+      savePendingMealEdit(job);
+      flash('Edit saved — will sync','#F59E0B');
+    }
+  }
+}
+function savePendingMealEdit(job){
+  const q=loadJ('fw_pending_meal_edits',[]).filter(j=>j.mid!==job.mid); // one job per meal
+  q.push(job);
+  save('fw_pending_meal_edits',JSON.stringify(q));
+}
+function clearPendingMealEdit(job){
+  save('fw_pending_meal_edits',JSON.stringify(loadJ('fw_pending_meal_edits',[]).filter(j=>j.mid!==job.mid)));
+}
+async function updateMealInNotion(oldMeal,newMeal){
+  if(localStorage.getItem('fw_testing_mode')==='true')return;
+  const id=newMeal.id;
+  const oldProps=(mealSync[id]&&mealSync[id].latest)||mealNotionProps(oldMeal);
+  const h=mealSync[id]||(mealSync[id]={active:false,latest:oldProps});
+  const newProps=mealNotionProps(newMeal);
+  const rowTitle=h.rowTitle||mealTitleOf(oldProps); // what the Notion row is called right now
+  h.latest=newProps;
+  const gen=(h.gen=(h.gen||0)+1);
+  clearPendingMealEdit({mid:id});                     // an older queued edit of this meal is now out of date
+  if(h.active)return;                                 // its first push is still on the way — it will carry (or be corrected to) the new text
+  if(replacePendingMeal(oldProps,newProps))return;    // still waiting in the offline queue — just swap the text
+  await pushMealEdit({mid:id,oldTitle:rowTitle,athlete:getSessionName(),date:oldProps.Date.date.start,props:newProps,gen},1);
+}
+// ── DELETING A LOGGED MEAL: remove its Nutrition Log row too (Notion "archives" it) ──
+function removePendingMeal(props){ // a meal that never left the offline queue: just forget it
+  const q=loadJ('fw_pending_meals',[]);
+  const key=mealKey(props);
+  const had=q.some(p=>p.key===key);
+  if(had)save('fw_pending_meals',JSON.stringify(q.filter(p=>p.key!==key)));
+  return had;
+}
+async function pushMealDelete(job,attempt){
+  attempt=attempt||1;
+  try{
+    let pageId=job.pageId;
+    if(!pageId){
+      const q=await notionFetch('https://api.notion.com/v1/databases/'+NUTRITION_DB+'/query','POST',{
+        filter:{and:[
+          {property:'Meal',title:{equals:job.oldTitle}},
+          {property:'Athlete',rich_text:{equals:job.athlete}},
+          {property:'Date',date:{equals:job.date}}
+        ]},page_size:1});
+      if(q.object==='error')throw new Error(q.message);
+      pageId=q.results&&q.results[0]&&q.results[0].id; // none found = it never reached Notion, nothing to remove
+    }
+    if(pageId){
+      const res=await notionFetch('https://api.notion.com/v1/pages/'+pageId,'PATCH',{archived:true});
+      if(res.object==='error'&&!/archived/i.test(res.message||''))throw new Error(res.message);
+    }
+    clearPendingMealDelete(job);
+  }catch(e){
+    console.error('Meal delete attempt '+attempt+' failed:',e.message);
+    if(attempt<3){
+      setTimeout(()=>pushMealDelete(job,attempt+1),attempt*2000);
+    } else {
+      savePendingMealDelete(job);
+      flash('Delete saved — will sync','#F59E0B');
+    }
+  }
+}
+function savePendingMealDelete(job){
+  const q=loadJ('fw_pending_meal_deletes',[]).filter(j=>j.mid!==job.mid);
+  q.push(job);
+  save('fw_pending_meal_deletes',JSON.stringify(q));
+}
+function clearPendingMealDelete(job){
+  save('fw_pending_meal_deletes',JSON.stringify(loadJ('fw_pending_meal_deletes',[]).filter(j=>j.mid!==job.mid)));
+}
+async function deleteMealInNotion(meal){
+  if(localStorage.getItem('fw_testing_mode')==='true')return;
+  const id=meal.id;
+  const h=mealSync[id]||(mealSync[id]={active:false,latest:mealNotionProps(meal)});
+  h.deleted=true;
+  h.gen=(h.gen||0)+1;                    // any older edit still retrying stands down
+  clearPendingMealEdit({mid:id});        // and a queued edit of this meal is pointless now
+  if(h.active)return;                    // its first push is still on the way — it will see "deleted" and not send, or remove what it made
+  if(removePendingMeal(h.latest))return; // never left the offline queue — it was never created, so just forget it
+  await pushMealDelete({mid:id,oldTitle:h.rowTitle||mealTitleOf(h.latest),athlete:getSessionName(),date:h.latest.Date.date.start},1);
+}
 async function flushPendingMeals(){
   const q=loadJ('fw_pending_meals',[]);
-  if(!q.length)return;
   for(const p of q){ await pushMealWithRetry(p.properties,1); }
+  const edits=loadJ('fw_pending_meal_edits',[]);
+  for(const j of edits){ await pushMealEdit(j,1); }
+  const dels=loadJ('fw_pending_meal_deletes',[]);
+  for(const j of dels){ await pushMealDelete(j,1); }
 }
 
 
 // MEAL SHEET
 function openMeal(){
+  mealDeleteId=null;mealEditIdx=null;const _sb=document.getElementById('meal-save-btn');if(_sb)_sb.textContent='SAVE MY MEAL →';
   const now=new Date();
   const h=now.getHours();
   const m=now.getMinutes();
@@ -3093,7 +3266,11 @@ function closeAthleteMenu(){
   const el=document.getElementById('athlete-menu-overlay');
   if(el)el.style.display='none';
 }
-function closeMeal(){document.getElementById('meal-overlay').style.display='none';}
+function closeMeal(){
+  document.getElementById('meal-overlay').style.display='none';
+  if(mealEditIdx!==null)state.mealSlot=_slotBeforeEdit; // editing should not change the default for the next new meal
+  mealEditIdx=null;
+}
 function checkOverwhelmPopup(){
   // First-timers get the how-to instead — never two popups at once
   if(maybeShowHowTo()){
@@ -3120,6 +3297,8 @@ function updateScrollFades(){
   bottom.style.opacity=atBottom?'0':'1';
 }
 let _customTime='';
+let mealDeleteId=null; // which meal is showing its "Delete this meal?" question
+let mealEditIdx=null,_slotBeforeEdit=null; // which logged meal the sheet is editing (null = logging a new one)
 
 function setMealSlot(v){state.mealSlot=v;renderMealChips();}
 function setTimeFromPicker(){
@@ -3141,6 +3320,38 @@ function setCustomTime(v){
   const btnDiv=document.getElementById('slot-btns');
   if(btnDiv)btnDiv.innerHTML=MEAL_SLOTS.map(s=>`<button onclick="setMealSlot('${s.value}')" style="background:${state.mealSlot===s.value?R:'#111118'};color:${state.mealSlot===s.value?'#fff':'#888'};border:2px solid ${state.mealSlot===s.value?R:'#2A2A3E'};border-radius:20px;padding:8px 14px;font-size:13px;font-family:'Barlow',sans-serif;font-weight:600;cursor:pointer">${s.label}</button>`).join('');
 }
+function openMealEdit(i){
+  const m=state.meals[i];if(!m)return;
+  mealDeleteId=null;mealEditIdx=i;_slotBeforeEdit=state.mealSlot;
+  state.mealSlot=m.slot;
+  const t=String(m.loggedAt||'').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  const hh=t?parseInt(t[1],10):12,mm=t?t[2]:'00',ap=t?t[3].toUpperCase():'PM';
+  const hourSel=document.getElementById('meal-hour'),minSel=document.getElementById('meal-min'),apSel=document.getElementById('meal-ampm');
+  if(hourSel)hourSel.innerHTML=Array.from({length:12},(_,k)=>`<option value="${k+1}" ${k+1===hh?'selected':''}>${k+1}</option>`).join('');
+  const mins=['00','15','30','45'];if(!mins.includes(mm))mins.push(mm);mins.sort();
+  if(minSel)minSel.innerHTML=mins.map(v=>`<option ${v===mm?'selected':''}>${v}</option>`).join('');
+  if(apSel)apSel.value=ap;
+  _customTime=m.loggedAt||''; // keep exactly what was logged unless they change it
+  const disp=document.getElementById('meal-time-display');if(disp)disp.textContent=m.loggedAt||'';
+  const lbl=document.getElementById('meal-context-label');if(lbl)lbl.textContent='✏️ EDIT YOUR MEAL';
+  const sb=document.getElementById('meal-save-btn');if(sb)sb.textContent='SAVE CHANGES →';
+  const ta=document.getElementById('meal-text');if(ta)ta.value=m.text||'';
+  document.getElementById('meal-time-picker').style.display='none';
+  renderMealChips();
+  document.getElementById('meal-overlay').style.display='flex';
+  setTimeout(()=>{const x=document.getElementById('meal-text');if(x){x.focus();x.setSelectionRange(x.value.length,x.value.length);}},200);
+}
+function saveMealEdit(text){
+  const i=mealEditIdx,old=state.meals[i];
+  if(!old){closeMeal();return;}
+  const updated=Object.assign({},old,{slot:state.mealSlot,text,loggedAt:_customTime||old.loggedAt});
+  if(updated.slot===old.slot&&updated.text===old.text&&updated.loggedAt===old.loggedAt){closeMeal();flash('No changes');return;}
+  state.meals[i]=updated; // same meal, same id — never a second copy
+  save('fw_meals_'+state.todayDate,state.meals);
+  setTimeout(()=>silentPushToNotion(),300); // daily summary picks up the new text
+  updateMealInNotion(old,updated);         // and so does the Nutrition Log row
+  flash('Meal updated ✓');closeMeal();renderAthlete();
+}
 function saveMeal(){
   const text=document.getElementById('meal-text').value.trim();
   if(!text)return;
@@ -3151,9 +3362,10 @@ function saveMeal(){
     if(slotArea){slotArea.style.border='2px solid #C8102E';slotArea.style.borderRadius='10px';slotArea.style.padding='8px';setTimeout(()=>{slotArea.style.border='';slotArea.style.padding='';},2000);}
     return;
   }
+  if(mealEditIdx!==null){saveMealEdit(text);return;}
   const id=Date.now();
   const idx=state.meals.length;
-  state.meals.push({id,slot:state.mealSlot,text,loggedAt:_customTime||document.getElementById('meal-time-display')?.textContent,cal:0,pro:0,carb:0});
+  state.meals.push({id,slot:state.mealSlot,text,loggedAt:_customTime||document.getElementById('meal-time-display')?.textContent,cal:0,pro:0,carb:0,nDate:localDateStr()});
   save('fw_meals_'+state.todayDate,state.meals);
   updateScore();
   setTimeout(()=>silentPushToNotion(),300); // push daily summary immediately after meal
