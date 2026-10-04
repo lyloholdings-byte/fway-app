@@ -1742,7 +1742,7 @@ function renderHome(){
     </div>
 
     <!-- SKILL WORK -->
-    <div class="card" onclick="aTab('skill')" style="padding:16px;border:2px solid ${skillDone?'#22C55E60':'#2A2A3E'};cursor:pointer;min-height:104px">
+    <div class="card" onclick="aTab('work')" style="padding:16px;border:2px solid ${skillDone?'#22C55E60':'#2A2A3E'};cursor:pointer;min-height:104px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <span style="font-size:12px;font-weight:900;color:#8A8AAA;letter-spacing:0.08em">TRAINHEROIC</span>
         <span style="font-size:22px;color:${skillDone?'#22C55E':'#555'}">${skillDone?'✓':'○'}</span>
@@ -1767,6 +1767,13 @@ function renderHome(){
 
 
 // CHECK-IN
+// After the check-in: send the athlete to the first thing they have not done yet (meals -> water -> training -> done)
+function nextUpStep(){
+  if(!(state.meals||[]).length)return {label:'LOG YOUR MEALS',tab:'fuel'};
+  if(!((state.waterOz||0)>0))return {label:'ADD YOUR WATER',tab:'fuel'};
+  if(load('fw_skill_answered_'+state.todayDate,'')!=='true')return {label:'LOG YOUR TRAINING',tab:'work'};
+  return {label:'ALL SET \u2014 SEE YOUR DAY',tab:'home'};
+}
 function renderCheckin(){
   // Show gentle nudge if check-in not done — but keep home screen visible
   const showCheckinNudge = !state.done && !state.pulseDone;
@@ -1811,6 +1818,8 @@ function renderCheckin(){
     const sColor=sColors[status]||'#9A9AB0';
     const sIcon=sIcons[status]||'✓';
     const isPulled=report?.pulled||false;
+    const isRed=isPulled||status==='Rest Day'||(state.ciRedFlags||[]).length>0; // red = say it every time, from the athlete's own answers
+    const nu=nextUpStep();
     return `<div style="text-align:center;padding:28px 16px 16px">
       <div style="width:90px;height:90px;border-radius:50%;background:${sColor}20;border:4px solid ${sColor};display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:42px">${sIcon}</div>
       ${status==='Full Go'?`<p style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:${sColor};margin-bottom:4px;line-height:1.25">${GREEN_AFFIRMATIONS[Math.floor(Math.random()*GREEN_AFFIRMATIONS.length)]}</p>`:''}
@@ -1830,18 +1839,19 @@ function renderCheckin(){
         ${report.flags?.length?`<div style="margin:10px 0;text-align:left">${report.flags.map(f=>`<div style="background:${sColor}15;border:1px solid ${sColor}30;border-radius:9px;padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px"><span style="font-size:12px">${isPulled?'🛑':'⚠️'}</span><p style="font-size:12px;color:${sColor};font-weight:600">${f}</p></div>`).join('')}</div>`:''}
       `:''}
       ${!isPulled?`<p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:${R};font-weight:700;margin:12px 0">+20 pts 🔥</p>`:''}
-      ${isPulled?
+      ${isRed?
         `<div style="background:#C8102E15;border:2px solid #C8102E;border-radius:13px;padding:14px;margin:14px 0">
           <p style="font-size:32px;text-align:center;margin-bottom:4px">🛑</p>
           <p style="font-size:12px;color:#9A9AB0">Talk to Coach and the Athletic Trainer before doing anything today.</p>
-        </div>`
+        </div>
+        <button onclick="aTab('home')" style="width:100%;background:#13131E;border:1.5px solid #303050;color:#F0EDE6;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px">SEE YOUR DAY \u2192</button>`
         :status==='Modified'?
         `<div style="background:#F59E0B15;border:2px solid #F59E0B;border-radius:13px;padding:14px;margin:14px 0">
           <p style="font-size:32px;text-align:center;margin-bottom:4px">⚠️</p>
           <p style="font-size:12px;color:#9A9AB0">Check in with Coach before your session today.</p>
         </div>
-        <button onclick="aTab('fuel')" style="width:100%;background:#F59E0B;color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px">GO LOG YOUR MEALS →</button>`
-        :`<button onclick="aTab('fuel')" style="width:100%;background:${status==='Full Go'?'#22C55E':'#3B82F6'};color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px">GO LOG YOUR MEALS →</button>`
+        <button onclick="aTab('${nu.tab}')" style="width:100%;background:#F59E0B;color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px">${nu.label} →</button>`
+        :`<button onclick="aTab('${nu.tab}')" style="width:100%;background:${status==='Full Go'?'#22C55E':'#3B82F6'};color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px">${nu.label} →</button>`
       }
       <div style="display:flex;gap:8px;margin-top:16px">
         <button onclick="backCheckin()" style="flex:1;background:#13131E;border:1.5px solid #303050;border-radius:12px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;color:#9A9AB0;cursor:pointer">⬅ GO BACK</button>
@@ -3205,13 +3215,42 @@ function submitClipReflection(){
   flash('Clip complete ✓');renderAthlete();
 }
 
+// ── TRAINHEROIC HISTORY: a past entry is visible for 24 hours, then it is removed from this phone (Notion keeps the record) ──
+const WORK_RECENT_MS=24*60*60*1000;
+function dateKeyTime(s){ // "name_9/12/2026" -> that day at noon (0 if there is no date)
+  const m=String(s||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  return m?new Date(+m[3],+m[1]-1,+m[2],12,0,0).getTime():0;
+}
+function workLogTs(l){
+  if(l&&l.ts)return l.ts;
+  const t=dateKeyTime(l&&l.date); // entries saved before this update have no timestamp: count from the end of the day they were logged
+  return t?t+12*3600*1000-1000:0;
+}
+function pruneWorkLogs(){
+  const all=loadJ('fw_work_all',[]);
+  const keep=all.filter(l=>Date.now()-workLogTs(l)<WORK_RECENT_MS);
+  if(keep.length!==all.length)save('fw_work_all',keep);
+  // also clear the per-day copies of old logs (long pasted text adds up) — keep today + yesterday only
+  try{
+    const prefix=uk('fw_work_logs_'),today=dateKeyTime(state.todayDate);
+    if(today){
+      const cutoff=today-36*3600*1000, kill=[];
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(k&&k.startsWith(prefix)){const kt=dateKeyTime(k);if(kt&&kt<cutoff)kill.push(k);}
+      }
+      kill.forEach(k=>localStorage.removeItem(k));
+    }
+  }catch(e){}
+  return keep;
+}
 // SCORE REFERENCE TAB
 // Skill work state — persists answer for the day
 let skillAnswer=null; // null=unanswered, 'yes', 'no'
 
 function renderWork(){
   const logs=loadJ('fw_work_logs_'+state.todayDate,[]);
-  const allLogs=loadJ('fw_work_all',[]);
+  const allLogs=pruneWorkLogs(); // past entries only stay for 24 hours
   const todayAnswered=load('fw_skill_answered_'+state.todayDate,'')==='true';
   return `
   <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">TRAINHEROIC + MORE</p>
@@ -3268,11 +3307,12 @@ function renderWork(){
   `}
 
   ${allLogs.filter(l=>l.date!==state.todayDate).slice(0,5).length>0?`
-  <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;margin-top:8px;margin-bottom:10px;letter-spacing:0.05em">RECENT</p>
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:900;margin-top:8px;margin-bottom:2px;letter-spacing:0.05em">RECENT</p>
+  <p style="font-size:11px;color:#6A6A7A;margin-bottom:10px">Entries stay here for 24 hours.</p>
   ${allLogs.filter(l=>l.date!==state.todayDate).slice(0,5).map(l=>`<div style="background:#0A0A12;border:1px solid #1A1A28;border-radius:10px;padding:10px 13px;margin-bottom:6px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:${l.details?'4':'0'}px">
       <span style="font-size:11px">${l.did?'✓':'✗'}</span>
-      <p style="font-size:10px;color:#8A8AAA">${l.date}</p>
+      <p style="font-size:10px;color:#8A8AAA">${String(l.date||'').replace(/^.*_/,'')}${l.time?' · '+l.time:''}</p>
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:${l.did?'#22C55E':'#555'}">${l.did?'TRAINED':'NO TRAINING'}</p>
     </div>
     ${l.details?`<div style="font-size:12px;color:#9A9AB0;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:140px;overflow-y:auto;-webkit-overflow-scrolling:touch">${escHtml(l.details)}</div>`:''}
@@ -3323,7 +3363,7 @@ function resetSkillWork(){
 async function submitSkillWork(did){
   const inputId=did?'skill-yes-input':'skill-no-input';
   const details=document.getElementById(inputId)?.value?.trim()||'';
-  const entry={did,details,time:nowStr(),date:state.todayDate,athlete:getSessionName()};
+  const entry={did,details,time:nowStr(),date:state.todayDate,ts:Date.now(),athlete:getSessionName()};
   const todayLogs=[entry];
   save('fw_work_logs_'+state.todayDate,todayLogs);
   save('fw_skill_answered_'+state.todayDate,'true');
