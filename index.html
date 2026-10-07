@@ -54,6 +54,11 @@ input,textarea,select{font-size:16px!important;font-family:inherit;touch-action:
 .sheet{background:#1C1C24;border-radius:22px 22px 0 0;padding:24px 20px calc(32px + env(safe-area-inset-bottom));width:100%;max-width:430px;max-height:88vh;overflow-y:auto;border-top:1px solid #2E2E3E;
   background-image:linear-gradient(#1C1C24 30%,rgba(28,28,36,0)),linear-gradient(rgba(28,28,36,0),#1C1C24 70%) 0 100%,radial-gradient(farthest-side at 50% 0,rgba(0,0,0,.35),rgba(0,0,0,0)),radial-gradient(farthest-side at 50% 100%,rgba(0,0,0,.35),rgba(0,0,0,0)) 0 100%;
   background-repeat:no-repeat;background-size:100% 24px,100% 24px,100% 10px,100% 10px;background-attachment:local,local,scroll,scroll}
+/* How-to popup: a compact card that is only as tall as its content and never taller than the part of the screen you can see
+   (iPhone Safari's toolbar covers the bottom of the page, so a tall fixed-height box hides its own buttons) */
+.howto-sheet{width:calc(100% - 24px);max-width:406px;border-radius:22px;border:1px solid #2E2E3E;display:flex;flex-direction:column;padding:18px 20px 16px;overflow:hidden;max-height:540px;max-height:min(560px,calc(100dvh - 210px))}
+#howto-body{flex:0 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto}
+.howto-img{max-width:100%;width:auto;height:auto;object-fit:contain;border-radius:10px;border:1px solid #2A2A3E;max-height:260px;max-height:clamp(120px,calc(100dvh - 480px),290px)}
 #overwhelm-scroll{-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#0D9488 #1C1C24}
 #overwhelm-scroll::-webkit-scrollbar{width:5px}
 #overwhelm-scroll::-webkit-scrollbar-track{background:#13131E;border-radius:3px}
@@ -287,15 +292,15 @@ select option{background:#13131E}
 </div>
 
 <div id="howto-overlay" class="overlay" style="display:none;align-items:center">
-  <div class="sheet" style="max-height:88vh;height:88vh;display:flex;flex-direction:column;padding:18px 20px calc(16px + env(safe-area-inset-bottom));overflow:hidden">
+  <div class="sheet howto-sheet">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;margin-bottom:10px">
       <p style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:#F0EDE6">HOW TO USE THIS APP</p>
       <button onclick="closeHowTo()" style="background:#2A2A3A;border-radius:50%;width:32px;height:32px;color:#CCC;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
     </div>
     <div id="howto-dots" style="display:flex;gap:6px;justify-content:center;margin-bottom:14px;flex-shrink:0"></div>
-    <div id="howto-body" style="flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto"></div>
+    <div id="howto-body"></div>
     <div style="display:flex;gap:9px;flex-shrink:0;margin-top:14px">
-      <button id="howto-back" onclick="howtoBack()" style="flex:0 0 88px;background:#13131E;border:1.5px solid #303050;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;color:#9A9AB0;cursor:pointer">← BACK</button>
+      <button id="howto-back" onclick="howtoBack()" style="flex:0 0 88px;white-space:nowrap;background:#13131E;border:1.5px solid #303050;border-radius:13px;padding:14px 8px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;color:#9A9AB0;cursor:pointer">← BACK</button>
       <button id="howto-next" onclick="howtoNext()" style="flex:1;background:#C8102E;color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;letter-spacing:0.06em;cursor:pointer">NEXT →</button>
     </div>
   </div>
@@ -327,14 +332,15 @@ select option{background:#13131E}
       <button onclick="closeMeal()" style="background:#2A2A3A;border-radius:50%;width:38px;height:38px;color:#CCC;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
     </div>
 
-    <p style="font-size:13px;color:#9A9AB0;font-weight:700;letter-spacing:0.06em;margin-bottom:8px">1. PICK ONE</p>
-    <div id="meal-type-chips" style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:18px"></div>
+    <p style="font-size:13px;color:#9A9AB0;font-weight:700;letter-spacing:0.06em;margin-bottom:8px">1. WHICH MEAL?</p>
+    <div id="meal-type-chips" style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:10px"></div>
 
-    <p style="font-size:13px;color:#9A9AB0;font-weight:700;letter-spacing:0.06em;margin-bottom:8px">2. TYPE YOUR FOOD</p>
-    <textarea id="meal-text" rows="4" placeholder="Example: rice, chicken, 2 eggs, shake..." style="width:100%;background:#1A1A28;border:2px solid #2A2A3E;border-radius:14px;color:#F0EDE6;padding:16px;font-size:19px;font-family:'Barlow',sans-serif;outline:none;resize:none;margin-bottom:14px;line-height:1.6;box-sizing:border-box"></textarea>
+    <p style="font-size:13px;color:#9A9AB0;font-weight:700;letter-spacing:0.06em;margin-bottom:8px">2. WHAT DID YOU EAT?</p>
+    <textarea id="meal-text" rows="3" placeholder="Example: 2 cups rice, 6oz chicken, broccoli, 1 Premier Protein shake" style="width:100%;background:#1A1A28;border:2px solid #2A2A3E;border-radius:14px;color:#F0EDE6;padding:16px;font-size:19px;font-family:'Barlow',sans-serif;outline:none;resize:none;margin-bottom:14px;line-height:1.6;box-sizing:border-box"></textarea>
+    <p style="font-size:12.5px;color:#8A8AAA;line-height:1.4;margin:-6px 0 12px">Say how much. Drinks count too: <strong style="color:#C8C8DC">Premier Protein shake</strong>, <strong style="color:#C8C8DC">Gold Standard whey</strong>, Muscle Milk.</p>
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <span style="font-size:14px;color:#8A8AAA">Time: <strong id="meal-time-display" style="color:#F0EDE6;font-size:15px"></strong></span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <span style="font-size:14px;color:#8A8AAA">3. Time you ate: <strong id="meal-time-display" style="color:#F0EDE6;font-size:15px"></strong></span>
       <button onclick="toggleMealTimePicker()" style="background:none;border:1.5px solid #303050;border-radius:9px;padding:6px 14px;color:#8A8AAA;font-size:13px;cursor:pointer">Change</button>
     </div>
     <div id="meal-time-picker" style="display:none;margin-bottom:14px">
@@ -823,6 +829,9 @@ function updatePinDots(digits){
 }
 const R='#C8102E';
 function localDateStr(d){d=d||new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;}
+// The athlete's day runs until 5am (the screen already treats 1am as still "yesterday"), so Notion must file things under that SAME day.
+// localDateStr() is the plain calendar date and put every after-midnight entry on the NEXT day.
+function appDayStr(now){const d=new Date(now==null?Date.now():now);if(d.getHours()<5)d.setDate(d.getDate()-1);return localDateStr(d);}
 const MEAL_SLOTS=[
   {label:'Breakfast',value:'Breakfast'},
   {label:'Snack',value:'Morning Snack'},
@@ -893,7 +902,7 @@ let state={
   todayKey:'fw_fc_'+(new Date().getHours()<5?new Date(Date.now()-86400000):new Date()).toLocaleDateString(),
   todayDate:(new Date().getHours()<5?new Date(Date.now()-86400000):new Date()).toLocaleDateString(),
   done:false,ciStep:0,ciAns:{},ciFlags:[],ciRedFlags:[],ciYellowFlags:[],
-  wellnessStep:null,ciWellness:{answered:false,concerns:[],details:''},locFollowup:null,publicRoster:[],
+  wellnessStep:null,ciWellness:{answered:false,concerns:[],details:''},locFollowup:null,painDetailStep:false,painExamplesOpen:false,publicRoster:[],
   meals:[],mealFeedback:{},
   eodSummary:null,eodLoading:false,
   waterOz:0,hydStreak:0,
@@ -932,7 +941,7 @@ function initState(){
     state.ciRedFlags=[];state.ciYellowFlags=[];
     state.logDone=false;state.eodSummary=null;
     state.clipWatched=false;state.clipReflection='';state.fuelView='plan';state.planViewed=false;state.eodLoading=false;state.logView='today';state.weeklyLogs={};
-  state.wellnessStep=null;state.ciWellness={answered:false,concerns:[],details:''};state.eodSummary=null;state.locFollowup=null;
+  state.wellnessStep=null;state.ciWellness={answered:false,concerns:[],details:''};state.eodSummary=null;state.locFollowup=null;state.painDetailStep=false;
     console.log('🌅 New day detected after 5am — state cleared');
   }
   // Update todayDate and todayKey to use 8am-anchored date
@@ -1899,6 +1908,7 @@ function renderCheckin(){
   }
 
   const step=state.ciStep,q=Q_STEPS[step],total=Q_STEPS.length;
+  if(state.painDetailStep&&q&&q.needsLocation)return renderPainDetail();
   const dots=Q_STEPS.map((_,i)=>`<div style="width:7px;height:7px;border-radius:50%;background:${step===i?R:step>i?'#22C55E':'#2A2A3E'};transition:background 0.2s"></div>`).join('');
   const isSched=q.key==='schedule';
   const painLoc=state.locFollowup===q.key;
@@ -1934,6 +1944,75 @@ function renderCheckin(){
     <p style="font-size:10px;color:#9A9AB0;text-align:center;margin-top:12px">${step+1} of ${total}</p>`;
 }
 
+// ── "TELL US ABOUT IT": when / how / what it looks like (the WHERE is the body-part question just before) ──
+const PAIN_START=['Today','Yesterday','2-3 days ago','About a week ago','More than a week','Not sure'];
+const PAIN_BOTHERS=['When I train or move','When I wake up','All day','At night','Only when I touch it'];
+const PAIN_FEELS=[
+  {v:'Sore / achy',ex:'A dull ache in the muscle, like the day after a hard workout.'},
+  {v:'Tight / stiff',ex:'The muscle feels short or locked up and is hard to stretch out.'},
+  {v:'Sharp',ex:'A quick stab or catch when you move a certain way.'},
+  {v:'Burning',ex:'A hot, burning feeling.'},
+  {v:'Throbbing',ex:'Pulses like a heartbeat, even when you are resting.'},
+  {v:'Tingling / numb',ex:'Pins and needles, or that spot feels asleep.'},
+  {v:'Pinching',ex:'A pinch or catch deep in a joint, like the hip or shoulder.'},
+  {v:'Weak',ex:'Feels weak, like it could give out when you put weight on it.'},
+  {v:'Popping / clicking',ex:'A pop or click when you move it. Tell Coach if it hurts too.'},
+  {v:'Not sure',ex:'That is okay. Pick it, then tell us what you can below.'}
+];
+const PAIN_LOOKS=[
+  {v:'Swelling',ex:'Puffy, or bigger than the other side.'},
+  {v:'Bruise',ex:'Purple, blue, or yellow marks.'},
+  {v:'Red / warm',ex:'Looks red, or feels hot to touch.'},
+  {v:'Limping',ex:'You are favoring it or walking different.'},
+  {v:'Looks normal',ex:'You cannot see anything wrong.'}
+];
+function renderPainDetail(){
+  const a=state.ciAns,step=state.ciStep,total=Q_STEPS.length;
+  const hurts=(a.soreness||'').includes('hurts');
+  const where=(a.sorenessLocations||[]).join(', ');
+  const has=(k,v)=>Array.isArray(a[k])&&a[k].includes(v);
+  const chip=(on,label,fn)=>`<button onclick="${fn}" style="padding:9px 14px;border-radius:20px;border:2px solid ${on?'#C8102E':'#2A2A3E'};background:${on?'#C8102E20':'#111118'};color:${on?'#fff':'#9A9AB0'};font-size:13px;font-family:'Barlow',sans-serif;font-weight:700;cursor:pointer">${label}</button>`;
+  const head=(t,sub)=>`<p style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;letter-spacing:0.04em;color:#F0EDE6;margin:20px 0 ${sub?2:8}px">${t}</p>${sub?`<p style="font-size:11px;color:#9A9AB0;margin-bottom:8px">${sub}</p>`:''}`;
+  const row=(inner)=>`<div style="display:flex;flex-wrap:wrap;gap:8px">${inner}</div>`;
+  const ready=!hurts||(!!a.painStart&&(a.painFeels||[]).length>0);
+  const exStyle='font-size:13px;line-height:1.5;color:#C8C8E0;margin-bottom:7px';
+  return `
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:4px">DAILY ✅</p>
+    <p style="font-size:12px;color:#9A9AB0;margin-bottom:14px">Quick daily read. Tap to answer.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <button onclick="backFromPainDetail()" style="display:flex;align-items:center;gap:4px;color:#F0EDE6;font-size:14px;font-weight:700;font-family:'Barlow Condensed',sans-serif;padding:8px 12px;background:#13131E;border:1.5px solid #303050;border-radius:10px;cursor:pointer">← BACK</button>
+      <p style="font-size:13px;font-weight:800;color:#9A9AB0;font-family:'Barlow Condensed',sans-serif;letter-spacing:0.04em">QUESTION ${step+1} OF ${total+1}</p>
+      <div style="width:60px"></div>
+    </div>
+    <div style="height:5px;background:#1C1C2E;border-radius:3px;overflow:hidden;margin-bottom:20px">
+      <div style="height:100%;width:${Math.round(((step+1)/(total+1))*100)}%;background:#C8102E;border-radius:3px"></div>
+    </div>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;text-align:center;margin-bottom:6px;line-height:1.1">Tell us about it</p>
+    <p style="font-size:12px;color:#9A9AB0;text-align:center;margin-bottom:12px">${hurts?'This helps Coach and the Athletic Trainer take care of you.':'Quick taps. Only pick what fits. You can skip anything.'}</p>
+    ${where?`<div style="text-align:center;margin-bottom:4px"><span style="display:inline-block;background:#13131E;border:1.5px solid #303050;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:700;color:#F0EDE6">📍 ${escHtml(where)}</span></div>`:''}
+    ${head('WHEN did it start?',hurts?'Pick one.':'')}
+    ${row(PAIN_START.map(v=>chip(a.painStart===v,v,`setPainStart('${v}')`)).join(''))}
+    ${head('WHEN does it bother you?','Tap all that fit.')}
+    ${row(PAIN_BOTHERS.map(v=>chip(has('painWhen',v),v,`togglePainOpt('painWhen','${v}')`)).join(''))}
+    ${head('HOW does it feel?',hurts?'Pick at least one. Tap all that fit.':'Tap all that fit.')}
+    ${row(PAIN_FEELS.map(f=>chip(has('painFeels',f.v),f.v,`togglePainOpt('painFeels','${f.v}')`)).join(''))}
+    ${state.painExamplesOpen?`
+    <div style="background:#13131E;border:1px solid #2A2A3E;border-radius:12px;padding:14px;margin:12px 0 0">
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.08em;color:#C8102E;margin-bottom:8px">WHAT THE WORDS MEAN</p>
+      ${PAIN_FEELS.map(f=>`<p style="${exStyle}"><b style="color:#F0EDE6">${f.v}</b> — ${f.ex}</p>`).join('')}
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.08em;color:#C8102E;margin:12px 0 8px">WHAT IT CAN LOOK LIKE</p>
+      ${PAIN_LOOKS.map(f=>`<p style="${exStyle}"><b style="color:#F0EDE6">${f.v}</b> — ${f.ex}</p>`).join('')}
+      <button onclick="togglePainExamples()" style="background:none;border:none;color:#9A9AB0;font-size:12px;cursor:pointer;padding:4px 0">Hide examples</button>
+    </div>`:`
+    <button onclick="togglePainExamples()" style="margin-top:10px;background:none;border:none;color:#9A9AB0;font-size:13px;font-weight:700;cursor:pointer;padding:6px 0">❓ Not sure what to pick? See examples</button>`}
+    ${head('What does it LOOK like?','Tap all that fit.')}
+    ${row(PAIN_LOOKS.map(f=>chip(has('painLooks',f.v),f.v,`togglePainOpt('painLooks','${f.v}')`)).join(''))}
+    ${head('Anything else?','Like what you were doing when it started. (Optional)')}
+    <textarea id="pain-note" rows="3" maxlength="500" oninput="state.ciAns.painNote=this.value" placeholder="Tell Coach in your own words..." style="width:100%;box-sizing:border-box;background:#13131E;border:1.5px solid #303050;border-radius:12px;color:#F0EDE6;padding:12px;font-size:15px;outline:none;resize:none;line-height:1.5;margin-bottom:16px">${escHtml(a.painNote||'')}</textarea>
+    ${!ready?`<p style="font-size:12px;color:#F59E0B;text-align:center;margin-bottom:8px">Pick when it started and at least one way it feels.</p>`:''}
+    <button onclick="continuePainDetail()" ${ready?'':'disabled'} style="width:100%;background:${ready?'#C8102E':'#2A2A3E'};color:#fff;border:none;border-radius:13px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;letter-spacing:0.1em;cursor:${ready?'pointer':'default'}">CONTINUE →</button>
+    <p style="font-size:10px;color:#9A9AB0;text-align:center;margin-top:12px">${step+1} of ${total}</p>`;
+}
 function ciPick(key,val,step,isLast,isMulti){
   if(isMulti){
     const cur=Array.isArray(state.ciAns[key])?state.ciAns[key]:[];
@@ -1941,12 +2020,15 @@ function ciPick(key,val,step,isLast,isMulti){
     renderAthlete();return;
   }
   state.ciAns[key]=val;
+  if(key!=='soreness')state.painDetailStep=false;
   const q=Q_STEPS[step];
   if(q.needsLocation){
     const locKey=key+'Locations';
     if(val===q.noneVal){
       state.ciAns[locKey]=[];
       state.locFollowup=null;
+      state.painDetailStep=false;
+      ['painStart','painWhen','painFeels','painLooks','painNote'].forEach(k=>{delete state.ciAns[k];});
     } else {
       state.locFollowup=key;
       renderAthlete();return;
@@ -1963,13 +2045,26 @@ function toggleLocArea(area){
 }
 function continueLocFollowup(){
   state.locFollowup=null;
+  state.painDetailStep=true; // next: when / how / what it looks like
+  renderAthlete();
+}
+function continuePainDetail(){
+  state.painDetailStep=false;
   const step=state.ciStep,total=Q_STEPS.length;
   if(step===total-1){state.wellnessStep='ask';renderAthlete();return;}
   state.ciStep=step+1;renderAthlete();
 }
+function backFromPainDetail(){state.painDetailStep=false;state.locFollowup='soreness';renderAthlete();}
+function setPainStart(v){state.ciAns.painStart=(state.ciAns.painStart===v)?'':v;renderAthlete();}
+function togglePainOpt(key,v){
+  const cur=Array.isArray(state.ciAns[key])?state.ciAns[key]:[];
+  state.ciAns[key]=cur.includes(v)?cur.filter(x=>x!==v):[...cur,v];
+  renderAthlete();
+}
+function togglePainExamples(){state.painExamplesOpen=!state.painExamplesOpen;renderAthlete();}
 function ciNextMulti(){state.ciStep++;renderAthlete();}
 function ciBack(){if(state.ciStep>0){state.ciStep--;renderAthlete();}}
-function resetCheckin(){state.done=false;state.ciStep=0;state.ciAns={};state.ciFlags=[];state.wellnessStep=null;state.locFollowup=null;localStorage.removeItem(state.todayKey);renderAthlete();}
+function resetCheckin(){state.done=false;state.ciStep=0;state.ciAns={};state.ciFlags=[];state.wellnessStep=null;state.locFollowup=null;state.painDetailStep=false;localStorage.removeItem(state.todayKey);save('fw_ans_'+state.todayDate,{});renderAthlete();}
 function backCheckin(){state.done=false;state.wellnessStep='ask';renderAthlete();}
 // ── FUEL SCORE SYSTEM ────────────────────────────────────────────────────────
 // Points: Check-in(20) + No flags(+10) + 3+meals(20) + 1-2meals(10)
@@ -2037,7 +2132,7 @@ Write the summary now. No intro, no label, just the sentences.`;
     state.eodSummary=summary;
     state.eodLoading=false;
     // Push to Notion Fuel Coach EOD Summary field
-    const today=localDateStr();
+    const today=appDayStr();
     const entryName=name+' '+today;
     const existing=await notionFetch('https://api.notion.com/v1/databases/47eef612-6214-4a9a-9397-b10c9a93356b/query','POST',{
       filter:{and:[{property:'Athlete',rich_text:{equals:name}},{property:'Date',date:{equals:today}}]},page_size:1
@@ -2241,7 +2336,9 @@ function finishCheckin(){
   state.ciRedFlags=redFlags;
   state.ciYellowFlags=yellowFlags;
   state.done=true;
+  state.painDetailStep=false;
   save(state.todayKey,'true');
+  save('fw_ans_'+state.todayDate,state.ciAns); // the answers used to live only in memory — reopening the app forgot them
   save('fw_red_flags_'+state.todayDate,redFlags);
   save('fw_yellow_flags_'+state.todayDate,yellowFlags);
   // Push notifications for flags
@@ -2287,10 +2384,32 @@ function schedulePush(){
   _pushTimer=setTimeout(()=>silentPushToNotion(),500);
 }
 
+// ── DAILY SYNC SAFETY ─────────────────────────────────────────────────────────
+// Notion does not allow a comma in a select value, and ONE bad value rejects the WHOLE daily update.
+// "✅ No, I feel good" has a comma, so every athlete who felt good silently never synced.
+const SORENESS_NONE='✅ No, I feel good';
+function safeSelectName(s){return String(s==null?'':s).replace(/,/g,' -').replace(/\s+/g,' ').trim().slice(0,100);}
+function sorenessForNotion(v){return v===SORENESS_NONE?'0 - No soreness':v;} // an option your Soreness Level column already has
+function painForNotion(v){return v===SORENESS_NONE?'✅ No pain':v;}            // an option your Pain Level column already has
+const CHECKIN_FIELDS=['Energy','Body Feeling','Soreness Level','Soreness Location','Sleep','Pain Level','Pain Location','Mental State','Ate Before Training','Motivation','Wellness Concerns','Red Flags'];
+// Payloads already stuck in an athlete's retry queue were built the old way: fix them so they finally go through
+function sanitizeQueuedPush(p){
+  const props=p.properties||{};
+  if(props['Check-In Status']?.select?.name==='Check-In Needed'){CHECKIN_FIELDS.forEach(k=>{delete props[k];});} // made-up defaults from a device with no check-in
+  Object.keys(props).forEach(k=>{
+    const sel=props[k]&&props[k].select;
+    if(!sel||typeof sel.name!=='string')return;
+    let n=sel.name;
+    if(n===SORENESS_NONE){n=(k==='Pain Level')?'✅ No pain':'0 - No soreness';}
+    sel.name=safeSelectName(n);
+  });
+  p.properties=props;
+  return p;
+}
 async function silentPushToNotion(){
   if(localStorage.getItem('fw_testing_mode')==='true'){flash('Push skipped','#F59E0B');return;}
   const name=getSessionName();if(!name)return;
-  const today=localDateStr();
+  const today=appDayStr(); // the athlete's day (before 5am still counts as yesterday) — same as the screen
   const a=state.ciAns&&Object.keys(state.ciAns).length?state.ciAns:{};
   const pa=state.pulseAnswers||{};
   const score=calcDailyScore();
@@ -2302,44 +2421,69 @@ async function silentPushToNotion(){
   const sched=Array.isArray(a.schedule)?a.schedule.join(', '):'';
   const mealText=state.meals.map((m,i)=>(i+1)+'. '+(m.loggedAt||'')+' '+m.slot+': '+m.text).join('\n');
   const submitted=new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
+  const known=(v)=>v!==undefined&&v!==null&&v!=='';
+  const sel=(v)=>({select:{name:safeSelectName(v)}});
+  const energy=a.energy||pa.energy,bodyF=a.body||pa.body,sleep=a.sleep||pa.sleep,mental=a.mental||pa.mental;
+  const hasLocalCheckin=!!(state.done||Object.keys(a).length);
   const properties={
     "Entry":{title:[{text:{content:name+' '+today}}]},
     "Athlete":{rich_text:[{text:{content:name}}]},
     "Date":{date:{start:today}},
-    "Schedule Today":{rich_text:[{text:{content:sched}}]},
-    "Energy":{select:{name:a.energy||pa.energy||'Good'}},
-    "Body Feeling":{select:{name:a.body||pa.body||'Good'}},
-    "Soreness Level":{select:{name:a.soreness||'✅ No, I feel good'}},
-    "Soreness Location":{rich_text:[{text:{content:(a.sorenessLocations||[]).join(', ')||''}}]},
-    "Sleep":{select:{name:a.sleep||pa.sleep||'7-8 hrs'}},
-    "Pain Level":{select:{name:a.soreness||'✅ No, I feel good'}},
-    "Pain Location":{rich_text:[{text:{content:(a.sorenessLocations||[]).join(', ')||''}}]},
-    "Mental State":{select:{name:a.mental||pa.mental||'Good'}},
-    "Ate Before Training":{select:{name:a.ate||'A little'}},
-    "Motivation":{select:{name:a.motivation||'3 - Im here'}},
-    "Wellness Concerns":{rich_text:[{text:{content:(state.ciAns&&state.ciAns.wellness_concerns?state.ciAns.wellness_concerns+(state.ciAns.wellness_details?' — '+state.ciAns.wellness_details:''):'')||''}}]},
-    "Red Flags":{rich_text:[{text:{content:(state.ciRedFlags||[]).join(', ')||''}}]},
-    "Check-In Status":{select:{name:state.done?((state.ciRedFlags||[]).length?'Flagged':'All Clear'):pa.sleep?'Pulse':'Check-In Needed'}},
-    "Skill Work Done":{select:{name:skillEntry?skillEntry.did?'Yes':'No':'Not Answered'}},
-    "Skill Work Details":{rich_text:rtChunks(skillEntry?.details||'')},
     "Consistency Streak":{number:state.streak},
     "Submitted At":{rich_text:[{text:{content:submitted}}]},
-    "Today Protocol":{rich_text:[{text:{content:protoText}}]},
+    "Today Protocol":{rich_text:rtChunks(protoText)},
     "Meals Logged":{number:state.meals.length},
     "Meal Log":{rich_text:[{text:{content:mealText.slice(0,2000)}}]},
     "Water Oz Logged":{number:Math.round(state.waterOz)},
     "Water Goal Oz":{number:waterGoal},
-    "Water Goal Hit":{select:{name:state.waterOz>=waterGoal?'Yes':'No'}},
+    "Water Goal Hit":sel(state.waterOz>=waterGoal?'Yes':'No'),
     "Fuel Score":{number:score},
-    "Plan Viewed":{select:{name:state.planViewed?'Yes':'No'}},
-    "Clip Watched":{select:{name:state.clipWatched?'Yes':'No'}},
-    "Clip Reflection":{rich_text:[{text:{content:state.clipReflection||''}}]}
+    "Plan Viewed":sel(state.planViewed?'Yes':'No'),
+    "Clip Watched":sel(state.clipWatched?'Yes':'No'),
+    "Clip Reflection":{rich_text:rtChunks(state.clipReflection||'')}
   };
+  // Check-in answers: send ONLY what the athlete really answered on this device. Never send made-up defaults —
+  // a sync from a device without today's check-in would overwrite real answers with "Good / 7-8 hrs / No soreness".
+  if(Array.isArray(a.schedule))properties["Schedule Today"]={rich_text:rtChunks(sched)};
+  if(known(energy))properties["Energy"]=sel(energy);
+  if(known(bodyF))properties["Body Feeling"]=sel(bodyF);
+  if(known(sleep))properties["Sleep"]=sel(sleep);
+  if(known(mental))properties["Mental State"]=sel(mental);
+  if(known(a.ate))properties["Ate Before Training"]=sel(a.ate);
+  if(known(a.motivation))properties["Motivation"]=sel(a.motivation);
+  if(known(a.soreness)){
+    const loc=(a.sorenessLocations||[]).join(', ')||'';
+    properties["Soreness Level"]=sel(sorenessForNotion(a.soreness));
+    properties["Pain Level"]=sel(painForNotion(a.soreness));
+    properties["Soreness Location"]={rich_text:rtChunks(loc)};
+    properties["Pain Location"]={rich_text:rtChunks(loc)};
+    // when / how / what it looks like (empty values clear an earlier answer if they corrected their check-in)
+    const ms=(arr)=>({multi_select:(Array.isArray(arr)?arr:[]).map(n=>({name:safeSelectName(n)}))});
+    properties["Pain Started"]=a.painStart?sel(a.painStart):{select:null};
+    properties["Pain When It Bothers"]=ms(a.painWhen);
+    properties["Pain Feels Like"]=ms(a.painFeels);
+    properties["Pain Looks Like"]=ms(a.painLooks);
+    properties["Pain Notes"]={rich_text:rtChunks(a.painNote||'')};
+  }
+  if(Object.keys(a).length){ // only when we really have the answers on this device
+    properties["Wellness Concerns"]={rich_text:rtChunks((state.ciAns&&state.ciAns.wellness_concerns?state.ciAns.wellness_concerns+(state.ciAns.wellness_details?' — '+state.ciAns.wellness_details:''):'')||'')};
+  }
+  if(hasLocalCheckin){ // the flags are saved separately, so they are always known once the check-in is done
+    properties["Red Flags"]={rich_text:rtChunks((state.ciRedFlags||[]).join(', ')||'')};
+  }
+  const createOnly={}; // only used when a brand-new row is created — never overwrites a real value
+  if(state.done)properties["Check-In Status"]=sel((state.ciRedFlags||[]).length?'Flagged':'All Clear');
+  else if(pa.sleep)properties["Check-In Status"]=sel('Pulse');
+  else createOnly["Check-In Status"]=sel('Check-In Needed');
+  if(skillEntry){
+    properties["Skill Work Done"]=sel(skillEntry.did?'Yes':'No');
+    properties["Skill Work Details"]={rich_text:rtChunks(skillEntry.details||'')};
+  } else createOnly["Skill Work Done"]=sel('Not Answered');
   const DB='47eef612-6214-4a9a-9397-b10c9a93356b';
-  await pushWithRetry(DB,name,today,properties);
+  await pushWithRetry(DB,name,today,properties,1,createOnly);
 }
 
-async function pushWithRetry(DB,name,today,properties,attempt){
+async function pushWithRetry(DB,name,today,properties,attempt,createOnly){
   attempt=attempt||1;
   try{
     const s=await notionFetch('https://api.notion.com/v1/databases/'+DB+'/query','POST',{
@@ -2350,7 +2494,7 @@ async function pushWithRetry(DB,name,today,properties,attempt){
       const u=await notionFetch('https://api.notion.com/v1/pages/'+s.results[0].id,'PATCH',{properties});
       if(u.object==='error')throw new Error(u.message);
     } else {
-      const c=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:DB},properties});
+      const c=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:DB},properties:Object.assign({},createOnly||{},properties)});
       if(c.object==='error')throw new Error(c.message);
     }
     flash('Synced','#22C55E');
@@ -2358,20 +2502,30 @@ async function pushWithRetry(DB,name,today,properties,attempt){
   }catch(e){
     const msg=(e&&e.message)||String(e)||'unknown';
     console.error('Push attempt '+attempt+' failed:',e);
+    // A column that does not exist in Notion rejects the WHOLE update. Drop just that field and send the rest.
+    const unknownCol=/(.+?) is not a property that exists/i.exec(msg);
+    if(unknownCol){
+      const prop=unknownCol[1].trim().replace(/^.*properties\./,'');
+      if(prop in properties||(createOnly&&prop in createOnly)){
+        delete properties[prop];if(createOnly)delete createOnly[prop];
+        console.warn('Notion has no "'+prop+'" column — sending everything else');
+        return pushWithRetry(DB,name,today,properties,attempt,createOnly);
+      }
+    }
     if(attempt<3){
       const delay=attempt*2000; // 2s, then 4s
-      setTimeout(()=>pushWithRetry(DB,name,today,properties,attempt+1),delay);
+      setTimeout(()=>pushWithRetry(DB,name,today,properties,attempt+1,createOnly),delay);
     } else {
       flash('Will retry sync — connection issue','#F59E0B');
-      savePendingPush(DB,name,today,properties);
+      savePendingPush(DB,name,today,properties,createOnly);
     }
   }
 }
 
-function savePendingPush(DB,name,today,properties){
+function savePendingPush(DB,name,today,properties,createOnly){
   const queue=loadJ('fw_pending_pushes',[]);
   const filtered=queue.filter(p=>!(p.name===name&&p.today===today));
-  filtered.push({DB,name,today,properties,savedAt:Date.now()});
+  filtered.push({DB,name,today,properties,createOnly:createOnly||{},savedAt:Date.now()});
   save('fw_pending_pushes',JSON.stringify(filtered));
 }
 function clearPendingPush(name,today){
@@ -2380,10 +2534,12 @@ function clearPendingPush(name,today){
   save('fw_pending_pushes',JSON.stringify(filtered));
 }
 async function flushPendingPushes(){
-  const queue=loadJ('fw_pending_pushes',[]);
+  let queue=loadJ('fw_pending_pushes',[]);
   if(!queue.length)return;
+  queue=queue.map(sanitizeQueuedPush); // fix payloads that were built the old way
+  save('fw_pending_pushes',JSON.stringify(queue));
   for(const p of queue){
-    await pushWithRetry(p.DB,p.name,p.today,p.properties,1);
+    await pushWithRetry(p.DB,p.name,p.today,p.properties,1,p.createOnly);
   }
 }
 
@@ -2929,6 +3085,15 @@ async function completeDailyLog(){
 // ── ATHLETE NUTRITION LOG — individual meal entries ─────────────────────────
 const NUTRITION_DB='b3486b60-3cd8-4231-aab7-3d9944a45cfe';
 // One place builds the Nutrition Log row, so "log" and "edit" can never drift apart
+function eatenDayStr(t){
+  // the athlete-day this food was EATEN on (not when it was typed in): a time later than now means yesterday
+  const m=String(t||'').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if(!m)return appDayStr();
+  let h=+m[1]%12;if(/pm/i.test(m[3]))h+=12;
+  const now=new Date(),d=new Date(now);d.setHours(h,+m[2],0,0);
+  if(d.getTime()>now.getTime()+5*60000)d.setDate(d.getDate()-1);
+  return appDayStr(d.getTime());
+}
 function mealNotionProps(meal){
   const name=getSessionName();
   const sched=Array.isArray(state.ciAns?.schedule)?state.ciAns.schedule.join(', '):'';
@@ -2939,7 +3104,7 @@ function mealNotionProps(meal){
     "Meal Type":{select:{name:meal.slot||'Other'}},
     "Schedule":{rich_text:[{text:{content:sched}}]},
     "Time Logged":{rich_text:[{text:{content:meal.loggedAt||''}}]},
-    "Date":{date:{start:meal.nDate||localDateStr()}}
+    "Date":{date:{start:meal.nDate||(meal.id>1e12?localDateStr(new Date(meal.id)):appDayStr())}} // older meals: the calendar date they were logged on (what the old code sent)
   };
 }
 function mealTitleOf(p){return p.Meal?.title?.[0]?.text?.content||'';}
@@ -3197,14 +3362,14 @@ function renderHowToStep(){
   const chip=s.tab?`<span style="background:#C8102E20;border:1px solid #C8102E60;border-radius:6px;color:#C8102E;font-size:10px;font-weight:800;letter-spacing:0.08em;padding:3px 8px;margin-left:8px;white-space:nowrap">${s.tab}</span>`:'';
   const body=document.getElementById('howto-body');
   if(body)body.innerHTML=`
-    <div style="display:flex;gap:11px;align-items:flex-start;margin-bottom:12px;flex-shrink:0">
+    <div style="display:flex;gap:11px;align-items:flex-start;margin-bottom:12px;flex-shrink:0;min-height:68px">
       <div style="width:28px;height:28px;border-radius:50%;background:#C8102E;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${s.n}</div>
       <div style="flex:1;min-width:0">
         <p style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:#F0EDE6;letter-spacing:0.03em">${s.title}${chip}</p>
         <p style="font-size:14px;color:#9A9AB0;line-height:1.55;margin-top:4px">${s.body}</p>
       </div>
     </div>
-    ${s.img?`<div style="flex:1;min-height:0;display:flex;align-items:flex-start;justify-content:center;overflow:hidden"><img src="${s.img}" alt="Step ${s.n}" style="max-width:100%;max-height:38vh;width:auto;height:auto;object-fit:contain;border-radius:10px;border:1px solid #2A2A3E"/></div>`:''}
+    ${s.img?`<div style="display:flex;justify-content:center;flex-shrink:0"><img class="howto-img" src="${s.img}" alt="Step ${s.n}"/></div>`:''}
   `;
   const back=document.getElementById('howto-back');
   if(back)back.style.visibility=howtoIdx===0?'hidden':'visible';
@@ -3345,6 +3510,7 @@ function saveMealEdit(text){
   const i=mealEditIdx,old=state.meals[i];
   if(!old){closeMeal();return;}
   const updated=Object.assign({},old,{slot:state.mealSlot,text,loggedAt:_customTime||old.loggedAt});
+  if(updated.loggedAt!==old.loggedAt)updated.nDate=eatenDayStr(updated.loggedAt);
   if(updated.slot===old.slot&&updated.text===old.text&&updated.loggedAt===old.loggedAt){closeMeal();flash('No changes');return;}
   state.meals[i]=updated; // same meal, same id — never a second copy
   save('fw_meals_'+state.todayDate,state.meals);
@@ -3365,7 +3531,7 @@ function saveMeal(){
   if(mealEditIdx!==null){saveMealEdit(text);return;}
   const id=Date.now();
   const idx=state.meals.length;
-  state.meals.push({id,slot:state.mealSlot,text,loggedAt:_customTime||document.getElementById('meal-time-display')?.textContent,cal:0,pro:0,carb:0,nDate:localDateStr()});
+  state.meals.push({id,slot:state.mealSlot,text,loggedAt:_customTime||document.getElementById('meal-time-display')?.textContent,cal:0,pro:0,carb:0,nDate:eatenDayStr(_customTime||document.getElementById('meal-time-display')?.textContent)});
   save('fw_meals_'+state.todayDate,state.meals);
   updateScore();
   setTimeout(()=>silentPushToNotion(),300); // push daily summary immediately after meal
@@ -4362,7 +4528,7 @@ function renderLogs(){
 async function loadNotionLogs(){
   state.loadingLogs=true;state.notionLogs=[];renderCoach();
   try{
-    const today=localDateStr();
+    const today=appDayStr(); // the athletes' current day, so the coach's Today matches what they are logging
     const r=await notionFetch('https://api.notion.com/v1/databases/47eef612-6214-4a9a-9397-b10c9a93356b/query','POST',{filter:{property:'Date',date:{equals:today}},page_size:50,sorts:[{property:'Date',direction:'descending'}]});
     if(r.results&&Array.isArray(r.results)){
       state.notionLogs=r.results.map(p=>{
@@ -5519,7 +5685,36 @@ try{
   document.body.innerHTML='<div style="background:#09090E;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px"><div style="text-align:center"><p style="font-family:sans-serif;color:#C8102E;font-size:16px;margin-bottom:8px">App failed to start</p><p style="font-family:monospace;color:#888;font-size:12px">'+bootErr.message+'</p><button onclick="location.reload()" style="margin-top:16px;background:#C8102E;border:none;border-radius:8px;padding:10px 20px;color:#fff;font-size:14px;cursor:pointer">Reload</button></div></div>';
 }
 </script>
-
+<script>
+/* AUTO-UPDATE: when the app comes back to the front, quietly check for a newer version and reload.
+   Never reloads while someone is typing or a pop-up is open. Their saved data stays on the phone. */
+const APP_BUILD='2026-10-07-a';
+(function(){
+  let lastCheck=Date.now(),busy=false;
+  function userIsBusy(){
+    try{
+      const ae=document.activeElement;
+      if(ae&&(ae.tagName==='TEXTAREA'||ae.tagName==='INPUT'))return true;
+      if(['meal-overlay','wb-overlay'].some(id=>{const e=document.getElementById(id);return e&&e.style.display!=='none'&&e.style.display!=='';}))return true;
+      const mt=document.getElementById('meal-text');if(mt&&mt.value.trim())return true;
+    }catch(e){}
+    return false;
+  }
+  async function checkForNewVersion(){
+    if(busy)return;busy=true;
+    try{
+      const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});
+      if(!r.ok)return;
+      const m=(await r.text()).match(/const APP_BUILD='([^']+)'/);
+      if(m&&m[1]!==APP_BUILD&&!userIsBusy())location.reload();
+    }catch(e){}finally{busy=false;lastCheck=Date.now();}
+  }
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible'&&Date.now()-lastCheck>2*60*1000)checkForNewVersion();
+  });
+  window.addEventListener('pageshow',e=>{if(e.persisted&&Date.now()-lastCheck>2*60*1000)checkForNewVersion();});
+})();
+</script>
 
 </body>
 </html>
