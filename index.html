@@ -231,6 +231,7 @@ select option{background:#13131E}
   <nav class="bnav" id="c-nav">
     <button class="bnav-btn active" onclick="cTab('roster')" id="cn-roster"><span class="icon">👥</span>Roster<span id="badge-roster" style="display:none;background:#C8102E;color:#fff;border-radius:50%;width:8px;height:8px;position:absolute;top:4px;right:4px"></span></button>
     <button class="bnav-btn" onclick="cTab('logs')" id="cn-logs" style="position:relative"><span class="icon">📋</span>Logs<span id="badge-logs" style="display:none;background:#C8102E;border-radius:50%;width:8px;height:8px;position:absolute;top:4px;right:4px"></span></button>
+    <button class="bnav-btn" onclick="cTab('photos')" id="cn-photos"><span class="icon">📷</span>Photos</button>
     <button class="bnav-btn" onclick="cTab('alerts')" id="cn-alerts" style="position:relative"><span class="icon">🔔</span>Alerts<span id="badge-alerts" style="display:none;background:#C8102E;border-radius:50%;width:8px;height:8px;position:absolute;top:4px;right:4px"></span></button>
     <button class="bnav-btn" onclick="cTab('sync')" id="cn-sync"><span class="icon">🔄</span>Sync</button>
   </nav>
@@ -338,6 +339,13 @@ select option{background:#13131E}
     <p style="font-size:13px;color:#9A9AB0;font-weight:700;letter-spacing:0.06em;margin-bottom:8px">2. WHAT DID YOU EAT?</p>
     <textarea id="meal-text" rows="3" placeholder="Example: 2 cups rice, 6oz chicken, broccoli, 1 Premier Protein shake" style="width:100%;background:#1A1A28;border:2px solid #2A2A3E;border-radius:14px;color:#F0EDE6;padding:16px;font-size:19px;font-family:'Barlow',sans-serif;outline:none;resize:none;margin-bottom:14px;line-height:1.6;box-sizing:border-box"></textarea>
     <p style="font-size:12.5px;color:#8A8AAA;line-height:1.4;margin:-6px 0 12px">Say how much. Drinks count too: <strong style="color:#C8C8DC">Premier Protein shake</strong>, <strong style="color:#C8C8DC">Gold Standard whey</strong>, Muscle Milk.</p>
+    <div id="meal-photo-row" style="display:none;align-items:center;gap:10px;margin:-2px 0 12px">
+      <button id="meal-photo-btn" onclick="document.getElementById('meal-photo-input').click()" style="background:#13131E;border:1.5px solid #14B8A6;border-radius:10px;color:#14B8A6;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;letter-spacing:0.05em;padding:8px 12px;cursor:pointer;flex-shrink:0">📷 ADD PHOTO</button>
+      <img id="meal-photo-preview" alt="Your food photo" style="display:none;width:40px;height:40px;object-fit:cover;border-radius:8px;flex-shrink:0">
+      <button id="meal-photo-clear" onclick="clearMealPhoto()" aria-label="Remove photo" style="display:none;background:none;border:none;color:#9A9AB0;font-size:16px;cursor:pointer;padding:4px">✕</button>
+      <span style="font-size:11px;color:#8A8AAA;line-height:1.3">Food only. No faces.</span>
+      <input type="file" id="meal-photo-input" accept="image/*" style="display:none" onchange="onMealPhotoPicked(this)">
+    </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <span style="font-size:14px;color:#8A8AAA">3. Time you ate: <strong id="meal-time-display" style="color:#F0EDE6;font-size:15px"></strong></span>
@@ -2767,7 +2775,7 @@ function renderFuel(){
             <button onclick="deleteMeal(${i})" style="background:none;border:none;color:#9A9AB8;font-size:13px;cursor:pointer">Delete</button>
           </div>
         </div>
-        <p style="font-size:15px;color:#F0EDE6;line-height:1.4">${m.text}</p>
+        <p style="font-size:15px;color:#F0EDE6;line-height:1.4">${escHtml(m.text)}${m.hasPhoto&&!m.photoOnly?' <span style="font-size:12px;color:#14B8A6">📷</span>':''}</p>
         ${mealDeleteId===m.id?`<div style="background:#C8102E12;border:1px solid #C8102E50;border-radius:10px;padding:12px;margin-top:10px">
           <p style="font-size:14px;font-weight:700;color:#F0EDE6">Delete this meal?</p>
           <p style="font-size:12px;color:#9A9AB0;margin:2px 0 10px">It will also be removed from what Coach sees.</p>
@@ -2776,7 +2784,8 @@ function renderFuel(){
             <button onclick="cancelDeleteMeal()" style="flex:1;background:#13131E;border:1.5px solid #303050;color:#F0EDE6;border-radius:10px;padding:11px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;letter-spacing:0.06em;cursor:pointer">KEEP IT</button>
           </div>
         </div>`:''}
-        ${fb[m.id]&&fb[m.id]!=='loading'?`<div style="background:#13131E;border-left:3px solid ${R};border-radius:0 8px 8px 0;padding:10px 12px;margin-top:8px"><p style="font-size:11px;color:${R};font-weight:700;letter-spacing:0.08em;margin-bottom:4px;text-transform:uppercase">Coach Note</p><p style="font-size:14px;color:#E0E0F0;line-height:1.6">${renderMD(fb[m.id])}</p></div>`:''}
+        ${fb[m.id]==='loading'?`<p style="font-size:13px;color:#14B8A6;margin-top:8px">Coach-bot is looking at your meal…</p>`:''}
+        ${fb[m.id]&&fb[m.id]!=='loading'?`<div style="background:#13131E;border-left:3px solid #14B8A6;border-radius:0 8px 8px 0;padding:10px 12px;margin-top:8px"><p style="font-size:11px;color:#14B8A6;font-weight:700;letter-spacing:0.08em;margin-bottom:4px;text-transform:uppercase">Coach-Bot Tip</p><p style="font-size:14px;color:#E0E0F0;line-height:1.6">${renderMD(escHtml(fb[m.id]))}</p></div>`:''}
       </div>
     `).join('')}
   </div>`:''}
@@ -3039,7 +3048,368 @@ HOW TO USE CONTEXT:
 - If body goal is gain muscle — emphasize protein at every meal.
 - If body goal is get faster — emphasize carb timing around training.`;
 
-function getMealFeedback(){} // AI feedback disabled — coming soon
+// ══ COACH-BOT + FOOD PHOTOS (beta) ══
+// Who gets the camera + coach-bot. Coach can also turn it on for one phone by opening the app with ?beta=1 (and off with ?beta=0).
+const BOT_BETA_NAMES=[];
+const BOT_DAILY_CAP=8; // most coach-bot tips one athlete can get in a day
+function botEnabled(){
+  try{if(localStorage.getItem('fw_beta_bot')==='1')return true;}catch(e){}
+  try{if((JSON.parse(localStorage.getItem('fw_session')||'null')||{}).role==='coach')return true;}catch(e){} // coach testing from Athlete view
+  const n=String(getSessionName()||'').toLowerCase().trim();
+  if(!n)return false;
+  try{if(localStorage.getItem('fw_photo_beta_'+n.replace(/\s+/g,'_'))==='1')return true;}catch(e){}
+  return BOT_BETA_NAMES.some(b=>String(b).toLowerCase().trim()===n);
+}
+// Coach turns it on per athlete with the "Photo Beta" checkbox in Athlete Profiles (Notion). Checked on open, then every 5 minutes at most.
+let _photoBetaCheckedAt=0,_photoBetaFor='';
+async function refreshPhotoBeta(){
+  try{
+    const sess=JSON.parse(localStorage.getItem('fw_session')||'null');
+    if(!sess||sess.role!=='athlete'||!sess.name)return;
+    if(_photoBetaFor===sess.name&&Date.now()-_photoBetaCheckedAt<5*60*1000)return;
+    _photoBetaCheckedAt=Date.now();_photoBetaFor=sess.name;
+    const res=await notionFetch('https://api.notion.com/v1/databases/80ee4bf5-ce5b-4aaf-8b35-2e5f6e2c93b5/query','POST',{filter:{property:'Photo Beta',checkbox:{equals:true}},page_size:100});
+    if(!res||res.object==='error'||!Array.isArray(res.results))return; // keep what we knew
+    const norm=x=>String(x||'').toLowerCase().replace(/\s+/g,' ').trim();
+    const me=norm(sess.name);
+    const on=res.results.some(p=>{const pr=p.properties||{};
+      const title=((pr['Athlete']&&pr['Athlete'].title)||[]).map(t=>t.plain_text||'').join('');
+      const fl=[((pr['First Name']&&pr['First Name'].rich_text)||[]).map(t=>t.plain_text||'').join(''),((pr['Last Name']&&pr['Last Name'].rich_text)||[]).map(t=>t.plain_text||'').join('')].join(' ');
+      return norm(title)===me||norm(fl)===me;});
+    const key='fw_photo_beta_'+me.replace(/\s+/g,'_');
+    const was=localStorage.getItem(key)==='1';
+    if(on)localStorage.setItem(key,'1');else localStorage.removeItem(key);
+    if(on!==was){const ov=document.getElementById('meal-overlay');if(ov&&ov.style.display!=='none'&&mealEditIdx===null){const row=document.getElementById('meal-photo-row');if(row)row.style.display=on?'flex':'none';}}
+  }catch(e){}
+}
+setTimeout(()=>refreshPhotoBeta(),1500);
+(function(){try{const p=new URLSearchParams(location.search).get('beta');if(p==='1')localStorage.setItem('fw_beta_bot','1');if(p==='0')localStorage.removeItem('fw_beta_bot');}catch(e){}})();
+
+const pendingPhotos={}; // meal id -> small photo (base64) still on its way to Notion
+const botPhotos={};     // meal id -> bigger photo for the coach-bot (kept in memory only)
+let mealPhotoDraft=null;
+const PHOTO_STORE_MAX=46000; // stays under Notion's 25-piece text limit, so the coach screen reads it in one go
+
+function loadImageFromFile(file){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file);const img=new Image();
+    img.onload=()=>res({img,url});
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('unreadable'));};
+    img.src=url;
+  });
+}
+function imgToB64(img,maxSide,maxChars){
+  const w0=img.naturalWidth||img.width,h0=img.naturalHeight||img.height;
+  if(!w0||!h0)return '';
+  let side=maxSide;
+  for(let round=0;round<6;round++){
+    const scale=Math.min(1,side/Math.max(w0,h0));
+    const w=Math.max(1,Math.round(w0*scale)),h=Math.max(1,Math.round(h0*scale));
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    const ctx=c.getContext('2d');if(!ctx)return '';
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+    for(const q of [0.72,0.6,0.5,0.4,0.32]){
+      const b64=(c.toDataURL('image/jpeg',q).split(',')[1]||'');
+      if(b64&&b64.length<=maxChars)return b64;
+    }
+    side=Math.round(side*0.75);
+  }
+  return '';
+}
+async function onMealPhotoPicked(input){
+  const file=input&&input.files&&input.files[0];
+  if(!file)return;
+  try{
+    const {img,url}=await loadImageFromFile(file);
+    const small=imgToB64(img,560,PHOTO_STORE_MAX);
+    const big=imgToB64(img,1024,450000)||small;
+    URL.revokeObjectURL(url);
+    if(!small)throw new Error('too big');
+    mealPhotoDraft={small,big};
+  }catch(e){flash('Could not use that photo. Try again.','#F59E0B');}
+  try{input.value='';}catch(e){}
+  showMealPhotoDraft();
+}
+function showMealPhotoDraft(){
+  const pv=document.getElementById('meal-photo-preview'),cl=document.getElementById('meal-photo-clear'),bt=document.getElementById('meal-photo-btn');
+  if(pv){pv.style.display=mealPhotoDraft?'block':'none';if(mealPhotoDraft)pv.src='data:image/jpeg;base64,'+mealPhotoDraft.small;else pv.removeAttribute('src');}
+  if(cl)cl.style.display=mealPhotoDraft?'inline-block':'none';
+  if(bt)bt.textContent=mealPhotoDraft?'📷 CHANGE':'📷 ADD PHOTO';
+}
+function clearMealPhoto(){mealPhotoDraft=null;showMealPhotoDraft();}
+function setupMealPhotoRow(isEdit){
+  mealPhotoDraft=null;
+  const row=document.getElementById('meal-photo-row');
+  if(row)row.style.display=(!isEdit&&botEnabled())?'flex':'none';
+  showMealPhotoDraft();
+}
+
+// Coach's "not too much" list (from the Food List in Notion). [name, words to match, plain fact]
+const NOT_TOO_MUCH=[
+  ['Spam',/\bspam\b|\bmusubi\b/i,'high in salt and fat'],
+  ['Bacon',/\bbacon\b/i,'processed meat, high in salt and fat'],
+  ['Sausage',/\bsausages?\b|\bbratwursts?\b|\bchorizo\b/i,'processed meat, high in salt and fat'],
+  ['Ham',/\bham\b/i,'processed meat, salty'],
+  ['Hot dogs',/\bhot ?dogs?\b|\bcorn ?dogs?\b/i,'processed meat, often fried'],
+  ['Candy',/\bcandy\b|\bchocolates?\b|\bskittles\b|\bgumm(?:y|ies)\b|\bm&ms?\b|\bsnickers\b|\bsour patch\b/i,'mostly sugar'],
+  ['Sweets',/\bcookies?\b|\bcakes?\b|\bcupcakes?\b|\bdonuts?\b|\bdoughnuts?\b|\bice cream\b|\bbrownies?\b/i,'sugar and fat, little else'],
+  ['Chips',/\bchips\b|\bdoritos\b|\bcheetos\b|\btakis\b/i,'salty and fried'],
+  ['Fries',/\bfries\b|\bta[tr]er ?tots?\b|\btator ?tots?\b|\bhash ?browns?\b/i,'fried'],
+  ['Pastries',/\bcroissants?\b|\bpastr(?:y|ies)\b|\bpancakes?\b|\bwaffles?\b|\bmuffins?\b/i,'mostly sugar and white flour'],
+  ['Fried chicken',/\bnuggets?\b|\btenders\b|\bwings\b|\bfried chicken\b/i,'usually fried'],
+  ['Fast food',/\bmcdonald'?s?\b|\bmcmuffins?\b|\bmc ?doubles?\b|\bburger king\b|\btaco bell\b|\bwendy'?s\b|\bjack in the box\b|\bpopeyes\b|\bkfc\b|\bhot ?pockets?\b/i,'salty and fried'],
+  ['Soda',/\bsodas?\b|\bcoke\b|\bsprite\b|\bpepsi\b|\bdr\.? ?pepper\b|\bmountain dew\b|\bsweet tea\b|\blemonade\b|\bkool[- ]?aid\b/i,'sugar water'],
+  ['Energy drinks',/\benergy drinks?\b|\bmonster\b|\bred ?bull\b|\bcelsius\b|\bbang\b|\bc4\b/i,'high in caffeine; the American Academy of Pediatrics says kids and teens should not drink them'],
+  ['Coffee and boba',/\bcoffee\b|\bboba\b|\blattes?\b|\bfrappuccinos?\b|\bcold brew\b|\bespresso\b|\bmochas?\b/i,'caffeine and sugar add up']
+];
+function notTooMuchIn(str){const s=String(str||'');return NOT_TOO_MUCH.filter(g=>g[1].test(s)).map(g=>g[0]);}
+function mealFoodText(m){return m?(m.photoOnly?'':(m.text||''))+' '+((m.foods||[]).join(', ')):'';}
+function athleteDayKeys(n){ // today's meals key first, then the days before (same 5am day rule the app uses)
+  const now=new Date(),base=new Date(now);
+  if(now.getHours()<5)base.setDate(base.getDate()-1);
+  const uname=getSessionName().toLowerCase().replace(/\s+/g,'_');
+  const out=[];
+  for(let i=0;i<n;i++){const d=new Date(base);d.setDate(base.getDate()-i);out.push(uname+'_'+d.toLocaleDateString());}
+  return out;
+}
+// how many of the last 7 days had this food, not counting this meal; and whether today already had it
+function foodDayCount(group,excludeId){
+  const g=NOT_TOO_MUCH.find(x=>x[0]===group);if(!g)return {before:0,todayHad:false};
+  let before=0,todayHad=false;
+  athleteDayKeys(7).forEach((key,i)=>{
+    const meals=i===0?state.meals:loadJ('fw_meals_'+key,[]);
+    const hit=(meals||[]).some(m=>m&&m.id!==excludeId&&g[1].test(mealFoodText(m)));
+    if(hit){before++;if(i===0)todayHad=true;}
+  });
+  return {before,todayHad};
+}
+// Closing line matches the plate: firm for a plate that needs work, steady for OK, soft for a good or great plate.
+function cleanAdd(a){ // the one thing to add, from the bot: short and plain
+  let t=String(a||'').replace(/[*_`#\n\r]/g,' ').replace(/\s+/g,' ').trim().replace(/[.!,;:]+$/,'').trim();
+  if(!t||t.length>40||/^(nothing|none|n\/a)$/i.test(t))return '';
+  return t.charAt(0).toLowerCase()+t.slice(1);
+}
+const BOT_CLOSERS={
+  needs_work:()=>"Let's do better. Name it. Own it. Fix it.",
+  ok:(add)=>(add?"On the right track, but let's add "+add+". ":"On the right track. ")+"Let's become aware. Adjust. Implement.",
+  great:()=>"Nice, now notice. Adjust. Repeat."
+};
+function botCloser(rating,add){const f=BOT_CLOSERS[rating];return f?'**'+f(cleanAdd(add))+'**':'';}
+function composeBotNote(meal,body,foods,rating,add){
+  const flagged=notTooMuchIn(mealFoodText(meal)+' '+(foods||[]).join(', '));
+  let head='',tail='';
+  if(flagged.length){
+    const counts=flagged.map(g=>Object.assign({g},foodDayCount(g,meal.id)));
+    const lvl2=counts.filter(c=>c.before>=3).sort((a,b)=>b.before-a.before)[0];
+    if(lvl2){
+      const days=lvl2.before+(lvl2.todayHad?0:1);
+      head='**Not today. Another time.**\nThat\'s '+lvl2.g+' '+days+' days in the last 7.';
+      tail='Keep logging the truth. That\'s how Coach helps you.';
+    }else{
+      head='**Nope, not today. Maybe another week.**';
+      tail='Thanks for telling the truth about what you ate.';
+    }
+  }
+  if(flagged.length&&rating!=='none')rating='needs_work'; // a not-too-much food always gets the firm line
+  if(!BOT_CLOSERS[rating]&&rating!=='none')rating='ok';
+  return [head,String(body||'').trim(),tail,botCloser(rating,add)].filter(Boolean).join('\n');
+}
+function parseBotReply(raw){
+  const s=String(raw||'');
+  let note='',foods=[],rating='',add='';
+  const m=s.match(/\{[\s\S]*\}/);
+  if(m){try{const j=JSON.parse(m[0]);note=String(j.note||'').trim();rating=String(j.rating||'').toLowerCase().trim().replace(/[\s-]+/g,'_');add=String(j.add||'');foods=Array.isArray(j.foods)?j.foods.map(f=>String(f).toLowerCase().trim()).filter(Boolean).slice(0,12):[];}catch(e){}}
+  if(!note&&!m)note=s.trim();
+  // the app writes the "Nope" lines itself — drop them if the bot added its own
+  note=note.split('\n').filter(l=>!/^\W*(nope,? not today|not today\.? another time)/i.test(l)).join('\n').trim();
+  // drop any closing line the bot wrote itself — the app adds the right one
+  note=note.split('\n').filter(l=>!/^\W*(let'?s do better|on the right track|nice,? now notice|name it\. own it|(let'?s )?become aware|notice\. adjust\. repeat)/i.test(l)).join('\n').trim();
+  return {note:note.slice(0,700),foods,rating,add};
+}
+function botPrompt(meal,hasPhoto){
+  const typed=meal.photoOnly?'':String(meal.text||'');
+  const flaggedTyped=notTooMuchIn(typed);
+  return `You are the FWAY coach-bot. You write a short tip about ONE meal an athlete logged in the Fonoti Way Performance app. Most athletes are high school athletes. Some are adults.
+
+VOICE (Fonoti Way):
+- Like a respected coach who cares but does not lower the standard. Warm, like a big brother or big sister who has your back.
+- Direct, calm, honest. Short sentences. Common words. 5th grade reading level.
+- Never harsh or shaming. No cursing. No hype words (elite, beast mode, grind, next level, unstoppable, greatness).
+- Do not overexplain. Say what matters, then stop.
+- No Bible verses or God talk in food tips.
+
+WHAT TO WRITE (3 to 5 short lines):
+1. Name what is good on the plate, plainly.
+2. If something is missing, name ONE easy thing to add (a protein; rice, potato, bread or fruit for energy; veggies or fruit; water).
+3. If the meal has a "not too much" food (list below), say one plain fact about it and give one swap for next time. Do NOT write "Nope" or "Not today". The app adds that line.
+4. End with one short line they can act on. The app adds the closing motto itself, so do not write one.
+
+HOW FIRM TO BE (pick a rating and match your tone to it):
+- "great": protein + energy + veggies or fruit. Short and warm. Give credit, nothing to fix.
+- "ok": solid base but something is missing (like meat and rice with no veggies or fruit). Steady. Give credit in the note. Put the ONE missing thing in "add" (2 to 4 words, like "veggies or fruit"). The app says it, so you do not need to repeat it.
+- "needs_work": mostly not-too-much foods, mostly sugar or fried, or no real food. Direct and firm, never harsh. Say the fact, give the swap, say what to do next time.
+- "none": not food, a pain or health note, or only a supplement question.
+
+HARD RULES:
+- Never mention calories, grams, macros, weight, body size, body shape, or losing or gaining weight.
+- Never call a food or the athlete "bad". Never say "too much" or "too little" about how much they ate.
+- Only describe what you can see or what they typed. If something important can't be seen (like how meat was cooked), say "I can't tell" once, only when it matters.
+- If the photo is not food or no food can be seen, the note is only: "Send a photo of your plate so I can help."
+- If they mention pain, injury, feeling sick, or a health problem, the note is only: "Tell Coach about that today."
+- If they mention supplements (creatine, pre-workout, pills, powders other than a protein shake), add only: "Talk to Coach about supplements. Don't guess."
+- If they skipped the meal or ate nothing: "Eat. Your body needs fuel for the work. Tell Coach why you skipped. Honesty gets help."
+- Respect family and island foods (rice, poi, taro, lau lau, musubi and others). Judge what is on the plate, not the culture.
+- No headers or lists. You may bold one or two food words with **double stars**.
+
+COACH'S FOOD LIST:
+Great: chicken, eggs, fish, turkey, shrimp, beans, edamame, rice, potatoes (baked or boiled), fruit, veggies, salad, avocado, yogurt, milk, nuts, peanut butter, water.
+OK: beef, pork, sandwiches, bread, cereal, oats, pasta, burritos, tacos, pizza, cheese, crackers, hummus, granola, bars, popcorn, protein shakes, smoothies, juice, sports drinks during long training, jerky, poke and family plates.
+Not too much: ${NOT_TOO_MUCH.map(g=>g[0]+' ('+g[2]+')').join('; ')}.
+
+THE MEAL:
+- Meal: ${meal.slot||'Meal'} at ${meal.loggedAt||'unknown time'}
+- What they typed: ${typed?JSON.stringify(typed):'(nothing, photo only)'}
+- Photo: ${hasPhoto?'attached':'none'}${flaggedTyped.length?'\n- Not-too-much foods in what they typed: '+flaggedTyped.join(', '):''}
+
+Reply with ONLY this JSON and nothing else:
+{"foods":["short names of the foods you see or they typed"],"rating":"great or ok or needs_work or none","add":"for ok plates only: the one thing to add, else empty","note":"your tip, with lines separated by \\n"}`;
+}
+function botTipsToday(){return Object.values(state.mealFeedback||{}).filter(v=>v&&v!=='loading').length;}
+function rerenderFuel(){if(state.aTab==='fuel')renderAthlete();}
+async function getMealFeedback(id){
+  if(!botEnabled()){delete botPhotos[id];return;}
+  const meal=state.meals.find(m=>m.id===id);
+  if(!meal||botTipsToday()>=BOT_DAILY_CAP){delete botPhotos[id];return;}
+  const img=botPhotos[id];delete botPhotos[id];
+  state.mealFeedback[id]='loading';rerenderFuel();
+  let body='',foods=[],rating='',add='';
+  try{
+    const content=[];
+    if(img)content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:img}});
+    content.push({type:'text',text:botPrompt(meal,!!img)});
+    const data=await aiFetch({model:'claude-sonnet-4-6',max_tokens:400,messages:[{role:'user',content}]});
+    const raw=((data&&data.content||[]).find(b=>b.type==='text')||{}).text||'';
+    const p=parseBotReply(raw);body=p.note;foods=p.foods;rating=p.rating;add=p.add;
+  }catch(e){console.warn('Coach-bot could not answer:',e&&e.message);}
+  const cur=state.meals.find(m=>m.id===id);
+  if(!body||!cur){ // no answer, or the meal was deleted meanwhile — leave no note
+    delete state.mealFeedback[id];save('fw_mfb_'+state.todayDate,state.mealFeedback);rerenderFuel();return;
+  }
+  const note=composeBotNote(cur,body,foods,rating,add);
+  state.mealFeedback[id]=note;save('fw_mfb_'+state.todayDate,state.mealFeedback);
+  const updated=Object.assign({},cur,{botNote:note,foods});
+  if(cur.photoOnly&&foods.length)updated.text='📷 '+foods.join(', ');
+  const i=state.meals.findIndex(m=>m.id===id);
+  if(i>=0){state.meals[i]=updated;save('fw_meals_'+state.todayDate,state.meals);}
+  updateMealInNotion(cur,updated);
+  if(updated.text!==cur.text)setTimeout(()=>silentPushToNotion(),300);
+  rerenderFuel();
+}
+
+// ── COACH: FOOD PHOTOS screen ──
+const photoState={day:null,rows:[],loading:false,err:'',who:'',removeArm:null,cleaned:false};
+function rtPlain(p){return ((p&&p.rich_text)||[]).map(t=>t.plain_text!=null?t.plain_text:((t.text&&t.text.content)||'')).join('');}
+function photoDayShift(n){
+  const d=new Date((photoState.day||appDayStr())+'T12:00:00');d.setDate(d.getDate()+n);
+  const s=localDateStr(d);if(s>appDayStr())return;
+  photoState.day=s;photoState.who='';photoState.removeArm=null;loadFoodPhotos();
+}
+function photoPickWho(i){const names=[...new Set(photoState.rows.map(r=>r.athlete))];photoState.who=i<0?'':(names[i]||'');photoState.removeArm=null;renderCoach();}
+async function loadFoodPhotos(){
+  photoState.day=photoState.day||appDayStr();
+  photoState.loading=true;photoState.err='';
+  if(state.cTab==='photos')renderCoach();
+  try{
+    const res=await notionFetch('https://api.notion.com/v1/databases/'+NUTRITION_DB+'/query','POST',{
+      filter:{and:[{property:'Has Photo',checkbox:{equals:true}},{property:'Date',date:{equals:photoState.day}}]},
+      sorts:[{timestamp:'created_time',direction:'descending'}],page_size:100});
+    if(!res||res.object==='error')throw new Error((res&&res.message)||'no answer');
+    photoState.rows=(res.results||[]).map(p=>{const pr=p.properties||{};return {
+      id:p.id,athlete:rtPlain(pr['Athlete'])||'Unknown',
+      slot:(pr['Meal Type']&&pr['Meal Type'].select&&pr['Meal Type'].select.name)||'',
+      time:rtPlain(pr['Time Logged']),text:rtPlain(pr['What They Ate']),
+      bot:rtPlain(pr['Bot Note']),coach:rtPlain(pr['Coach Note']),photo:rtPlain(pr['Photo Data'])};});
+  }catch(e){photoState.err='Could not load photos. Check your connection and try again.';photoState.rows=[];}
+  photoState.loading=false;
+  if(state.cTab==='photos')renderCoach();
+  if(!photoState.cleaned){photoState.cleaned=true;cleanupOldPhotos();}
+}
+function renderFoodPhotos(){
+  const day=photoState.day||appDayStr();
+  const rows=photoState.rows||[];
+  const names=[...new Set(rows.map(r=>r.athlete))];
+  const shown=photoState.who?rows.filter(r=>r.athlete===photoState.who):rows;
+  const label=new Date(day+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const isToday=day===appDayStr();
+  const chip=(on)=>`padding:7px 12px;border-radius:18px;border:1.5px solid ${on?'#14B8A6':'#303050'};background:${on?'#0D948825':'#111118'};color:${on?'#fff':'#9A9AB0'};font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap`;
+  const btn='flex:1;border-radius:10px;padding:10px;font-family:\'Barlow Condensed\',sans-serif;font-weight:900;font-size:14px;letter-spacing:0.05em;cursor:pointer';
+  return `
+  <p style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;margin-bottom:2px">📷 FOOD PHOTOS</p>
+  <p style="font-size:12px;color:#9A9AB0;margin-bottom:12px">Only coaches see this screen. Photos clear after 14 days. Your notes stay.</p>
+  <div style="display:flex;align-items:center;justify-content:space-between;background:#13131E;border:1px solid #303050;border-radius:12px;padding:6px;margin-bottom:12px">
+    <button onclick="photoDayShift(-1)" style="background:none;border:none;color:#F0EDE6;font-size:22px;padding:4px 14px;cursor:pointer" aria-label="Day before">‹</button>
+    <p style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900">${isToday?'TODAY · ':''}${escHtml(label)}</p>
+    <button onclick="photoDayShift(1)" style="background:none;border:none;color:${isToday?'#303050':'#F0EDE6'};font-size:22px;padding:4px 14px;cursor:pointer" ${isToday?'disabled':''} aria-label="Next day">›</button>
+  </div>
+  ${photoState.loading?`<p style="text-align:center;color:#9A9AB0;padding:24px 0">Loading photos…</p>`:''}
+  ${!photoState.loading&&photoState.err?`<p style="text-align:center;color:#F59E0B;padding:16px 0">${escHtml(photoState.err)}</p><button onclick="loadFoodPhotos()" style="${btn};width:100%;background:#13131E;border:1.5px solid #303050;color:#F0EDE6">TRY AGAIN</button>`:''}
+  ${!photoState.loading&&!photoState.err&&!rows.length?`<p style="text-align:center;color:#9A9AB0;padding:24px 0">No food photos for this day.</p>`:''}
+  ${!photoState.loading&&rows.length?`<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px">
+    <button onclick="photoPickWho(-1)" style="${chip(!photoState.who)}">All (${rows.length})</button>
+    ${names.map((n,i)=>`<button onclick="photoPickWho(${i})" style="${chip(photoState.who===n)}">${escHtml(n)} (${rows.filter(r=>r.athlete===n).length})</button>`).join('')}
+  </div>
+  ${shown.map(r=>{
+    const okPhoto=/^[A-Za-z0-9+/=]+$/.test(r.photo||'');
+    const armed=photoState.removeArm===r.id;
+    return `<div class="card" style="padding:14px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:900">${escHtml(r.athlete)}</p>
+        <p style="font-size:12px;color:#9A9AB0;text-align:right">${escHtml(r.slot)}${r.time?' · '+escHtml(r.time):''}</p>
+      </div>
+      ${okPhoto?`<img src="data:image/jpeg;base64,${r.photo}" alt="Food photo from ${escHtml(r.athlete)}" style="width:100%;border-radius:10px;margin:10px 0;display:block;background:#0A0A12">`:`<p style="font-size:13px;color:#8A8AAA;margin:10px 0">Photo not available.</p>`}
+      ${r.text?`<p style="font-size:14px;color:#F0EDE6;line-height:1.4;margin-bottom:8px">${escHtml(r.text)}</p>`:''}
+      ${r.bot?`<div style="background:#13131E;border-left:3px solid #14B8A6;border-radius:0 8px 8px 0;padding:9px 11px;margin-bottom:10px"><p style="font-size:10px;color:#14B8A6;font-weight:700;letter-spacing:0.08em;margin-bottom:3px">COACH-BOT TIP</p><p style="font-size:13px;color:#E0E0F0;line-height:1.5">${renderMD(escHtml(r.bot))}</p></div>`:''}
+      <textarea id="cnote-${r.id}" rows="2" placeholder="Your note (only coaches see it)" style="width:100%;box-sizing:border-box;background:#0A0A12;border:1.5px solid #303050;border-radius:10px;color:#F0EDE6;padding:10px;font-size:15px;font-family:'Barlow',sans-serif;resize:vertical;margin-bottom:8px">${escHtml(r.coach)}</textarea>
+      <div style="display:flex;gap:8px">
+        <button onclick="saveCoachNote('${r.id}')" style="${btn};background:#0D9488;border:none;color:#fff">SAVE NOTE</button>
+        <button onclick="removeFoodPhoto('${r.id}')" style="${btn};background:${armed?'#C8102E':'#13131E'};border:1.5px solid ${armed?'#C8102E':'#303050'};color:${armed?'#fff':'#9A9AB0'}">${armed?'TAP AGAIN TO REMOVE':'REMOVE PHOTO'}</button>
+      </div>
+    </div>`;}).join('')}`:''}`;
+}
+async function saveCoachNote(id){
+  const ta=document.getElementById('cnote-'+id);const text=ta?ta.value.trim():'';
+  try{
+    const res=await notionFetch('https://api.notion.com/v1/pages/'+id,'PATCH',{properties:{'Coach Note':{rich_text:text?rtChunks(text):[]}}});
+    if(!res||res.object==='error')throw new Error(res&&res.message);
+    const r=photoState.rows.find(x=>x.id===id);if(r)r.coach=text;
+    flash('Note saved ✓');
+  }catch(e){flash('Note not saved. Try again.','#F59E0B');}
+}
+async function removeFoodPhoto(id){
+  if(photoState.removeArm!==id){photoState.removeArm=id;renderCoach();setTimeout(()=>{if(photoState.removeArm===id){photoState.removeArm=null;if(state.cTab==='photos')renderCoach();}},4000);return;}
+  photoState.removeArm=null;
+  try{
+    const res=await notionFetch('https://api.notion.com/v1/pages/'+id,'PATCH',{properties:{'Has Photo':{checkbox:false},'Photo Data':{rich_text:[]}}});
+    if(!res||res.object==='error')throw new Error(res&&res.message);
+    photoState.rows=photoState.rows.filter(x=>x.id!==id);
+    if(photoState.who&&!photoState.rows.some(r=>r.athlete===photoState.who))photoState.who='';
+    flash('Photo removed');
+  }catch(e){flash('Could not remove it. Try again.','#F59E0B');}
+  if(state.cTab==='photos')renderCoach();
+}
+// Photos older than 14 days get cleared (runs once when a coach opens the Photos screen). Notes and text stay.
+async function cleanupOldPhotos(){
+  try{
+    const d=new Date(appDayStr()+'T12:00:00');d.setDate(d.getDate()-14);
+    const res=await notionFetch('https://api.notion.com/v1/databases/'+NUTRITION_DB+'/query','POST',{
+      filter:{and:[{property:'Has Photo',checkbox:{equals:true}},{property:'Date',date:{before:localDateStr(d)}}]},page_size:50});
+    if(!res||res.object==='error')return;
+    for(const p of (res.results||[])){
+      await notionFetch('https://api.notion.com/v1/pages/'+p.id,'PATCH',{properties:{'Has Photo':{checkbox:false},'Photo Data':{rich_text:[]}}});
+    }
+  }catch(e){}
+}
+
 
 
 // Auto-fire after meal save — no button needed
@@ -3104,7 +3474,9 @@ function mealNotionProps(meal){
     "Meal Type":{select:{name:meal.slot||'Other'}},
     "Schedule":{rich_text:[{text:{content:sched}}]},
     "Time Logged":{rich_text:[{text:{content:meal.loggedAt||''}}]},
-    "Date":{date:{start:meal.nDate||(meal.id>1e12?localDateStr(new Date(meal.id)):appDayStr())}} // older meals: the calendar date they were logged on (what the old code sent)
+    "Date":{date:{start:meal.nDate||(meal.id>1e12?localDateStr(new Date(meal.id)):appDayStr())}}, // older meals: the calendar date they were logged on (what the old code sent)
+    ...(pendingPhotos[meal.id]?{"Has Photo":{checkbox:true},"Photo Data":{rich_text:rtChunks(pendingPhotos[meal.id])}}:{}),
+    ...(meal.botNote?{"Bot Note":{rich_text:rtChunks(meal.botNote)}}:{})
   };
 }
 function mealTitleOf(p){return p.Meal?.title?.[0]?.text?.content||'';}
@@ -3130,6 +3502,7 @@ async function pushMealWithRetry(properties,attempt,mealId){
     const res=await notionFetch('https://api.notion.com/v1/pages','POST',{parent:{database_id:NUTRITION_DB},properties:sending});
     if(res.object==='error')throw new Error(res.message);
     console.log('✅ Nutrition log synced');
+    if(mealId)delete pendingPhotos[mealId];
     clearPendingMeal(sending);
     if(sending!==properties)clearPendingMeal(properties);
     if(h){
@@ -3299,7 +3672,7 @@ async function flushPendingMeals(){
 
 // MEAL SHEET
 function openMeal(){
-  mealDeleteId=null;mealEditIdx=null;const _sb=document.getElementById('meal-save-btn');if(_sb)_sb.textContent='SAVE MY MEAL →';
+  mealDeleteId=null;mealEditIdx=null;setupMealPhotoRow(false);refreshPhotoBeta();const _sb=document.getElementById('meal-save-btn');if(_sb)_sb.textContent='SAVE MY MEAL →';
   const now=new Date();
   const h=now.getHours();
   const m=now.getMinutes();
@@ -3487,7 +3860,7 @@ function setCustomTime(v){
 }
 function openMealEdit(i){
   const m=state.meals[i];if(!m)return;
-  mealDeleteId=null;mealEditIdx=i;_slotBeforeEdit=state.mealSlot;
+  mealDeleteId=null;mealEditIdx=i;_slotBeforeEdit=state.mealSlot;setupMealPhotoRow(true);
   state.mealSlot=m.slot;
   const t=String(m.loggedAt||'').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
   const hh=t?parseInt(t[1],10):12,mm=t?t[2]:'00',ap=t?t[3].toUpperCase():'PM';
@@ -3519,8 +3892,9 @@ function saveMealEdit(text){
   flash('Meal updated ✓');closeMeal();renderAthlete();
 }
 function saveMeal(){
-  const text=document.getElementById('meal-text').value.trim();
-  if(!text)return;
+  let text=document.getElementById('meal-text').value.trim();
+  const photo=(mealEditIdx===null&&botEnabled())?mealPhotoDraft:null;
+  if(!text&&!photo)return;
   if(!state.mealSlot){
     flash('Select a meal time first ↑');
     // Highlight the slot buttons
@@ -3531,7 +3905,10 @@ function saveMeal(){
   if(mealEditIdx!==null){saveMealEdit(text);return;}
   const id=Date.now();
   const idx=state.meals.length;
-  state.meals.push({id,slot:state.mealSlot,text,loggedAt:_customTime||document.getElementById('meal-time-display')?.textContent,cal:0,pro:0,carb:0,nDate:eatenDayStr(_customTime||document.getElementById('meal-time-display')?.textContent)});
+  const photoOnly=!text&&!!photo;
+  if(photoOnly)text='📷 Photo';
+  if(photo){pendingPhotos[id]=photo.small;botPhotos[id]=photo.big;mealPhotoDraft=null;}
+  state.meals.push({id,slot:state.mealSlot,text,...(photo?{hasPhoto:true}:{}),...(photoOnly?{photoOnly:true}:{}),loggedAt:_customTime||document.getElementById('meal-time-display')?.textContent,cal:0,pro:0,carb:0,nDate:eatenDayStr(_customTime||document.getElementById('meal-time-display')?.textContent)});
   save('fw_meals_'+state.todayDate,state.meals);
   updateScore();
   setTimeout(()=>silentPushToNotion(),300); // push daily summary immediately after meal
@@ -3773,6 +4150,7 @@ function cTab(t){
   const sc=document.getElementById('c-content');if(sc)sc.scrollTop=0;
   // Load logs once per session — board uses same data all week
   if(t==='logs')loadNotionLogs();
+  if(t==='photos'){renderCoach();loadFoodPhotos();return;}
   if(t==='roster'&&!state.rosterProfiles.length)loadRoster();
   if(t==='alerts'){
     // Mark all current alerts as seen so badge clears immediately
@@ -3791,6 +4169,7 @@ function renderCoach(){
   else if(state.cTab==='logs')el.innerHTML=renderLogs();
   else if(state.cTab==='sync')el.innerHTML=renderSync();
   else if(state.cTab==='alerts')el.innerHTML=renderAlerts();
+  else if(state.cTab==='photos')el.innerHTML=renderFoodPhotos();
 }
 
 let schedEditAthlete='';
@@ -5688,7 +6067,7 @@ try{
 <script>
 /* AUTO-UPDATE: when the app comes back to the front, quietly check for a newer version and reload.
    Never reloads while someone is typing or a pop-up is open. Their saved data stays on the phone. */
-const APP_BUILD='2026-10-07-a';
+const APP_BUILD='2026-10-29-c';
 (function(){
   let lastCheck=Date.now(),busy=false;
   function userIsBusy(){
