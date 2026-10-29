@@ -339,11 +339,17 @@ select option{background:#13131E}
     <p style="font-size:13px;color:#9A9AB0;font-weight:700;letter-spacing:0.06em;margin-bottom:8px">2. WHAT DID YOU EAT?</p>
     <textarea id="meal-text" rows="3" placeholder="Example: 2 cups rice, 6oz chicken, broccoli, 1 Premier Protein shake" style="width:100%;background:#1A1A28;border:2px solid #2A2A3E;border-radius:14px;color:#F0EDE6;padding:16px;font-size:19px;font-family:'Barlow',sans-serif;outline:none;resize:none;margin-bottom:14px;line-height:1.6;box-sizing:border-box"></textarea>
     <p style="font-size:12.5px;color:#8A8AAA;line-height:1.4;margin:-6px 0 12px">Say how much. Drinks count too: <strong style="color:#C8C8DC">Premier Protein shake</strong>, <strong style="color:#C8C8DC">Gold Standard whey</strong>, Muscle Milk.</p>
-    <div id="meal-photo-row" style="display:none;align-items:center;gap:10px;margin:-2px 0 12px">
-      <button id="meal-photo-btn" onclick="document.getElementById('meal-photo-input').click()" style="background:#13131E;border:1.5px solid #14B8A6;border-radius:10px;color:#14B8A6;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;letter-spacing:0.05em;padding:8px 12px;cursor:pointer;flex-shrink:0">📷 ADD PHOTO</button>
-      <img id="meal-photo-preview" alt="Your food photo" style="display:none;width:40px;height:40px;object-fit:cover;border-radius:8px;flex-shrink:0">
-      <button id="meal-photo-clear" onclick="clearMealPhoto()" aria-label="Remove photo" style="display:none;background:none;border:none;color:#9A9AB0;font-size:16px;cursor:pointer;padding:4px">✕</button>
-      <span style="font-size:11px;color:#8A8AAA;line-height:1.3">Food only. No faces.</span>
+    <div id="meal-photo-row" style="display:none;flex-direction:column;gap:6px;margin:-2px 0 12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="meal-photo-take" onclick="document.getElementById('meal-photo-camera').click()" style="background:#13131E;border:1.5px solid #14B8A6;border-radius:10px;color:#14B8A6;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;letter-spacing:0.04em;padding:9px 6px;cursor:pointer;flex:1;min-width:0;white-space:nowrap">📷 TAKE PHOTO</button>
+        <button id="meal-photo-btn" onclick="document.getElementById('meal-photo-input').click()" style="background:#13131E;border:1.5px solid #14B8A6;border-radius:10px;color:#14B8A6;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;letter-spacing:0.04em;padding:9px 6px;cursor:pointer;flex:1;min-width:0;white-space:nowrap">🖼️ ADD PHOTO</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <img id="meal-photo-preview" alt="Your food photo" style="display:none;width:40px;height:40px;object-fit:cover;border-radius:8px;flex-shrink:0">
+        <button id="meal-photo-clear" onclick="clearMealPhoto()" aria-label="Remove photo" style="display:none;background:none;border:none;color:#9A9AB0;font-size:16px;cursor:pointer;padding:4px;flex-shrink:0">✕</button>
+        <span style="font-size:11px;color:#8A8AAA">Photo of your food only. No faces.</span>
+      </div>
+      <input type="file" id="meal-photo-camera" accept="image/*" capture="environment" style="display:none" onchange="onMealPhotoPicked(this)">
       <input type="file" id="meal-photo-input" accept="image/*" style="display:none" onchange="onMealPhotoPicked(this)">
     </div>
 
@@ -2784,8 +2790,8 @@ function renderFuel(){
             <button onclick="cancelDeleteMeal()" style="flex:1;background:#13131E;border:1.5px solid #303050;color:#F0EDE6;border-radius:10px;padding:11px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;letter-spacing:0.06em;cursor:pointer">KEEP IT</button>
           </div>
         </div>`:''}
-        ${fb[m.id]==='loading'?`<p style="font-size:13px;color:#14B8A6;margin-top:8px">Coach-bot is looking at your meal…</p>`:''}
-        ${fb[m.id]&&fb[m.id]!=='loading'?`<div style="background:#13131E;border-left:3px solid #14B8A6;border-radius:0 8px 8px 0;padding:10px 12px;margin-top:8px"><p style="font-size:11px;color:#14B8A6;font-weight:700;letter-spacing:0.08em;margin-bottom:4px;text-transform:uppercase">Coach-Bot Tip</p><p style="font-size:14px;color:#E0E0F0;line-height:1.6">${renderMD(escHtml(fb[m.id]))}</p></div>`:''}
+        ${fb[m.id]==='loading'?`<p style="font-size:13px;color:#14B8A6;margin-top:8px">FWAY is looking at your meal…</p>`:''}
+        ${fb[m.id]&&fb[m.id]!=='loading'?`<div style="background:#13131E;border-left:3px solid #14B8A6;border-radius:0 8px 8px 0;padding:10px 12px;margin-top:8px"><p style="font-size:11px;color:#14B8A6;font-weight:700;letter-spacing:0.08em;margin-bottom:4px;text-transform:uppercase">FWAY Tip</p><p style="font-size:14px;color:#E0E0F0;line-height:1.6">${renderMD(escHtml(fb[m.id]))}</p></div>`:''}
       </div>
     `).join('')}
   </div>`:''}
@@ -3053,6 +3059,7 @@ HOW TO USE CONTEXT:
 const BOT_BETA_NAMES=[];
 const BOT_DAILY_CAP=8; // most coach-bot tips one athlete can get in a day
 function botEnabled(){
+  try{if(!/(^|\.)lyloholdings-byte\.github\.io$/i.test(location.hostname||''))return true;}catch(e){return true;} // any preview copy (computer, chat preview) shows the button; the live app follows the beta list
   try{if(localStorage.getItem('fw_beta_bot')==='1')return true;}catch(e){}
   try{if((JSON.parse(localStorage.getItem('fw_session')||'null')||{}).role==='coach')return true;}catch(e){} // coach testing from Athlete view
   const n=String(getSessionName()||'').toLowerCase().trim();
@@ -3134,7 +3141,7 @@ function showMealPhotoDraft(){
   const pv=document.getElementById('meal-photo-preview'),cl=document.getElementById('meal-photo-clear'),bt=document.getElementById('meal-photo-btn');
   if(pv){pv.style.display=mealPhotoDraft?'block':'none';if(mealPhotoDraft)pv.src='data:image/jpeg;base64,'+mealPhotoDraft.small;else pv.removeAttribute('src');}
   if(cl)cl.style.display=mealPhotoDraft?'inline-block':'none';
-  if(bt)bt.textContent=mealPhotoDraft?'📷 CHANGE':'📷 ADD PHOTO';
+  if(bt)bt.textContent='🖼️ ADD PHOTO';
 }
 function clearMealPhoto(){mealPhotoDraft=null;showMealPhotoDraft();}
 function setupMealPhotoRow(isEdit){
@@ -3368,7 +3375,7 @@ function renderFoodPhotos(){
       </div>
       ${okPhoto?`<img src="data:image/jpeg;base64,${r.photo}" alt="Food photo from ${escHtml(r.athlete)}" style="width:100%;border-radius:10px;margin:10px 0;display:block;background:#0A0A12">`:`<p style="font-size:13px;color:#8A8AAA;margin:10px 0">Photo not available.</p>`}
       ${r.text?`<p style="font-size:14px;color:#F0EDE6;line-height:1.4;margin-bottom:8px">${escHtml(r.text)}</p>`:''}
-      ${r.bot?`<div style="background:#13131E;border-left:3px solid #14B8A6;border-radius:0 8px 8px 0;padding:9px 11px;margin-bottom:10px"><p style="font-size:10px;color:#14B8A6;font-weight:700;letter-spacing:0.08em;margin-bottom:3px">COACH-BOT TIP</p><p style="font-size:13px;color:#E0E0F0;line-height:1.5">${renderMD(escHtml(r.bot))}</p></div>`:''}
+      ${r.bot?`<div style="background:#13131E;border-left:3px solid #14B8A6;border-radius:0 8px 8px 0;padding:9px 11px;margin-bottom:10px"><p style="font-size:10px;color:#14B8A6;font-weight:700;letter-spacing:0.08em;margin-bottom:3px">FWAY TIP</p><p style="font-size:13px;color:#E0E0F0;line-height:1.5">${renderMD(escHtml(r.bot))}</p></div>`:''}
       <textarea id="cnote-${r.id}" rows="2" placeholder="Your note (only coaches see it)" style="width:100%;box-sizing:border-box;background:#0A0A12;border:1.5px solid #303050;border-radius:10px;color:#F0EDE6;padding:10px;font-size:15px;font-family:'Barlow',sans-serif;resize:vertical;margin-bottom:8px">${escHtml(r.coach)}</textarea>
       <div style="display:flex;gap:8px">
         <button onclick="saveCoachNote('${r.id}')" style="${btn};background:#0D9488;border:none;color:#fff">SAVE NOTE</button>
@@ -6067,7 +6074,7 @@ try{
 <script>
 /* AUTO-UPDATE: when the app comes back to the front, quietly check for a newer version and reload.
    Never reloads while someone is typing or a pop-up is open. Their saved data stays on the phone. */
-const APP_BUILD='2026-10-29-c';
+const APP_BUILD='2026-10-29-f';
 (function(){
   let lastCheck=Date.now(),busy=false;
   function userIsBusy(){
