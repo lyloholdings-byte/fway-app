@@ -3291,11 +3291,18 @@ async function getMealFeedback(id){
     const content=[];
     if(img)content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:img}});
     content.push({type:'text',text:botPrompt(meal,!!img)});
-    const data=await aiFetch({model:'claude-sonnet-5-5',max_tokens:400,messages:[{role:'user',content}]});
-    if(data&&(data.type==='error'||data.error))botErr=String((data.error&&(data.error.message||data.error.type))||data.error||'error');
-    const raw=((data&&data.content||[]).find(b=>b.type==='text')||{}).text||'';
-    if(!raw&&!botErr)botErr='empty answer';
+    // try the main model, then a second one if the answer comes back empty or errors
+    let raw='';const tried=[];
+    for(const model of ['claude-sonnet-5-5','claude-haiku-4-5-20251001']){
+      const data=await aiFetch({model,max_tokens:1200,messages:[{role:'user',content}]});
+      raw=((data&&Array.isArray(data.content)?data.content:[]).filter(b=>b&&b.type==='text').map(b=>b.text||'').join('\n')).trim();
+      if(raw){botErr='';break;}
+      if(data&&(data.type==='error'||data.error))tried.push(model+': '+String((data.error&&(data.error.message||data.error.type))||data.error||'error'));
+      else tried.push(model+': empty (stop '+((data&&data.stop_reason)||'?')+', blocks '+(((data&&data.content)||[]).map(b=>b&&b.type).join('/')||'none')+(data&&!data.content?', keys '+Object.keys(data||{}).slice(0,6).join('/'):'')+')');
+      botErr=tried.join(' | ');
+    }
     const p=parseBotReply(raw);body=p.note;foods=p.foods;rating=p.rating;add=p.add;
+    if(raw&&!body)botErr='could not read the answer: '+raw.slice(0,160);
   }catch(e){botErr='no connection: '+((e&&e.message)||'');console.warn('Coach-bot could not answer:',e&&e.message);}
   const cur=state.meals.find(m=>m.id===id);
   if(!body||!cur){ // no answer, or the meal was deleted meanwhile — leave no note for the athlete
@@ -6077,7 +6084,7 @@ try{
 <script>
 /* AUTO-UPDATE: when the app comes back to the front, quietly check for a newer version and reload.
    Never reloads while someone is typing or a pop-up is open. Their saved data stays on the phone. */
-const APP_BUILD='2026-10-29-i';
+const APP_BUILD='2026-10-29-j';
 (function(){
   let lastCheck=Date.now(),busy=false;
   function userIsBusy(){
